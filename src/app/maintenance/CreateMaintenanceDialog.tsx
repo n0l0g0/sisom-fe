@@ -1,0 +1,118 @@
+'use client';
+
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { api, Room } from '@/services/api';
+import { useRouter } from 'next/navigation';
+
+interface CreateMaintenanceDialogProps {
+  rooms: Room[];
+}
+
+export function CreateMaintenanceDialog({ rooms }: CreateMaintenanceDialogProps) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    roomId: '',
+    title: '',
+    description: '',
+    reportedBy: ''
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await api.createMaintenanceRequest(formData);
+      setOpen(false);
+      router.refresh();
+      setFormData({
+        roomId: '',
+        title: '',
+        description: '',
+        reportedBy: ''
+      });
+    } catch (error) {
+      console.error('Failed to create maintenance request:', error);
+      alert('Failed to create maintenance request');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="bg-[#f5a987] hover:bg-[#e09b7d] text-white rounded-lg px-4 py-2 flex items-center gap-2 transition-colors">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+          </svg>
+          แจ้งซ่อมใหม่
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px] bg-white rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-[#8b5a3c]">แจ้งซ่อมใหม่</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <div className="space-y-2">
+            <Label htmlFor="room">ห้อง</Label>
+            <Select onValueChange={(value) => setFormData({...formData, roomId: value})} required>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="เลือกห้อง" />
+              </SelectTrigger>
+              <SelectContent>
+                {rooms.map((room) => (
+                  <SelectItem key={room.id} value={room.id}>
+                    ห้อง {room.number} (ชั้น {room.floor})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="title">หัวข้อ</Label>
+            <Input
+              id="title"
+              value={formData.title}
+              onChange={(e) => setFormData({...formData, title: e.target.value})}
+              required
+              placeholder="เช่น ไฟห้องน้ำเสีย, ท่อน้ำรั่ว"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">รายละเอียด</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              placeholder="รายละเอียดเพิ่มเติม..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="reportedBy">ผู้แจ้ง</Label>
+            <Input
+              id="reportedBy"
+              value={formData.reportedBy}
+              onChange={(e) => setFormData({...formData, reportedBy: e.target.value})}
+              placeholder="ระบุชื่อผู้แจ้ง (ถ้ามี)"
+            />
+          </div>
+
+          <Button type="submit" className="w-full bg-[#f5a987] hover:bg-[#e09b7d] text-white" disabled={loading}>
+            {loading ? 'กำลังบันทึก...' : 'บันทึก'}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

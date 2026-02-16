@@ -1269,7 +1269,13 @@ export function SaveDormSettings({ initialConfig }: { initialConfig: DormConfig 
     const electricRate =
       electricRateRaw.trim() === '' ? undefined : Number(electricRateRaw);
     const commonFee = Number((document.getElementById('commonFee') as HTMLInputElement)?.value);
-    const bankAccount = (document.getElementById('bankAccount') as HTMLInputElement)?.value;
+    const bankName = (document.getElementById('bankName') as HTMLSelectElement | null)?.value?.trim() ?? '';
+    const bankAccountNumber =
+      (document.getElementById('bankAccountNumber') as HTMLInputElement | null)?.value?.trim() ?? '';
+    const bankAccountName =
+      (document.getElementById('bankAccountName') as HTMLInputElement | null)?.value?.trim() ?? '';
+    const bankBranch =
+      (document.getElementById('bankBranch') as HTMLInputElement | null)?.value?.trim() ?? '';
     const waterFeeMethodRaw = (document.getElementById('waterFeeMethod') as HTMLInputElement | null)?.value;
     const waterFlatMonthlyFeeRaw = (document.getElementById('waterFlatMonthlyFee') as HTMLInputElement | null)?.value;
     const waterFlatPerPersonFeeRaw = (document.getElementById('waterFlatPerPersonFee') as HTMLInputElement | null)?.value;
@@ -1377,6 +1383,18 @@ export function SaveDormSettings({ initialConfig }: { initialConfig: DormConfig 
           })()
         : undefined;
 
+    const bankAccount =
+      bankName || bankAccountNumber || bankAccountName || bankBranch
+        ? (() => {
+            const parts: string[] = [];
+            if (bankName) parts.push(bankName);
+            if (bankAccountName) parts.push(`ชื่อบัญชี ${bankAccountName}`);
+            if (bankAccountNumber) parts.push(`เลขที่บัญชี ${bankAccountNumber}`);
+            if (bankBranch) parts.push(`สาขา ${bankBranch}`);
+            return parts.join(' ');
+          })()
+        : initialConfig?.bankAccount;
+
     try {
       const minimalPayload = {
         dormName,
@@ -1386,7 +1404,7 @@ export function SaveDormSettings({ initialConfig }: { initialConfig: DormConfig 
         waterUnitPrice: waterRate !== undefined ? waterRate : undefined,
         electricUnitPrice: electricRate !== undefined ? electricRate : undefined,
         commonFee,
-        bankAccount,
+        bankAccount: bankAccount || undefined,
       };
       const saved = await api.updateDormConfig(minimalPayload);
       try {

@@ -87,9 +87,37 @@ export default async function DormSettingsPage() {
               <Label htmlFor="commonFee">ค่าส่วนกลาง (บาท/เดือน)</Label>
               <Input id="commonFee" type="number" defaultValue={config ? Number(config.commonFee) : 300} className="rounded-2xl border-amber-200" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="bankAccount">เลขที่บัญชีรับโอน</Label>
-              <Input id="bankAccount" defaultValue={config?.bankAccount || ''} className="rounded-2xl border-amber-200" />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="bankName">ชื่อธนาคาร</Label>
+                <select
+                  id="bankName"
+                  defaultValue=""
+                  className="rounded-2xl border-amber-200 w-full px-3 py-2 bg-white"
+                >
+                  <option value="">-- เลือกธนาคาร --</option>
+                  <option value="กรุงเทพ">ธนาคารกรุงเทพ</option>
+                  <option value="กสิกรไทย">ธนาคารกสิกรไทย</option>
+                  <option value="ไทยพาณิชย์">ธนาคารไทยพาณิชย์</option>
+                  <option value="กรุงศรี">ธนาคารกรุงศรีอยุธยา</option>
+                  <option value="กรุงไทย">ธนาคารกรุงไทย</option>
+                  <option value="ทหารไทยธนชาต">ธนาคารทหารไทยธนชาต</option>
+                  <option value="ออมสิน">ธนาคารออมสิน</option>
+                  <option value="กยศ.">ธนาคารเพื่อการเกษตรและสหกรณ์การเกษตร</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bankAccountNumber">เลขที่บัญชี</Label>
+                <Input id="bankAccountNumber" className="rounded-2xl border-amber-200" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bankAccountName">ชื่อบัญชี</Label>
+                <Input id="bankAccountName" className="rounded-2xl border-amber-200" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bankBranch">สาขา</Label>
+                <Input id="bankBranch" className="rounded-2xl border-amber-200" />
+              </div>
             </div>
           </CardContent>
         </div>

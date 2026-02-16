@@ -168,33 +168,38 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        {priceGroups.map(pg => (
-          <div
-            key={pg.price}
-            className="bg-white rounded-2xl p-5 shadow-sm hover:-translate-y-1 transition-transform duration-200 border border-slate-100"
-          >
-            <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${pg.vacant > 0 ? 'bg-emerald-50' : 'bg-red-50'} border ${pg.vacant > 0 ? 'border-emerald-200' : 'border-red-200'}`}>
-                <svg className={`w-6 h-6 ${pg.vacant > 0 ? 'text-emerald-500' : 'text-red-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={pg.vacant > 0 ? 'M5 13l4 4L19 7' : 'M6 18L18 6M6 6l12 12'} />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <p className="text-slate-500 text-sm">ห้องราคา {pg.price.toLocaleString()} บาท</p>
-                <p className={`text-xl md:text-2xl font-bold mt-1 ${pg.vacant > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                  ว่าง {pg.vacant} ห้อง จากทั้งหมด {pg.total}
-                </p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      
       <div className="mb-2">
         <h3 className="text-xl font-semibold text-orange-900 mb-3 flex items-center gap-2">
           <span className="text-2xl">💰</span> ห้องว่างตามราคา
         </h3>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        {priceGroups.map(ps => {
+          const percent = ps.total > 0 ? Math.round((ps.vacant / ps.total) * 100) : 0;
+          return (
+            <div key={ps.price} className="card-hover bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200 rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-2xl font-bold text-orange-900">฿{ps.price.toLocaleString()}</span>
+                <span className="text-xs text-orange-700 bg-orange-200 px-2 py-1 rounded-full">/เดือน</span>
+              </div>
+              <div className="flex items-end justify-between">
+                <div>
+                  <p className="text-3xl font-bold text-green-600">{ps.vacant}</p>
+                  <p className="text-orange-700 text-sm">ห้องว่าง</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg text-orange-700">จาก {ps.total} ห้อง</p>
+                  <div className="w-24 h-2 bg-orange-200 rounded-full mt-1 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full transition-all duration-500"
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
       <DashboardRoomsList
         totalRooms={rooms.length}

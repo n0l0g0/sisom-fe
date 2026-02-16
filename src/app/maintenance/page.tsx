@@ -58,6 +58,32 @@ function parseMoveOutDescription(description?: string) {
   return result;
 }
 
+function parseMaintenanceDescription(description?: string) {
+  const result: { textLines: string[]; images: string[] } = {
+    textLines: [],
+    images: [],
+  };
+  if (!description) return result;
+  const lines = description.split('\n').map((l) => l.trim()).filter(Boolean);
+  for (const line of lines) {
+    if (/^IMAGE\d*:/i.test(line)) {
+      const url = line.split(':').slice(1).join(':').trim();
+      if (url) result.images.push(url);
+      continue;
+    }
+    const m = line.match(/https?:\/\/\S+/);
+    if (m && /\.(png|jpg|jpeg|gif|webp)(\?|$)/i.test(m[0])) {
+      const url = m[0];
+      result.images.push(url);
+      const rest = line.replace(url, '').trim();
+      if (rest) result.textLines.push(rest);
+      continue;
+    }
+    result.textLines.push(line);
+  }
+  return result;
+}
+
 export default function MaintenancePage() {
   return (
     <Suspense
@@ -578,12 +604,46 @@ function MaintenancePageContent() {
                     );
                   }
                   if (selectedRequest.description) {
+                    const parsed = parseMaintenanceDescription(
+                      selectedRequest.description,
+                    );
                     return (
-                      <div className="space-y-1 text-sm">
-                        <div className="text-slate-500">รายละเอียด</div>
-                        <div className="whitespace-pre-wrap text-slate-700">
-                          {selectedRequest.description}
+                      <div className="space-y-4 text-sm">
+                        <div>
+                          <div className="text-slate-500">รายละเอียด</div>
+                          <div className="whitespace-pre-wrap text-slate-700">
+                            {parsed.textLines.length > 0
+                              ? parsed.textLines.join('\n')
+                              : selectedRequest.description}
+                          </div>
                         </div>
+                        {parsed.images.length > 0 && (
+                          <div className="space-y-3">
+                            <div className="text-sm font-semibold text-[#8b5a3c]">
+                              รูปประกอบการแจ้งซ่อม
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {parsed.images.map((url, idx) => (
+                                <a
+                                  key={`${selectedRequest.id}-img-${idx}`}
+                                  href={url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="block border rounded-lg overflow-hidden bg-slate-50"
+                                >
+                                  <img
+                                    src={url}
+                                    alt={`รูปแจ้งซ่อม ${idx + 1}`}
+                                    className="w-full object-contain max-h-80"
+                                  />
+                                </a>
+                              ))}
+                            </div>
+                            <div className="text-xs text-slate-500">
+                              คลิกที่รูปเพื่อเปิดดูขนาดเต็มในแท็บใหม่
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   }

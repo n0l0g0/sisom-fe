@@ -49,6 +49,9 @@ export default function UserDialog({ user, open, onOpenChange, onSubmit }: UserD
   });
   const [loading, setLoading] = useState(false);
   const [verifyCode, setVerifyCode] = useState<string>('');
+  const [passwordConfirm, setPasswordConfirm] = useState<string>('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -74,10 +77,26 @@ export default function UserDialog({ user, open, onOpenChange, onSubmit }: UserD
       });
       setVerifyCode('');
     }
+    setPasswordConfirm('');
+    setShowPassword(false);
+    setShowPasswordConfirm(false);
   }, [user, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      if (!formData.passwordHash || !passwordConfirm) {
+        alert('กรุณากรอกรหัสผ่านและยืนยันรหัสผ่าน');
+        return;
+      }
+    }
+    if (
+      (formData.passwordHash || passwordConfirm) &&
+      formData.passwordHash !== passwordConfirm
+    ) {
+      alert('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน');
+      return;
+    }
     setLoading(true);
     try {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -124,13 +143,43 @@ export default function UserDialog({ user, open, onOpenChange, onSubmit }: UserD
           
           <div className="space-y-2">
             <Label htmlFor="password">รหัสผ่าน {user && '(เว้นว่างหากไม่ต้องการเปลี่ยน)'}</Label>
-            <Input 
-              id="password" 
-              type="password"
-              value={formData.passwordHash} 
-              onChange={e => setFormData({...formData, passwordHash: e.target.value})}
-              required={!user}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                value={formData.passwordHash}
+                onChange={e => setFormData({ ...formData, passwordHash: e.target.value })}
+                required={!user}
+                className="pr-16"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(v => !v)}
+                className="absolute inset-y-0 right-0 px-3 text-xs text-slate-500"
+              >
+                {showPassword ? 'ซ่อน' : 'แสดง'}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="passwordConfirm">ยืนยันรหัสผ่าน</Label>
+            <div className="relative">
+              <Input
+                id="passwordConfirm"
+                type={showPasswordConfirm ? 'text' : 'password'}
+                value={passwordConfirm}
+                onChange={e => setPasswordConfirm(e.target.value)}
+                className="pr-16"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPasswordConfirm(v => !v)}
+                className="absolute inset-y-0 right-0 px-3 text-xs text-slate-500"
+              >
+                {showPasswordConfirm ? 'ซ่อน' : 'แสดง'}
+              </button>
+            </div>
           </div>
 
           {(!formData.lineUserId) && (

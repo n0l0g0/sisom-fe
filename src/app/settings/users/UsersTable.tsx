@@ -76,7 +76,32 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
   };
 
   const handleCreate = async (data: CreateUserDto) => {
-    const newUser = await api.createUser(data);
+    const username = data.username.trim().toLowerCase();
+    const lineId = data.lineUserId?.trim();
+
+    const dupUsername = users.find(
+      (u) => u.username.trim().toLowerCase() === username,
+    );
+    if (dupUsername) {
+      alert('ชื่อผู้ใช้งานนี้ถูกใช้แล้ว กรุณาเปลี่ยนชื่อผู้ใช้');
+      return;
+    }
+
+    if (lineId) {
+      const dupLine = users.find(
+        (u) => u.lineUserId && u.lineUserId.trim() === lineId,
+      );
+      if (dupLine) {
+        alert('LINE User ID นี้ถูกใช้แล้วกับผู้ใช้งานคนอื่น');
+        return;
+      }
+    }
+
+    const newUser = await api.createUser({
+      ...data,
+      username: data.username.trim(),
+      lineUserId: lineId && lineId.length > 0 ? lineId : undefined,
+    });
     setUsers([...users, newUser]);
     setIsDialogOpen(false);
   };

@@ -237,6 +237,7 @@ export interface CreateUserDto {
   passwordHash: string;
   name?: string;
   phone?: string;
+  lineUserId?: string;
   role?: 'OWNER' | 'ADMIN';
   permissions?: string[];
 }
@@ -794,7 +795,20 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to create user');
+    if (!res.ok) {
+      let message = 'Failed to create user';
+      try {
+        const body = await res.json();
+        if (typeof body?.message === 'string') {
+          message = body.message;
+        } else if (Array.isArray(body?.message) && body.message.length > 0) {
+          message = String(body.message[0]);
+        }
+      } catch {
+        // ignore parse error and keep default message
+      }
+      throw new Error(message);
+    }
     return res.json();
   },
 

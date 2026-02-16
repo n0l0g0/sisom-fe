@@ -204,6 +204,8 @@ function BillsPageContent() {
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-gray-700 uppercase bg-slate-50 border-b">
                 <tr>
+                  <th className="px-6 py-4 font-semibold text-[#8b5a3c]">ตึก</th>
+                  <th className="px-6 py-4 font-semibold text-[#8b5a3c]">ชั้น</th>
                   <th className="px-6 py-4 font-semibold text-[#8b5a3c]">ห้อง</th>
                   <th className="px-6 py-4 font-semibold text-[#8b5a3c]">ผู้เช่า</th>
                   <th className="px-6 py-4 font-semibold text-[#8b5a3c]">ประจำเดือน</th>
@@ -215,24 +217,49 @@ function BillsPageContent() {
               <tbody>
                 {loading ? (
                   <tr className="bg-white border-b">
-                    <td colSpan={6} className="px-6 py-10 text-center text-slate-500">
+                    <td colSpan={8} className="px-6 py-10 text-center text-slate-500">
                       กำลังโหลด...
                     </td>
                   </tr>
                 ) : filteredInvoices.length === 0 ? (
                   <tr className="bg-white border-b">
-                    <td colSpan={6} className="px-6 py-10 text-center text-slate-500">
+                    <td colSpan={8} className="px-6 py-10 text-center text-slate-500">
                       ไม่พบข้อมูล
                     </td>
                   </tr>
                 ) : (
-                  pagedInvoices.map((bill) => (
-                    <tr key={bill.id} className="bg-white border-b hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4 font-bold text-[#8b5a3c]">{bill.contract?.room?.number}</td>
-                      <td className="px-6 py-4 text-slate-600">{bill.contract?.tenant?.name}</td>
-                      <td className="px-6 py-4 text-slate-600">{new Date(bill.year, bill.month - 1).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })}</td>
-                      <td className="px-6 py-4 text-right font-mono text-slate-700">฿{Number(bill.totalAmount).toLocaleString()}</td>
-                      <td className="px-6 py-4 text-center">
+                  pagedInvoices.map((bill) => {
+                    const buildingLabel =
+                      bill.contract?.room?.building?.name ||
+                      bill.contract?.room?.building?.code ||
+                      '-'
+                    const floorLabel =
+                      typeof bill.contract?.room?.floor === 'number'
+                        ? bill.contract.room.floor
+                        : '-'
+                    return (
+                      <tr
+                        key={bill.id}
+                        className="bg-white border-b hover:bg-slate-50 transition-colors"
+                      >
+                        <td className="px-6 py-4 text-slate-600">{buildingLabel}</td>
+                        <td className="px-6 py-4 text-slate-600">{floorLabel}</td>
+                        <td className="px-6 py-4 font-bold text-[#8b5a3c]">
+                          {bill.contract?.room?.number}
+                        </td>
+                        <td className="px-6 py-4 text-slate-600">
+                          {bill.contract?.tenant?.name}
+                        </td>
+                        <td className="px-6 py-4 text-slate-600">
+                          {new Date(bill.year, bill.month - 1).toLocaleDateString(
+                            'th-TH',
+                            { month: 'long', year: 'numeric' },
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-right font-mono text-slate-700">
+                          ฿{Number(bill.totalAmount).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-center">
                         <Badge
                           variant={
                             bill.status === 'PAID'
@@ -261,20 +288,19 @@ function BillsPageContent() {
                             ? 'ยกเลิกแล้ว'
                             : 'รอชำระ'}
                         </Badge>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex justify-center gap-2">
-                          {bill.status === 'CANCELLED' ? (
-                            <span className="text-xs text-slate-400">
-                              ยกเลิกแล้ว
-                            </span>
-                          ) : (
-                            <SendInvoiceButton invoice={bill} />
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <div className="flex justify-center gap-2">
+                            {bill.status === 'CANCELLED' ? (
+                              <span className="text-xs text-slate-400">ยกเลิกแล้ว</span>
+                            ) : (
+                              <SendInvoiceButton invoice={bill} />
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { api } from '@/services/api';
+import { api, DormExtra } from '@/services/api';
 import DashboardRoomsList from './DashboardRoomsList';
 import type { Room, DormConfig } from '@/services/api';
 
@@ -15,18 +15,21 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
   let invoices = [] as Awaited<ReturnType<typeof api.getInvoices>>;
   let buildings = [] as Awaited<ReturnType<typeof api.getBuildings>>;
   let dormConfig = null as DormConfig | null;
+  let dormExtra = {} as DormExtra;
   try {
-    [rooms, invoices, buildings, dormConfig] = await Promise.all([
+    [rooms, invoices, buildings, dormConfig, dormExtra] = await Promise.all([
       api.getRooms(),
       api.getInvoices(),
       api.getBuildings(),
       api.getDormConfig(),
+      api.getDormExtra(),
     ]);
   } catch {
     rooms = [];
     invoices = [];
     buildings = [];
     dormConfig = null;
+    dormExtra = {};
   }
   
   const occupiedRooms = rooms.filter(r => r.status === 'OCCUPIED').length;
@@ -123,9 +126,13 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
     <div className="fade-in space-y-8">
       <header className="mb-2">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
-            <span className="text-2xl">🏢</span>
-          </div>
+          {dormExtra?.logoUrl ? (
+            <img src={dormExtra.logoUrl} alt="logo" className="w-12 h-12 rounded-xl object-cover border border-orange-200 shadow-lg" />
+          ) : (
+            <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-2xl">🏢</span>
+            </div>
+          )}
           <div>
             <h2 className="text-3xl font-bold text-orange-900">Dashboard หอพัก</h2>
             <p className="text-orange-700">{dormConfig?.dormName || 'หอพัก'}</p>

@@ -23,6 +23,7 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
 
   const allBuildingKeys = useMemo(() => groups.map((g) => g.key), [groups]);
 
+  const [filter, setFilter] = useState<'all' | 'VACANT' | 'OCCUPIED' | 'OVERDUE'>('all');
   const [openBuildings, setOpenBuildings] = useState<Set<string>>(
     () => new Set(groups.map((g) => g.key))
   );
@@ -83,28 +84,35 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
   };
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-sm">
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
       <div className="flex items-start justify-between mb-4 gap-4">
         <div>
-          <h3 className="font-semibold text-[#8b5a3c]">รายการห้องทั้งหมด</h3>
-          <div className="text-sm text-slate-500 mt-0.5">{totalRooms} ห้อง</div>
+          <h3 className="font-semibold text-orange-900 flex items-center gap-2"><span className="text-2xl">🚪</span> รายการห้องพัก</h3>
+          <div className="text-sm text-orange-700 mt-0.5">{totalRooms} ห้อง</div>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
-            className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition text-sm"
+            className="px-3 py-1.5 rounded-lg border-2 border-orange-200 bg-orange-50 text-orange-900 hover:bg-orange-100 transition text-sm"
             onClick={expandAll}
           >
             ขยายทั้งหมด
           </button>
           <button
             type="button"
-            className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition text-sm"
+            className="px-3 py-1.5 rounded-lg border-2 border-orange-200 bg-orange-50 text-orange-900 hover:bg-orange-100 transition text-sm"
             onClick={collapseAll}
           >
             ยุบทั้งหมด
           </button>
         </div>
+      </div>
+
+      <div className="mb-4 flex flex-wrap gap-3">
+        <button onClick={() => setFilter('all')} className={`px-4 py-2 rounded-xl border-2 text-sm font-medium transition ${filter==='all' ? 'bg-orange-300 border-orange-300 text-orange-900' : 'bg-orange-100 border-orange-200 text-orange-900 hover:bg-orange-200'}`}>ทั้งหมด</button>
+        <button onClick={() => setFilter('VACANT')} className={`px-4 py-2 rounded-xl border-2 text-sm font-medium transition ${filter==='VACANT' ? 'bg-green-300 border-green-300 text-green-900' : 'bg-orange-100 border-orange-200 text-orange-900 hover:bg-green-200'}`}>🟢 ว่าง</button>
+        <button onClick={() => setFilter('OCCUPIED')} className={`px-4 py-2 rounded-xl border-2 text-sm font-medium transition ${filter==='OCCUPIED' ? 'bg-blue-300 border-blue-300 text-blue-900' : 'bg-orange-100 border-orange-200 text-orange-900 hover:bg-blue-200'}`}>🔵 มีผู้เช่า</button>
+        <button onClick={() => setFilter('OVERDUE')} className={`px-4 py-2 rounded-xl border-2 text-sm font-medium transition ${filter==='OVERDUE' ? 'bg-red-300 border-red-300 text-red-900' : 'bg-orange-100 border-orange-200 text-orange-900 hover:bg-red-200'}`}>🔴 ค้างชำระ</button>
       </div>
 
       <div className="space-y-3">
@@ -113,7 +121,7 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
           return (
             <details
               key={g.key}
-              className="rounded-xl border border-slate-100 bg-slate-50/40 overflow-hidden"
+              className="rounded-2xl overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200"
               open={buildingOpen}
               onToggle={(e) => {
                 const isOpen = e.currentTarget.open;
@@ -132,21 +140,22 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
                 }
               }}
             >
-              <summary className="cursor-pointer select-none px-4 py-3 bg-white flex items-center justify-between">
-                <div className="font-semibold text-slate-700">
+              <summary className="cursor-pointer select-none px-4 py-3 flex items-center justify-between hover:bg-orange-100/50 transition">
+                <div className="font-bold text-orange-900">
                   {g.buildingName}
                   {g.buildingCode ? ` (${g.buildingCode})` : ''}
                 </div>
-                <div className="text-sm text-slate-500">{g.totalRooms} ห้อง</div>
+                <div className="text-sm text-orange-700">{g.totalRooms} ห้อง</div>
               </summary>
 
               <div className="p-4 space-y-3">
                 {g.floors.map((f) => {
                   const floorOpen = openFloors.get(g.key)?.has(f.floor) || false;
+                  const floorRooms = f.rooms.filter((r) => filter === 'all' ? true : r.status === filter);
                   return (
                     <details
                       key={f.floor}
-                      className="rounded-lg border border-slate-200 bg-white/70 overflow-hidden"
+                      className="rounded-xl overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 border-l-4 border-orange-200"
                       open={floorOpen}
                       onToggle={(e) => {
                         const isOpen = e.currentTarget.open;
@@ -160,19 +169,38 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
                         });
                       }}
                     >
-                      <summary className="cursor-pointer select-none px-4 py-2 flex items-center justify-between">
-                        <div className="text-sm font-semibold text-slate-700">ชั้น {f.floor}</div>
-                        <div className="text-xs text-slate-500">{f.rooms.length} ห้อง</div>
+                      <summary className="cursor-pointer select-none px-4 py-2 flex items-center justify-between hover:bg-orange-100/30 transition">
+                        <div className="text-sm font-semibold text-orange-900">ชั้น {f.floor}</div>
+                        <div className="text-xs text-orange-700">{floorRooms.length}/{f.rooms.length}</div>
                       </summary>
                       <div className="p-4 pt-2">
-                        <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-10 gap-3">
-                          {f.rooms.map((room) => (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 ml-4">
+                          {floorRooms.map((room) => (
                             <RoomDetailDialog key={room.id} room={room}>
-                              <div
-                                className={`p-3 rounded-xl border text-center min-w-[90px] cursor-pointer hover:shadow-md transition-all hover:-translate-y-0.5 ${getStatusColor(room.status)}`}
-                              >
-                                <div className="text-base font-bold mb-0.5">{room.number}</div>
-                                <div className="text-[11px] opacity-80">{getDisplayStatus(room.status)}</div>
+                              <div className={`room-card ${getStatusColor(room.status)} border-2 rounded-xl p-3`}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-lg font-bold text-orange-900">ห้อง {room.number}</span>
+                                  <span className="text-xs px-2 py-1 rounded-lg">
+                                    {getDisplayStatus(room.status)}
+                                  </span>
+                                </div>
+                                <div className="space-y-1 text-xs">
+                                  <div className="flex items-center gap-1 text-orange-800">
+                                    <span>💵</span>
+                                    <span className="font-semibold">฿{((room.contracts?.[0]?.currentRent ?? room.pricePerMonth) ?? 0).toLocaleString()}</span>
+                                  </div>
+                                  {room.contracts?.[0]?.tenant?.name ? (
+                                    <div className="flex items-center gap-1 text-orange-800 pt-1 border-t border-orange-300">
+                                      <span>👤</span>
+                                      <span className="truncate">{room.contracts?.[0]?.tenant?.name}</span>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-1 text-green-700 pt-1 border-t border-green-300">
+                                      <span>✨</span>
+                                      <span>พร้อมเช่า</span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </RoomDetailDialog>
                           ))}

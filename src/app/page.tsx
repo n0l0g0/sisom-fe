@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { api } from '@/services/api';
 import DashboardRoomsList from './DashboardRoomsList';
-import type { Room } from '@/services/api';
+import type { Room, DormConfig } from '@/services/api';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,16 +14,19 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
   let rooms = [] as Awaited<ReturnType<typeof api.getRooms>>;
   let invoices = [] as Awaited<ReturnType<typeof api.getInvoices>>;
   let buildings = [] as Awaited<ReturnType<typeof api.getBuildings>>;
+  let dormConfig = null as DormConfig | null;
   try {
-    [rooms, invoices, buildings] = await Promise.all([
+    [rooms, invoices, buildings, dormConfig] = await Promise.all([
       api.getRooms(),
       api.getInvoices(),
       api.getBuildings(),
+      api.getDormConfig(),
     ]);
   } catch {
     rooms = [];
     invoices = [];
     buildings = [];
+    dormConfig = null;
   }
   
   const occupiedRooms = rooms.filter(r => r.status === 'OCCUPIED').length;
@@ -118,64 +121,50 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
 
   return (
     <div className="fade-in space-y-8">
-      <h2 className="text-2xl font-bold mb-6 text-[#8b5a3c]">แดชบอร์ด</h2>
+      <header className="mb-2">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+            <span className="text-2xl">🏢</span>
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold text-orange-900">Dashboard หอพัก</h2>
+            <p className="text-orange-700">{dormConfig?.dormName || 'หอพัก'}</p>
+          </div>
+        </div>
+      </header>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-xl p-5 shadow-sm hover:-translate-y-1 transition-transform duration-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-500 text-sm">ห้องทั้งหมด</p>
-              <p className="text-3xl font-bold mt-1 text-[#f5a987]">{rooms.length}</p>
-            </div>
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#f5a987]/20">
-              <svg className="w-6 h-6 text-[#f5a987]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-              </svg>
-            </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="card-hover bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-3xl">🏠</span>
+            <span className="text-xs text-orange-700 bg-orange-200 px-2 py-1 rounded-full">ทั้งหมด</span>
           </div>
+          <p className="text-4xl font-bold text-orange-900 mb-1">{rooms.length}</p>
+          <p className="text-orange-700 text-sm">ห้องทั้งหมด</p>
         </div>
-        
-        <div className="bg-white rounded-xl p-5 shadow-sm hover:-translate-y-1 transition-transform duration-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-500 text-sm">ห้องว่าง</p>
-              <p className="text-3xl font-bold mt-1 text-emerald-500">{availableRooms}</p>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-              <svg className="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
-              </svg>
-            </div>
+        <div className="card-hover bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-3xl">✅</span>
+            <span className="text-xs text-green-700 bg-green-200 px-2 py-1 rounded-full">ว่าง</span>
           </div>
+          <p className="text-4xl font-bold text-green-600 mb-1">{availableRooms}</p>
+          <p className="text-green-700 text-sm">ห้องว่าง</p>
         </div>
-        
-        <div className="bg-white rounded-xl p-5 shadow-sm hover:-translate-y-1 transition-transform duration-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-500 text-sm">มีผู้เช่า</p>
-              <p className="text-3xl font-bold mt-1 text-blue-500">{occupiedRooms}</p>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-              <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-              </svg>
-            </div>
+        <div className="card-hover bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-3xl">👤</span>
+            <span className="text-xs text-blue-700 bg-blue-200 px-2 py-1 rounded-full">มีผู้เช่า</span>
           </div>
+          <p className="text-4xl font-bold text-blue-600 mb-1">{occupiedRooms}</p>
+          <p className="text-blue-700 text-sm">มีผู้พักอาศัย</p>
         </div>
-        
-        <div className="bg-white rounded-xl p-5 shadow-sm hover:-translate-y-1 transition-transform duration-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-500 text-sm">ค้างชำระ</p>
-              <p className="text-3xl font-bold mt-1 text-red-500">{unpaidBillsCount}</p>
-              <p className="text-xs text-slate-400 mt-1">฿{totalUnpaidAmount.toLocaleString()}</p>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
-              <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-            </div>
+        <div className="card-hover bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-3xl">⚠️</span>
+            <span className="text-xs text-red-700 bg-red-200 px-2 py-1 rounded-full">ค้างชำระ</span>
           </div>
+          <p className="text-4xl font-bold text-red-600 mb-1">{unpaidBillsCount}</p>
+          <p className="text-red-700 text-sm">฿{totalUnpaidAmount.toLocaleString()}</p>
         </div>
       </div>
       
@@ -202,35 +191,10 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
         ))}
       </div>
       
-      {/* Quick Actions */}
-      <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
-        <h3 className="font-semibold mb-4 text-[#8b5a3c]">ดำเนินการด่วน</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Link href="/floor-plan" className="p-4 border-2 border-dashed border-[#f8b89a]/40 hover:border-[#f5a987] hover:bg-[#f5a987]/10 transition rounded-xl group text-center block">
-            <svg className="w-8 h-8 mx-auto mb-2 text-slate-400 group-hover:text-[#f5a987]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-            </svg>
-            <p className="text-sm text-slate-600">เพิ่มห้องพัก</p>
-          </Link>
-          <Link href="/meter" className="p-4 border-2 border-dashed border-[#f8b89a]/40 hover:border-[#f5a987] hover:bg-[#f5a987]/10 transition rounded-xl group text-center block">
-            <svg className="w-8 h-8 mx-auto mb-2 text-slate-400 group-hover:text-[#f5a987]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-            </svg>
-            <p className="text-sm text-slate-600">จดมิเตอร์</p>
-          </Link>
-          <Link href="/bills" className="p-4 border-2 border-dashed border-[#f8b89a]/40 hover:border-[#f5a987] hover:bg-[#f5a987]/10 transition rounded-xl group text-center block">
-            <svg className="w-8 h-8 mx-auto mb-2 text-slate-400 group-hover:text-[#f5a987]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/>
-            </svg>
-            <p className="text-sm text-slate-600">สร้างบิล</p>
-          </Link>
-          <Link href="/payments" className="p-4 border-2 border-dashed border-[#f8b89a]/40 hover:border-[#f5a987] hover:bg-[#f5a987]/10 transition rounded-xl group text-center block">
-            <svg className="w-8 h-8 mx-auto mb-2 text-slate-400 group-hover:text-[#f5a987]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-            </svg>
-            <p className="text-sm text-slate-600">รับชำระเงิน</p>
-          </Link>
-        </div>
+      <div className="mb-2">
+        <h3 className="text-xl font-semibold text-orange-900 mb-3 flex items-center gap-2">
+          <span className="text-2xl">💰</span> ห้องว่างตามราคา
+        </h3>
       </div>
       <DashboardRoomsList
         totalRooms={rooms.length}

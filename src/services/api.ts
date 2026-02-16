@@ -155,6 +155,12 @@ export interface DormConfig {
   bankAccount?: string;
 }
 
+export interface DormExtra {
+  logoUrl?: string;
+  mapUrl?: string;
+  lineLink?: string;
+}
+
 export interface MaintenanceRequest {
   id: string;
   roomId: string;
@@ -546,6 +552,22 @@ export const api = {
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error('Failed to update dorm config');
+    return res.json();
+  },
+
+  getDormExtra: async (): Promise<DormExtra> => {
+    const res = await fetch(`${API_URL}/settings/dorm-extra`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch dorm extra');
+    return res.json();
+  },
+
+  updateDormExtra: async (data: DormExtra): Promise<DormExtra> => {
+    const res = await fetch(`${API_URL}/settings/dorm-extra`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update dorm extra');
     return res.json();
   },
 

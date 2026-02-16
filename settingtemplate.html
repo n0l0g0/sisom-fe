@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="th" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dormitory Settings</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Prompt', sans-serif; }
+    :root {
+      --cream: #fffbf7;
+      --beige: #f5ede3;
+      --warm-gray: #e8ddd2;
+      --taupe: #c4b5a0;
+      --soft-brown: #a89080;
+      --accent: #d4a574;
+      --accent-light: #e8c4a0;
+      --text-dark: #5a504a;
+    }
+    body { 
+      background: linear-gradient(135deg, var(--cream) 0%, var(--beige) 100%);
+      min-height: 100%;
+    }
+    .input-field {
+      border: 1.5px solid var(--warm-gray);
+      border-radius: 16px;
+      padding: 14px 18px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.8);
+      color: var(--text-dark);
+    }
+    .input-field:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: white;
+      box-shadow: 0 4px 12px rgba(212, 165, 116, 0.15);
+    }
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--accent-light);
+    }
+    .logo-preview {
+      min-height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px dashed var(--accent-light);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.6);
+      position: relative;
+      overflow: hidden;
+    }
+    .logo-preview img {
+      max-height: 150px;
+      max-width: 100%;
+      object-fit: contain;
+    }
+    .file-input-label {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--soft-brown) 100%);
+      color: white;
+      padding: 14px 28px;
+      border-radius: 16px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(212, 165, 116, 0.2);
+    }
+    .file-input-label:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(212, 165, 116, 0.3);
+    }
+    input[type="file"] {
+      display: none;
+    }
+    .card-section {
+      background: rgba(255, 255, 255, 0.5);
+      border: 1.5px solid var(--warm-gray);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+    .card-section:hover {
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+    }
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a89080' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 20px;
+      padding-right: 40px;
+    }
+  </style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <style>body { box-sizing: border-box; }</style>
+ </head>
+ <body class="h-full overflow-auto">
+  <div id="app" class="w-full min-h-full p-6"><!-- Header -->
+   <header class="mb-10">
+    <div class="flex items-center gap-4">
+     <div class="w-16 h-16 bg-gradient-to-br from-amber-100 to-amber-50 rounded-2xl flex items-center justify-center shadow-md border border-amber-200"><span class="text-4xl">🏠</span>
+     </div>
+     <div>
+      <h1 class="text-4xl font-light text-amber-900" style="color: var(--text-dark);">ตั้งค่าหอพัก</h1>
+      <p class="text-amber-800 font-light" style="color: var(--soft-brown);">จัดการข้อมูลและอัตราค่าใช้งาน</p>
+     </div>
+    </div>
+   </header><!-- Main Form -->
+   <div class="max-w-3xl mx-auto">
+    <form id="settings-form" class="space-y-6"><!-- Logo Section -->
+     <div class="card-section">
+      <div class="section-title"><span class="text-4xl">🖼️</span>
+       <h2 class="text-2xl font-light" style="color: var(--text-dark);">Logo หอพัก</h2>
+      </div><!-- Logo Preview -->
+      <div class="mb-6">
+       <div class="logo-preview">
+        <img id="logo-preview" src="" alt="Logo Preview" style="display: none;">
+        <div id="logo-placeholder" class="text-center w-full"><span class="text-6xl block mb-2">📸</span>
+         <p class="text-base font-light" style="color: var(--soft-brown);">คลิกเพื่ออัพโหลด Logo</p>
+        </div>
+       </div>
+      </div><!-- File Upload -->
+      <div class="mb-4"><label for="logo_upload" class="file-input-label">🖼️ เลือกรูป Logo</label> <input type="file" id="logo_upload" name="logo_upload" accept="image/*">
+       <p class="text-xs font-light mt-3" style="color: var(--soft-brown);">รองรับไฟล์รูปภาพ: JPG, PNG, GIF</p>
+      </div>
+     </div><!-- ข้อมูลทั่วไป Section -->
+     <div class="card-section">
+      <div class="section-title"><span class="text-4xl">🏠</span>
+       <h2 class="text-2xl font-light" style="color: var(--text-dark);">ข้อมูลทั่วไป</h2>
+      </div><!-- ชื่อหอพัก -->
+      <div class="mb-6"><label for="dormitory_name" class="block text-sm font-semibold mb-2" style="color: var(--text-dark);">ชื่อหอพัก *</label> <input type="text" id="dormitory_name" name="dormitory_name" class="input-field w-full" placeholder="เช่น หอพักสุขใจ" value="หอพักสุขใจ">
+      </div><!-- ที่อยู่ -->
+      <div class="mb-6"><label for="address" class="block text-sm font-semibold mb-2" style="color: var(--text-dark);">ที่อยู่ *</label> <textarea id="address" name="address" class="input-field w-full h-24 resize-none" placeholder="กรุงเทพมหานคร">123/456 ซ.ลาดพร้าว แขวงวังทองหลาง เขตบางกะปิ กรุงเทพมหานคร 10240</textarea>
+      </div><!-- เบอร์โทร -->
+      <div class="mb-6"><label for="phone" class="block text-sm font-semibold mb-2" style="color: var(--text-dark);">เบอร์โทร *</label> <input type="tel" id="phone" name="phone" class="input-field w-full" placeholder="081-234-5678" value="081-234-5678">
+      </div><!-- Line ID -->
+      <div class="mb-6"><label for="line_id" class="block text-sm font-semibold mb-2" style="color: var(--text-dark);">Line ID *</label> <input type="text" id="line_id" name="line_id" class="input-field w-full" placeholder="@dormitory_sukhjai" value="@dormitory_sukhjai">
+      </div><!-- Google Map Link -->
+      <div class="mb-6"><label for="google_map_link" class="block text-sm font-semibold mb-2" style="color: var(--text-dark);">Google Map Link</label> <input type="url" id="google_map_link" name="google_map_link" class="input-field w-full" placeholder="วางลิงก์ Google Map ที่นี่" value="">
+      </div><!-- Line Link -->
+      <div class="mb-4"><label for="line_link" class="block text-sm font-semibold mb-2" style="color: var(--text-dark);">Line Link</label> <input type="url" id="line_link" name="line_link" class="input-field w-full" placeholder="วางลิงก์ Line ที่นี่" value="">
+      </div>
+     </div><!-- มิเตอร์และบิล Section -->
+     <div class="card-section">
+      <div class="section-title"><span class="text-4xl">⚡</span>
+       <h2 class="text-2xl font-light" style="color: var(--text-dark);">มิเตอร์และบิล</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"><!-- ค่าน้ำ -->
+       <div><label for="water_meter_rate" class="block text-sm font-semibold mb-2" style="color: var(--text-dark);">ค่าน้ำ (บาท/หน่วย) *</label>
+        <div class="flex items-center"><input type="number" id="water_meter_rate" name="water_meter_rate" class="input-field flex-1" placeholder="25" value="25" step="0.01" min="0"> <span class="ml-3 text-3xl">💧</span>
+        </div>
+       </div><!-- ค่าไฟ -->
+       <div><label for="electricity_meter_rate" class="block text-sm font-semibold mb-2" style="color: var(--text-dark);">ค่าไฟ (บาท/หน่วย) *</label>
+        <div class="flex items-center"><input type="number" id="electricity_meter_rate" name="electricity_meter_rate" class="input-field flex-1" placeholder="7" value="7" step="0.01" min="0"> <span class="ml-3 text-3xl">⚡</span>
+        </div>
+       </div><!-- ค่าส่วนกลาง -->
+       <div><label for="common_area_fee" class="block text-sm font-semibold mb-2" style="color: var(--text-dark);">ค่าส่วนกลาง (บาท/เดือน) *</label>
+        <div class="flex items-center"><input type="number" id="common_area_fee" name="common_area_fee" class="input-field flex-1" placeholder="500" value="500" step="0.01" min="0"> <span class="ml-3 text-3xl">🏢</span>
+        </div>
+       </div>
+      </div><!-- ข้อมูลธนาคาร -->
+      <h3 class="text-lg font-semibold mb-4 pb-3" style="color: var(--text-dark); border-bottom: 1.5px solid var(--accent-light);">🏦 ข้อมูลบัญชีรับโอน</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6"><!-- ธนาคาร -->
+       <div><label for="bank_name" class="block text-sm font-semibold mb-2" style="color: var(--text-dark);">ชื่อธนาคาร *</label> <select id="bank_name" name="bank_name" class="input-field w-full"> <option value="">-- เลือกธนาคาร --</option> <option value="กรุงเทพ">ธนาคารกรุงเทพ</option> <option value="กสิกรไทย">ธนาคารกสิกรไทย</option> <option value="ไทยพาณิชย์">ธนาคารไทยพาณิชย์</option> <option value="กรุงศรี">ธนาคารกรุงศรี</option> <option value="ซิตี้แบงก์">ธนาคารซิตี้แบงก์</option> <option value="ทหารไทย">ธนาคารทหารไทย</option> <option value="ไทยเครดิต">ธนาคารไทยเครดิต</option> <option value="อาคารสงเคราะห์">ธนาคารอาคารสงเคราะห์</option> <option value="ยูโอบี">ธนาคารยูโอบี</option> <option value="อิสลามิก">ธนาคารอิสลามิก</option> </select>
+       </div><!-- เลขที่บัญชี -->
+       <div><label for="bank_account" class="block text-sm font-semibold mb-2" style="color: var(--text-dark);">เลขที่บัญชี *</label> <input type="text" id="bank_account" name="bank_account" class="input-field w-full" placeholder="123-4-56789-0" value="">
+       </div><!-- ชื่อบัญชี -->
+       <div class="md:col-span-2"><label for="account_name" class="block text-sm font-semibold mb-2" style="color: var(--text-dark);">ชื่อบัญชี *</label> <input type="text" id="account_name" name="account_name" class="input-field w-full" placeholder="นาย สมชาย ใจดี" value="">
+       </div>
+      </div>
+     </div><!-- Submit Button -->
+     <div class="flex gap-4"><button type="submit" class="flex-1 font-semibold py-4 px-6 rounded-2xl transition-all shadow-md hover:shadow-lg transform hover:scale-105 text-white" style="background: linear-gradient(135deg, var(--accent) 0%, var(--soft-brown) 100%);"> 💾 บันทึกการตั้งค่า </button> <button type="reset" class="flex-1 font-semibold py-4 px-6 rounded-2xl transition-all shadow-md hover:shadow-lg" style="background: var(--warm-gray); color: var(--text-dark);"> 🔄 รีเซ็ต </button>
+     </div>
+    </form><!-- Success Message -->
+    <div id="success-msg" class="mt-8 rounded-2xl p-4 border border-green-300" style="background: rgba(240, 253, 244, 0.6); display: none;">
+     <div class="flex items-start gap-3"><span class="text-2xl">✅</span>
+      <div>
+       <p class="text-sm font-light" style="color: var(--text-dark);">ข้อมูลถูกบันทึก! การตั้งค่าของคุณได้รับการบันทึกเรียบร้อยแล้ว</p>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+    const form = document.getElementById('settings-form');
+    const logoUpload = document.getElementById('logo_upload');
+    const logoPreview = document.getElementById('logo-preview');
+    const logoPlaceholder = document.getElementById('logo-placeholder');
+    const successMsg = document.getElementById('success-msg');
+
+    // Handle logo file upload
+    logoUpload.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          logoPreview.src = event.target.result;
+          logoPreview.style.display = 'block';
+          logoPlaceholder.style.display = 'none';
+          
+          // Save to localStorage
+          localStorage.setItem('logo_data', event.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Load settings from localStorage on page load
+    function loadSettings() {
+      const saved = localStorage.getItem('dormitory_settings');
+      if (saved) {
+        const settings = JSON.parse(saved);
+        Object.keys(settings).forEach(key => {
+          const element = document.getElementById(key);
+          if (element) {
+            element.value = settings[key];
+          }
+        });
+      }
+
+      // Load logo
+      const logoData = localStorage.getItem('logo_data');
+      if (logoData) {
+        logoPreview.src = logoData;
+        logoPreview.style.display = 'block';
+        logoPlaceholder.style.display = 'none';
+      }
+    }
+
+    // Save settings to localStorage
+    function saveSettings(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(form);
+      const settings = {};
+      
+      formData.forEach((value, key) => {
+        if (key !== 'logo_upload') {
+          settings[key] = value;
+        }
+      });
+
+      localStorage.setItem('dormitory_settings', JSON.stringify(settings));
+
+      // Show success message
+      successMsg.style.display = 'block';
+      
+      setTimeout(() => {
+        successMsg.style.opacity = '0.7';
+      }, 2000);
+    }
+
+    // Event listener
+    form.addEventListener('submit', saveSettings);
+
+    // Load settings on page load
+    window.addEventListener('DOMContentLoaded', loadSettings);
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cea3786b3a8f910',t:'MTc3MTIxNTI1My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

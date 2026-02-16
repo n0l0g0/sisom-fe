@@ -1,17 +1,21 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { api } from "@/services/api";
+import { api, DormExtra } from "@/services/api";
 import { SaveDormSettings } from "./SaveDormSettings";
+import SaveDormExtra from "./SaveDormExtra";
 
 export const dynamic = 'force-dynamic';
 
 export default async function DormSettingsPage() {
   let config: Awaited<ReturnType<typeof api.getDormConfig>> = null;
+  let extra: DormExtra = {};
   try {
     config = await api.getDormConfig();
+    extra = await api.getDormExtra();
   } catch {
     config = null;
+    extra = {};
   }
   return (
     <div className="space-y-8 fade-in">
@@ -83,6 +87,15 @@ export default async function DormSettingsPage() {
           </CardContent>
         </Card>
       </div>
+      
+      <Card className="border-none shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-[#8b5a3c]">โลโก้และลิงก์</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SaveDormExtra initial={extra} />
+        </CardContent>
+      </Card>
 
       <SaveDormSettings initialConfig={config} />
     </div>

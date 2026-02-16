@@ -1,6 +1,6 @@
  'use client';
  
- import { useEffect, useState } from "react";
+ import { Suspense, useEffect, useState } from "react";
  import { api, Room } from "@/services/api";
  import FloorPlanContent from "./FloorPlanContent";
  
@@ -29,5 +29,9 @@
      };
    }, []);
  
-   return <FloorPlanContent rooms={rooms} buildings={buildings} />;
+   return (
+     <Suspense fallback={<div />}>
+       <FloorPlanContent rooms={rooms} buildings={buildings} />
+     </Suspense>
+   );
  }

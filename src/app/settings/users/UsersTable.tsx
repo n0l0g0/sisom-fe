@@ -41,6 +41,33 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
     }
   };
 
+  const handleMakeGeneral = async (user: User) => {
+    try {
+      if (!user.lineUserId || user.lineUserId.trim().length === 0) {
+        alert('กรุณากรอก LINE User ID ให้ผู้ใช้ก่อน');
+        return;
+      }
+      await api.linkRichMenu(user.lineUserId, 'GENERAL');
+      alert('ตั้งเป็นบุคคลทั่วไปและเชื่อม Rich Menu บุคคลทั่วไปสำเร็จ');
+    } catch {
+      alert('ทำรายการไม่สำเร็จ');
+    }
+  };
+
+  const handleMakeStaff = async (user: User) => {
+    try {
+      if (!user.lineUserId || user.lineUserId.trim().length === 0) {
+        alert('กรุณากรอก LINE User ID ให้ผู้ใช้ก่อน');
+        return;
+      }
+      await api.mapLineUserRole(user.id, 'STAFF');
+      await api.linkRichMenu(user.lineUserId, 'ADMIN');
+      alert('ตั้งเป็น Staff และเชื่อม Rich Menu ผู้ดูแลสำเร็จ');
+    } catch {
+      alert('ทำรายการไม่สำเร็จ');
+    }
+  };
+
   const handleCreate = async (data: CreateUserDto) => {
     const newUser = await api.createUser(data);
     setUsers([...users, newUser]);
@@ -125,11 +152,25 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
                           </svg>
                         </button>
                         <button
+                          onClick={() => handleMakeGeneral(user)}
+                          className="px-3 py-2 rounded-lg text-white bg-blue-500 hover:bg-blue-600 transition text-xs"
+                          title="ตั้งเป็นบุคคลทั่วไปและเชื่อม Rich Menu บุคคลทั่วไป"
+                        >
+                          ตั้งเป็นบุคคลทั่วไป
+                        </button>
+                        <button
                           onClick={() => handleMakeTenant(user)}
                           className="px-3 py-2 rounded-lg text-white bg-emerald-500 hover:bg-emerald-600 transition text-xs"
                           title="ตั้งเป็นผู้เช่าและเชื่อม Rich Menu ผู้เช่า"
                         >
                           ตั้งเป็นผู้เช่า
+                        </button>
+                        <button
+                          onClick={() => handleMakeStaff(user)}
+                          className="px-3 py-2 rounded-lg text-white bg-orange-500 hover:bg-orange-600 transition text-xs"
+                          title="ตั้งเป็น Staff และเชื่อม Rich Menu ผู้ดูแล"
+                        >
+                          ตั้งเป็น Staff
                         </button>
                         <button 
                           onClick={() => handleDelete(user.id)}

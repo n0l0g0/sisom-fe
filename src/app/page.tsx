@@ -33,7 +33,14 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
     return (active?.currentRent ?? r.pricePerMonth) ?? null;
   };
   const priceGroups = [2100, 2500, 3000].map((p) => {
-    const matches = rooms.filter(r => derivePrice(r) === p);
+    const matches = rooms.filter(r => {
+      const v = derivePrice(r);
+      if (v === null) return false;
+      if (p === 2100) return v >= 2100 && v < 2300;
+      if (p === 2500) return v >= 2400 && v < 2600;
+      if (p === 3000) return v >= 3000 && v < 3200;
+      return v === p;
+    });
     const total = matches.length;
     const vacant = matches.filter(r => r.status === 'VACANT').length;
     return { price: p, total, vacant };

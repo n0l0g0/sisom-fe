@@ -33,6 +33,13 @@ export interface Room {
   building?: Building;
 }
 
+export interface RoomContact {
+  id: string;
+  name: string;
+  phone: string;
+  lineUserId?: string;
+}
+
 export interface Tenant {
   id: string;
   name: string;
@@ -281,6 +288,63 @@ export const api = {
     if (!res.ok) throw new Error('Failed to get link requests');
     const data = await res.json();
     return (data?.list || []) as Array<{ userId: string; phone: string; tenantId: string; createdAt: string }>;
+  },
+
+  getRoomContacts: async (roomId: string): Promise<RoomContact[]> => {
+    const res = await fetch(`${API_URL}/rooms/${roomId}/contacts`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) throw new Error('Failed to fetch room contacts');
+    const data = await res.json().catch(() => ({}));
+    return (data?.contacts || []) as RoomContact[];
+  },
+
+  createRoomContact: async (
+    roomId: string,
+    payload: { name?: string; phone?: string },
+  ): Promise<RoomContact[]> => {
+    const res = await fetch(`${API_URL}/rooms/${roomId}/contacts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new Error(txt || 'Failed to create room contact');
+    }
+    const data = await res.json().catch(() => ({}));
+    return (data?.contacts || []) as RoomContact[];
+  },
+
+  clearRoomContactLine: async (
+    roomId: string,
+    contactId: string,
+  ): Promise<RoomContact[]> => {
+    const res = await fetch(
+      `${API_URL}/rooms/${roomId}/contacts/${contactId}/clear-line`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
+    if (!res.ok) throw new Error('Failed to clear room contact line');
+    const data = await res.json().catch(() => ({}));
+    return (data?.contacts || []) as RoomContact[];
+  },
+
+  deleteRoomContact: async (
+    roomId: string,
+    contactId: string,
+  ): Promise<RoomContact[]> => {
+    const res = await fetch(
+      `${API_URL}/rooms/${roomId}/contacts/${contactId}`,
+      {
+        method: 'DELETE',
+      },
+    );
+    if (!res.ok) throw new Error('Failed to delete room contact');
+    const data = await res.json().catch(() => ({}));
+    return (data?.contacts || []) as RoomContact[];
   },
 
   acceptLinkRequest: async (roomId: string, userId: string, tenantId: string): Promise<{ ok: boolean }> => {

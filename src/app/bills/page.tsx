@@ -61,7 +61,7 @@ function BillsPageContent() {
         setError(null);
         const [invoicesRes, roomsRes] = await Promise.all([
           api.getInvoices(),
-          api.getRooms()
+          api.getRooms(),
         ]);
         if (cancelled) return;
         setInvoices(invoicesRes);
@@ -155,7 +155,25 @@ function BillsPageContent() {
             />
           </div>
           <SendAllBar invoices={filteredInvoices} />
-          <CreateInvoiceDialog rooms={rooms} />
+          <CreateInvoiceDialog
+            rooms={rooms}
+            onCreated={async () => {
+              try {
+                setLoading(true);
+                setError(null);
+                const [invoicesRes, roomsRes] = await Promise.all([
+                  api.getInvoices(),
+                  api.getRooms(),
+                ]);
+                setInvoices(invoicesRes);
+                setRooms(roomsRes);
+              } catch (e) {
+                setError((e as Error).message || 'โหลดข้อมูลไม่สำเร็จ');
+              } finally {
+                setLoading(false);
+              }
+            }}
+          />
         </div>
       </div>
 
@@ -215,13 +233,44 @@ function BillsPageContent() {
                       <td className="px-6 py-4 text-slate-600">{new Date(bill.year, bill.month - 1).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })}</td>
                       <td className="px-6 py-4 text-right font-mono text-slate-700">฿{Number(bill.totalAmount).toLocaleString()}</td>
                       <td className="px-6 py-4 text-center">
-                        <Badge variant={bill.status === 'PAID' ? 'secondary' : bill.status === 'OVERDUE' ? 'destructive' : 'outline'} className={bill.status === 'PAID' ? 'bg-green-100 text-green-700 hover:bg-green-200 border-none' : (bill.status === 'DRAFT' || bill.status === 'SENT') ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-none' : ''}>
-                          {bill.status === 'PAID' ? 'ชำระแล้ว' : bill.status === 'OVERDUE' ? 'ค้างชำระ' : bill.status === 'DRAFT' ? 'ร่าง' : 'รอชำระ'}
+                        <Badge
+                          variant={
+                            bill.status === 'PAID'
+                              ? 'secondary'
+                              : bill.status === 'OVERDUE'
+                              ? 'destructive'
+                              : 'outline'
+                          }
+                          className={
+                            bill.status === 'PAID'
+                              ? 'bg-green-100 text-green-700 hover:bg-green-200 border-none'
+                              : bill.status === 'OVERDUE'
+                              ? 'bg-red-100 text-red-700 hover:bg-red-200 border-none'
+                              : bill.status === 'CANCELLED'
+                              ? 'bg-slate-200 text-slate-600 border-none'
+                              : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-none'
+                          }
+                        >
+                          {bill.status === 'PAID'
+                            ? 'ชำระแล้ว'
+                            : bill.status === 'OVERDUE'
+                            ? 'ค้างชำระ'
+                            : bill.status === 'DRAFT'
+                            ? 'ร่าง'
+                            : bill.status === 'CANCELLED'
+                            ? 'ยกเลิกแล้ว'
+                            : 'รอชำระ'}
                         </Badge>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex justify-center gap-2">
-                          <SendInvoiceButton invoice={bill} />
+                          {bill.status === 'CANCELLED' ? (
+                            <span className="text-xs text-slate-400">
+                              ยกเลิกแล้ว
+                            </span>
+                          ) : (
+                            <SendInvoiceButton invoice={bill} />
+                          )}
                         </div>
                       </td>
                     </tr>

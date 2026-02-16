@@ -23,7 +23,14 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
       }
       const allTenants = await api.getTenants({ includeHistory: true });
       const targetName = (user.name || user.username || '').trim().toLowerCase();
-      const matched = allTenants.find(t => t.name.trim().toLowerCase() === targetName);
+      const targetPhone = (user.phone || '').trim();
+      const matched = allTenants.find((t) => {
+        const name = (t.name || '').trim().toLowerCase();
+        const phone = (t.phone || '').trim();
+        if (name && targetName && name === targetName) return true;
+        if (phone && targetPhone && phone === targetPhone) return true;
+        return false;
+      });
       if (matched) {
         await api.updateTenant(matched.id, { lineUserId: user.lineUserId });
       } else {

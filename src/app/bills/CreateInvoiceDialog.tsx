@@ -25,9 +25,10 @@ import { useRouter } from 'next/navigation';
 
 interface CreateInvoiceDialogProps {
   rooms: Room[];
+  onCreated?: () => Promise<void> | void;
 }
 
-export function CreateInvoiceDialog({ rooms }: CreateInvoiceDialogProps) {
+export function CreateInvoiceDialog({ rooms, onCreated }: CreateInvoiceDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -36,7 +37,35 @@ export function CreateInvoiceDialog({ rooms }: CreateInvoiceDialogProps) {
   const [year, setYear] = useState<string>(String(new Date().getFullYear()));
 
   // Filter only occupied rooms
-  const occupiedRooms = rooms.filter(room => room.status === 'OCCUPIED');
+  const occupiedRooms = rooms
+    .filter((room) => room.status === 'OCCUPIED')
+    .slice()
+    .sort((a, b) => {
+      const aBuilding =
+        (a.building?.code || a.building?.name || '').toString().toLowerCase();
+      const bBuilding =
+        (b.building?.code || b.building?.name || '').toString().toLowerCase();
+      if (aBuilding !== bBuilding) {
+        return aBuilding.localeCompare(bBuilding, 'th-TH');
+      }
+      const aFloor = a.floor ?? 0;
+      const bFloor = b.floor ?? 0;
+      if (aFloor !== bFloor) {
+        return aFloor - bFloor;
+      }
+      const parseRoomNumber = (num: string) => {
+        const trimmed = (num || '').trim();
+        const numeric = Number(trimmed);
+        if (Number.isFinite(numeric)) return numeric;
+        return Number.POSITIVE_INFINITY;
+      };
+      const aNum = parseRoomNumber(a.number);
+      const bNum = parseRoomNumber(b.number);
+      if (aNum !== bNum) {
+        return aNum - bNum;
+      }
+      return a.number.localeCompare(b.number, 'th-TH');
+    });
 
   const handleCreate = async () => {
     if (!roomId || !month || !year) return;
@@ -48,8 +77,12 @@ export function CreateInvoiceDialog({ rooms }: CreateInvoiceDialogProps) {
         month: Number(month),
         year: Number(year),
       });
+      if (onCreated) {
+        await onCreated();
+      } else {
+        router.refresh();
+      }
       setOpen(false);
-      router.refresh(); // Refresh server components
     } catch (error) {
       console.error('Failed to create invoice:', error);
       alert('Failed to create invoice. Please check if meter reading exists for this month.');
@@ -87,7 +120,7 @@ export function CreateInvoiceDialog({ rooms }: CreateInvoiceDialogProps) {
               <SelectContent>
                 {occupiedRooms.map((room) => (
                   <SelectItem key={room.id} value={room.id}>
-                    {room.number}
+                    {`${room.building?.name || room.building?.code || 'ไม่ทราบตึก'} • ชั้น ${room.floor || '-'} • ห้อง ${room.number}`}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button";
   const [currentMR, setCurrentMR] = useState<MeterReading | null>(null);
   const [prevMR, setPrevMR] = useState<MeterReading | null>(null);
  
-   const canSend = invoice.status !== 'PAID';
+  const canSend = invoice.status !== 'PAID' && invoice.status !== 'CANCELLED';
   const canEdit = invoice.status === 'SENT' || invoice.status === 'DRAFT';
  
    const doSend = async () => {

@@ -1,7 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Room, Invoice, MaintenanceRequest, Asset, api } from '@/services/api';
+import {
+  Room,
+  Invoice,
+  MaintenanceRequest,
+  Asset,
+  RoomContact,
+  api,
+} from '@/services/api';
 import {
   Dialog,
   DialogContent,
@@ -49,6 +56,11 @@ export default function RoomDetailDialog({ room, children }: Props) {
   const [settled, setSettled] = useState<Array<{ id: string; label: string; amount: number; method: 'DEPOSIT' | 'CASH' }>>([]);
   const [moveOutDays, setMoveOutDays] = useState<number>(7);
   const [linkRequests, setLinkRequests] = useState<Array<{ userId: string; phone: string; tenantId: string; createdAt: string }>>([]);
+  const [roomContacts, setRoomContacts] = useState<RoomContact[]>([]);
+  const [loadingContacts, setLoadingContacts] = useState(false);
+  const [newContactName, setNewContactName] = useState('');
+  const [newContactPhone, setNewContactPhone] = useState('');
+  const [savingContact, setSavingContact] = useState(false);
   
   // Data states
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -197,6 +209,12 @@ export default function RoomDetailDialog({ room, children }: Props) {
           const reqs = await api.getLinkRequests(room.id);
           setLinkRequests(reqs);
         } catch {}
+        try {
+          setLoadingContacts(true);
+          const contacts = await api.getRoomContacts(room.id);
+          setRoomContacts(contacts);
+        } catch {}
+        setLoadingContacts(false);
       })();
     }
   }, [open, fetchInvoices, fetchMaintenance, fetchAssets]);
@@ -250,6 +268,48 @@ export default function RoomDetailDialog({ room, children }: Props) {
     }
   };
 
+  const handleCreateRoomContact = async () => {
+    if (savingContact) return;
+    const name = newContactName.trim();
+    const phone = newContactPhone.trim();
+    if (!phone) return;
+    try {
+      setSavingContact(true);
+      const contacts = await api.createRoomContact(room.id, { name, phone });
+      setRoomContacts(contacts);
+      setNewContactName('');
+      setNewContactPhone('');
+    } catch (e) {
+      alert(
+        e instanceof Error
+          ? e.message
+          : 'ไม่สามารถเพิ่มข้อมูลผู้ติดต่อ/ผู้เข้าพักได้',
+      );
+    } finally {
+      setSavingContact(false);
+    }
+  };
+
+  const handleClearRoomContactLine = async (contactId: string) => {
+    if (!window.confirm('ยืนยันการตัดการเชื่อมต่อ LINE สำหรับคนนี้?')) return;
+    try {
+      const contacts = await api.clearRoomContactLine(room.id, contactId);
+      setRoomContacts(contacts);
+    } catch {
+      alert('ตัดการเชื่อมต่อไม่สำเร็จ');
+    }
+  };
+
+  const handleDeleteRoomContact = async (contactId: string) => {
+    if (!window.confirm('ยืนยันการลบข้อมูลคนนี้ออกจากห้อง?')) return;
+    try {
+      const contacts = await api.deleteRoomContact(room.id, contactId);
+      setRoomContacts(contacts);
+    } catch {
+      alert('ลบข้อมูลไม่สำเร็จ');
+    }
+  };
+
   const handleCreateTenant = async () => {
     if (activeContract) return;
     if (!tenantName || !tenantPhone || !tenantStartDate || !tenantRent || !tenantDeposit) return;
@@ -271,6 +331,14 @@ export default function RoomDetailDialog({ room, children }: Props) {
         currentRent: Number(tenantRent),
         occupantCount: Math.max(1, Number(tenantOccupantCount || 1)),
       });
+      try {
+        await api.createRoomContact(room.id, {
+          name: tenantName,
+          phone: tenantPhone,
+        });
+      } catch (e) {
+        void e;
+      }
       setTenantDialogOpen(false);
       window.location.reload();
     } catch {
@@ -511,6 +579,25 @@ export default function RoomDetailDialog({ room, children }: Props) {
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                 ย้ายออก
+              </TabsTrigger>
+              <TabsTrigger
+                value="contacts"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#f5a987] data-[state=active]:text-[#f5a987] rounded-none px-0 py-2 text-slate-500 font-medium flex items-center gap-2"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M17 20h5v-2a4 4 0 00-3-3.87M9 20h6M6 8a4 4 0 118 0 4 4 0 01-8 0zM3 18v-1a4 4 0 013-3.87"
+                  />
+                </svg>
+                บัญชี LINE / ผู้เข้าพัก
               </TabsTrigger>
               <TabsTrigger 
                 value="maintenance"
@@ -1066,6 +1153,94 @@ export default function RoomDetailDialog({ room, children }: Props) {
                     </div>
                   ) : (
                     <div className="text-center py-10 text-slate-500">ไม่มีประวัติการแจ้งซ่อม</div>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="contacts">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-slate-800">
+                  การเชื่อมบัญชี LINE สำหรับห้องนี้
+                </h3>
+                <p className="text-sm text-slate-600">
+                  เพิ่มรายชื่อคนที่อยู่ในห้อง พร้อมเบอร์โทร จากนั้นให้ผู้เข้าพักพิมพ์
+                  REGISTER &lt;เบอร์โทร&gt; ใน LINE เพื่อเชื่อมบัญชีเองได้
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-end">
+                  <div className="flex-1">
+                    <Label htmlFor="contactName">ชื่อผู้เข้าพัก/ผู้ติดต่อ</Label>
+                    <Input
+                      id="contactName"
+                      placeholder="เช่น คุณเอ, คุณบี (ไม่บังคับ)"
+                      value={newContactName}
+                      onChange={(e) => setNewContactName(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Label htmlFor="contactPhone">เบอร์โทร</Label>
+                    <Input
+                      id="contactPhone"
+                      placeholder="เช่น 0812345678"
+                      value={newContactPhone}
+                      onChange={(e) => setNewContactPhone(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    className="whitespace-nowrap"
+                    disabled={savingContact || !newContactPhone.trim()}
+                    onClick={handleCreateRoomContact}
+                  >
+                    {savingContact ? 'กำลังบันทึก...' : 'เพิ่มรายชื่อ'}
+                  </Button>
+                </div>
+                <div className="mt-4 border rounded-lg divide-y">
+                  {loadingContacts ? (
+                    <div className="p-4 text-sm text-slate-500">
+                      กำลังโหลดรายชื่อ...
+                    </div>
+                  ) : roomContacts.length === 0 ? (
+                    <div className="p-4 text-sm text-slate-500">
+                      ยังไม่มีการตั้งค่าผู้เข้าพัก/บัญชี LINE สำหรับห้องนี้
+                    </div>
+                  ) : (
+                    roomContacts.map((c) => (
+                      <div
+                        key={c.id}
+                        className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                      >
+                        <div>
+                          <div className="font-medium text-slate-800">
+                            {c.name || c.phone}
+                          </div>
+                          <div className="text-sm text-slate-600">
+                            เบอร์: {c.phone}
+                          </div>
+                          <div className="text-xs mt-1">
+                            {c.lineUserId
+                              ? 'เชื่อมกับบัญชี LINE แล้ว'
+                              : 'ยังไม่เชื่อมกับบัญชี LINE'}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {c.lineUserId && (
+                            <Button
+                              variant="outline"
+                              className="border-amber-500 text-amber-700 hover:bg-amber-50"
+                              onClick={() => handleClearRoomContactLine(c.id)}
+                            >
+                              ตัดการเชื่อมต่อ
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            className="border-red-500 text-red-600 hover:bg-red-50"
+                            onClick={() => handleDeleteRoomContact(c.id)}
+                          >
+                            ลบออก
+                          </Button>
+                        </div>
+                      </div>
+                    ))
                   )}
                 </div>
               </div>

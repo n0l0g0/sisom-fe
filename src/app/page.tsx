@@ -28,6 +28,16 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
   
   const occupiedRooms = rooms.filter(r => r.status === 'OCCUPIED').length;
   const availableRooms = rooms.filter(r => r.status === 'VACANT').length;
+  const derivePrice = (r: Room) => {
+    const active = r.contracts?.[0];
+    return (active?.currentRent ?? r.pricePerMonth) ?? null;
+  };
+  const priceGroups = [2100, 2500, 3000].map((p) => {
+    const matches = rooms.filter(r => derivePrice(r) === p);
+    const total = matches.length;
+    const vacant = matches.filter(r => r.status === 'VACANT').length;
+    return { price: p, total, vacant };
+  });
   
   const unpaidInvoices = invoices.filter(i => i.status === 'SENT' || i.status === 'OVERDUE' || i.status === 'DRAFT');
   const unpaidBillsCount = unpaidInvoices.length;
@@ -160,6 +170,29 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
             </div>
           </div>
         </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        {priceGroups.map(pg => (
+          <div
+            key={pg.price}
+            className="bg-white rounded-2xl p-5 shadow-sm hover:-translate-y-1 transition-transform duration-200 border border-slate-100"
+          >
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${pg.vacant > 0 ? 'bg-emerald-50' : 'bg-red-50'} border ${pg.vacant > 0 ? 'border-emerald-200' : 'border-red-200'}`}>
+                <svg className={`w-6 h-6 ${pg.vacant > 0 ? 'text-emerald-500' : 'text-red-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={pg.vacant > 0 ? 'M5 13l4 4L19 7' : 'M6 18L18 6M6 6l12 12'} />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-slate-500 text-sm">ห้องราคา {pg.price.toLocaleString()} บาท</p>
+                <p className={`text-xl md:text-2xl font-bold mt-1 ${pg.vacant > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  ว่าง {pg.vacant} ห้อง จากทั้งหมด {pg.total}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
       
       {/* Quick Actions */}

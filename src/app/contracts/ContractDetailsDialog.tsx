@@ -17,26 +17,34 @@ import { useRouter } from 'next/navigation';
 
 interface ContractDetailsDialogProps {
   contract: Contract;
+  triggerLabel?: string;
 }
 
-export function ContractDetailsDialog({ contract }: ContractDetailsDialogProps) {
+export function ContractDetailsDialog({ contract, triggerLabel }: ContractDetailsDialogProps) {
   const router = useRouter();
-  const [rent, setRent] = useState(contract.currentRent.toString());
+  const [deposit, setDeposit] = useState(
+    (contract.deposit ?? '').toString(),
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [tenantName, setTenantName] = useState(contract.tenant?.name ?? '');
+  const [tenantPhone, setTenantPhone] = useState(contract.tenant?.phone ?? '');
+  const [tenantIdCard, setTenantIdCard] = useState(contract.tenant?.idCard ?? '');
+  const [tenantAddress, setTenantAddress] = useState(contract.tenant?.address ?? '');
+  const [isSavingTenant, setIsSavingTenant] = useState(false);
 
-  const handleSaveRent = async () => {
-    const newRent = parseFloat(rent);
-    if (isNaN(newRent)) return;
+  const handleSaveDeposit = async () => {
+    const newDeposit = parseFloat(deposit);
+    if (isNaN(newDeposit)) return;
 
     try {
       setIsSaving(true);
-      await api.updateContract(contract.id, { currentRent: newRent });
+      await api.updateContract(contract.id, { deposit: newDeposit });
       router.refresh();
       // Optional: Show success message
     } catch (error) {
-      console.error('Failed to update rent:', error);
-      alert('บันทึกค่าเช่าไม่สำเร็จ');
+      console.error('Failed to update deposit:', error);
+      alert('บันทึกเงินประกันไม่สำเร็จ');
     } finally {
       setIsSaving(false);
     }
@@ -59,6 +67,33 @@ export function ContractDetailsDialog({ contract }: ContractDetailsDialogProps) 
     }
   };
 
+  const handleSaveTenant = async () => {
+    if (!contract.tenant?.id) return;
+    const name = tenantName.trim();
+    const phone = tenantPhone.trim();
+    const idCard = tenantIdCard.trim();
+    const address = tenantAddress.trim();
+    if (!name || !phone) {
+      alert('กรุณากรอกชื่อและเบอร์โทรศัพท์ผู้เช่า');
+      return;
+    }
+    try {
+      setIsSavingTenant(true);
+      await api.updateTenant(contract.tenant.id, {
+        name,
+        phone,
+        idCard: idCard || undefined,
+        address: address || undefined,
+      });
+      router.refresh();
+    } catch (error) {
+      console.error('Failed to update tenant:', error);
+      alert('บันทึกข้อมูลผู้เช่าไม่สำเร็จ');
+    } finally {
+      setIsSavingTenant(false);
+    }
+  };
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -68,7 +103,7 @@ export function ContractDetailsDialog({ contract }: ContractDetailsDialogProps) 
           className="gap-2 text-slate-600 hover:text-slate-900"
         >
           <ExternalLink className="w-4 h-4" />
-          ดูสัญญา
+          {triggerLabel ?? 'ดูสัญญา'}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -84,24 +119,67 @@ export function ContractDetailsDialog({ contract }: ContractDetailsDialogProps) 
           {/* Tenant Information */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-[#8b5a3c] border-b pb-2">ข้อมูลผู้เช่า</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <Label className="text-slate-500">ชื่อ-นามสกุล</Label>
-                <div className="font-medium">{contract.tenant?.name}</div>
+            {contract.tenant ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <Label htmlFor="tenant-name" className="text-slate-500">ชื่อ-นามสกุล</Label>
+                    <Input
+                      id="tenant-name"
+                      value={tenantName}
+                      onChange={(e) => setTenantName(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="tenant-phone" className="text-slate-500">เบอร์โทรศัพท์</Label>
+                    <Input
+                      id="tenant-phone"
+                      value={tenantPhone}
+                      onChange={(e) => setTenantPhone(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="tenant-idcard" className="text-slate-500">เลขบัตรประชาชน</Label>
+                    <Input
+                      id="tenant-idcard"
+                      value={tenantIdCard}
+                      onChange={(e) => setTenantIdCard(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="tenant-address" className="text-slate-500">ที่อยู่</Label>
+                    <Input
+                      id="tenant-address"
+                      value={tenantAddress}
+                      onChange={(e) => setTenantAddress(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    onClick={handleSaveTenant}
+                    disabled={isSavingTenant}
+                    className="bg-[#f5a987] hover:bg-[#e09b7b]"
+                  >
+                    {isSavingTenant ? (
+                      <span className="animate-spin mr-2">⏳</span>
+                    ) : (
+                      <Save className="w-4 h-4 mr-2" />
+                    )}
+                    บันทึกข้อมูลผู้เช่า
+                  </Button>
+                </div>
               </div>
-              <div>
-                <Label className="text-slate-500">เบอร์โทรศัพท์</Label>
-                <div className="font-medium">{contract.tenant?.phone}</div>
+            ) : (
+              <div className="text-sm text-slate-500">
+                ไม่พบข้อมูลผู้เช่าที่เชื่อมกับสัญญานี้
               </div>
-              <div>
-                <Label className="text-slate-500">เลขบัตรประชาชน</Label>
-                <div className="font-medium">{contract.tenant?.idCard || '-'}</div>
-              </div>
-              <div>
-                <Label className="text-slate-500">ที่อยู่</Label>
-                <div className="font-medium">{contract.tenant?.address || '-'}</div>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Contract Information */}
@@ -137,18 +215,18 @@ export function ContractDetailsDialog({ contract }: ContractDetailsDialogProps) 
             <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 mt-4">
                 <div className="flex items-end gap-4">
                   <div className="flex-1 space-y-2">
-                    <Label htmlFor="rent" className="text-slate-700 font-semibold">ค่าเช่า (บาท/เดือน)</Label>
+                    <Label htmlFor="deposit" className="text-slate-700 font-semibold">เงินประกัน (บาท)</Label>
                     <Input 
-                      id="rent" 
+                      id="deposit" 
                       type="number" 
-                      value={rent} 
-                      onChange={(e) => setRent(e.target.value)}
+                      value={deposit} 
+                      onChange={(e) => setDeposit(e.target.value)}
                       className="bg-white"
                     />
                   </div>
                   <Button 
-                    onClick={handleSaveRent} 
-                    disabled={isSaving || rent === contract.currentRent.toString()}
+                    onClick={handleSaveDeposit} 
+                    disabled={isSaving || deposit === (contract.deposit ?? '').toString()}
                     className="bg-[#f5a987] hover:bg-[#e09b7b]"
                   >
                     {isSaving ? (
@@ -156,7 +234,7 @@ export function ContractDetailsDialog({ contract }: ContractDetailsDialogProps) 
                     ) : (
                       <Save className="w-4 h-4 mr-2" />
                     )}
-                    บันทึกค่าเช่า
+                    บันทึกเงินประกัน
                   </Button>
                 </div>
               </div>

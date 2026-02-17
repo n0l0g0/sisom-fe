@@ -7,6 +7,8 @@ import {
   MaintenanceRequest,
   Asset,
   RoomContact,
+  MeterReading,
+  DormConfig,
   api,
 } from '@/services/api';
 import {
@@ -32,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ContractDetailsDialog } from "../contracts/ContractDetailsDialog";
 
 interface Props {
   room: Room;
@@ -55,6 +58,14 @@ export default function RoomDetailDialog({ room, children }: Props) {
   const [moveOutDate, setMoveOutDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [settled, setSettled] = useState<Array<{ id: string; label: string; amount: number; method: 'DEPOSIT' | 'CASH' }>>([]);
   const [moveOutDays, setMoveOutDays] = useState<number>(7);
+  const [dormConfig, setDormConfig] = useState<DormConfig | null>(null);
+  const [lastMeterReading, setLastMeterReading] = useState<MeterReading | null>(null);
+  const [moveOutWaterCurrent, setMoveOutWaterCurrent] = useState('');
+  const [moveOutElectricCurrent, setMoveOutElectricCurrent] = useState('');
+  const [moveOutOtherDescription, setMoveOutOtherDescription] = useState('');
+  const [moveOutOtherAmount, setMoveOutOtherAmount] = useState('');
+  const [moveOutDiscount, setMoveOutDiscount] = useState('');
+  const [moveOutSaved, setMoveOutSaved] = useState(false);
   const [linkRequests, setLinkRequests] = useState<Array<{ userId: string; phone: string; tenantId: string; createdAt: string }>>([]);
   const [roomContacts, setRoomContacts] = useState<RoomContact[]>([]);
   const [loadingContacts, setLoadingContacts] = useState(false);
@@ -111,6 +122,37 @@ export default function RoomDetailDialog({ room, children }: Props) {
 
   const activeContract = room.contracts?.find(c => c.isActive);
 
+  const depositInitial = Math.max(0, Number(activeContract?.deposit ?? 0));
+  const depositUsed = settled
+    .filter((s) => s.method === 'DEPOSIT')
+    .reduce((sum, s) => sum + s.amount, 0);
+  const depositBaseRefund = Math.max(0, depositInitial - depositUsed);
+
+  const waterPrev = lastMeterReading ? Number(lastMeterReading.waterReading ?? 0) : 0;
+  const electricPrev = lastMeterReading ? Number(lastMeterReading.electricReading ?? 0) : 0;
+  const waterNow = Number(moveOutWaterCurrent || 0);
+  const electricNow = Number(moveOutElectricCurrent || 0);
+  const waterUsage = Math.max(0, waterNow - waterPrev);
+  const electricUsage = Math.max(0, electricNow - electricPrev);
+  const waterUnitPrice = dormConfig ? Number(dormConfig.waterUnitPrice ?? 0) : 0;
+  const electricUnitPrice = dormConfig ? Number(dormConfig.electricUnitPrice ?? 0) : 0;
+  const waterCharge = waterUsage * waterUnitPrice;
+  const electricCharge = electricUsage * electricUnitPrice;
+  const otherCharge = Math.max(0, Number(moveOutOtherAmount || 0));
+  const discountAmount = Math.max(0, Number(moveOutDiscount || 0));
+  const moveOutSubTotal = waterCharge + electricCharge + otherCharge;
+  const moveOutTotal = Math.max(0, moveOutSubTotal - discountAmount);
+
+  const expectedDepositRefund =
+    settleMethod === 'DEPOSIT'
+      ? Math.max(0, depositBaseRefund - moveOutTotal)
+      : depositBaseRefund;
+
+  const additionalCashNeeded =
+    settleMethod === 'DEPOSIT'
+      ? Math.max(0, moveOutTotal - depositBaseRefund)
+      : moveOutTotal;
+
   useEffect(() => {
     if (open) {
       setOccupantCount(String(activeContract?.occupantCount ?? 1));
@@ -142,7 +184,7 @@ export default function RoomDetailDialog({ room, children }: Props) {
   const fetchInvoices = useCallback(async () => {
     try {
       setLoadingInvoices(true);
-      const data = await api.getInvoices(room.id);
+      const data = await api.getInvoices({ roomId: room.id });
       setInvoices(data);
     } catch (error) {
       console.error('Failed to fetch invoices', error);
@@ -175,6 +217,35 @@ export default function RoomDetailDialog({ room, children }: Props) {
     }
   }, [room.id]);
 
+  const fetchDormConfig = useCallback(async () => {
+    try {
+      const cfg = await api.getDormConfig();
+      setDormConfig(cfg);
+    } catch (error) {
+      console.error('Failed to fetch dorm config', error);
+    }
+  }, []);
+
+  const fetchLastMeter = useCallback(async () => {
+    try {
+      const readings = await api.getMeterReadings(room.id);
+      if (readings.length > 0) {
+        const sorted = [...readings].sort((a, b) => {
+          const aTime = new Date(a.createdAt).getTime();
+          const bTime = new Date(b.createdAt).getTime();
+          if (a.year !== b.year) return a.year - b.year;
+          if (a.month !== b.month) return a.month - b.month;
+          return aTime - bTime;
+        });
+        setLastMeterReading(sorted[sorted.length - 1]);
+      } else {
+        setLastMeterReading(null);
+      }
+    } catch (error) {
+      console.error('Failed to fetch last meter reading', error);
+    }
+  }, [room.id]);
+
   const fetchRooms = useCallback(async () => {
     try {
       setLoadingRooms(true);
@@ -193,6 +264,8 @@ export default function RoomDetailDialog({ room, children }: Props) {
         await fetchInvoices();
         await fetchMaintenance();
         await fetchAssets();
+        await fetchDormConfig();
+        await fetchLastMeter();
         const tenantId = activeContract?.tenantId;
         if (tenantId) {
           try {
@@ -217,7 +290,7 @@ export default function RoomDetailDialog({ room, children }: Props) {
         setLoadingContacts(false);
       })();
     }
-  }, [open, fetchInvoices, fetchMaintenance, fetchAssets]);
+  }, [open, fetchInvoices, fetchMaintenance, fetchAssets, fetchDormConfig, fetchLastMeter]);
 
   useEffect(() => {
     if (moveDialogOpen) {
@@ -292,9 +365,14 @@ export default function RoomDetailDialog({ room, children }: Props) {
 
   const handleClearRoomContactLine = async (contactId: string) => {
     if (!window.confirm('ยืนยันการตัดการเชื่อมต่อ LINE สำหรับคนนี้?')) return;
+    const contact = roomContacts.find((c) => c.id === contactId);
+    const lineUserId = contact?.lineUserId;
     try {
       const contacts = await api.clearRoomContactLine(room.id, contactId);
       setRoomContacts(contacts);
+      if (lineUserId) {
+        await api.unlinkRichMenu(lineUserId, 'GENERAL');
+      }
     } catch {
       alert('ตัดการเชื่อมต่อไม่สำเร็จ');
     }
@@ -632,9 +710,9 @@ export default function RoomDetailDialog({ room, children }: Props) {
                             <div className="text-slate-500 text-xs mt-1">
                               เข้าพักเมื่อ {new Date(contract.startDate).toLocaleDateString('th-TH')}
                             </div>
-                            <Button variant="outline" size="sm" className="mt-2 h-7 text-xs bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100">
-                              ดูข้อมูลผู้เช่า
-                            </Button>
+                            <div className="mt-2">
+                              <ContractDetailsDialog contract={contract} triggerLabel="ดูข้อมูลผู้เช่า" />
+                            </div>
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -1049,7 +1127,117 @@ export default function RoomDetailDialog({ room, children }: Props) {
                      </div>
                    </div>
 
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="border rounded-lg p-3 space-y-2">
+                        <div className="font-semibold text-slate-700 mb-2">คำนวณค่าน้ำ/ไฟ ล่าสุด</div>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <div className="text-slate-500">เลขน้ำครั้งก่อน</div>
+                            <div className="font-mono">
+                              {lastMeterReading ? Number(lastMeterReading.waterReading).toLocaleString() : '-'}
+                            </div>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-slate-600">เลขน้ำครั้งล่าสุด</Label>
+                            <Input
+                              type="number"
+                              inputMode="decimal"
+                              value={moveOutWaterCurrent}
+                              onChange={(e) => {
+                                setMoveOutWaterCurrent(e.target.value);
+                                setMoveOutSaved(false);
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <div className="mt-2 text-slate-500">เลขไฟครั้งก่อน</div>
+                            <div className="font-mono">
+                              {lastMeterReading ? Number(lastMeterReading.electricReading).toLocaleString() : '-'}
+                            </div>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-slate-600">เลขไฟครั้งล่าสุด</Label>
+                            <Input
+                              type="number"
+                              inputMode="decimal"
+                              value={moveOutElectricCurrent}
+                              onChange={(e) => {
+                                setMoveOutElectricCurrent(e.target.value);
+                                setMoveOutSaved(false);
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className="mt-2 text-xs text-slate-600 space-y-1">
+                          <div>
+                            ใช้น้ำ {waterUsage.toLocaleString()} หน่วย x ฿{waterUnitPrice.toLocaleString()} = ฿
+                            {waterCharge.toLocaleString()}
+                          </div>
+                          <div>
+                            ใช้ไฟ {electricUsage.toLocaleString()} หน่วย x ฿{electricUnitPrice.toLocaleString()} = ฿
+                            {electricCharge.toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="border rounded-lg p-3 space-y-2">
+                        <div className="font-semibold text-slate-700 mb-2">รายการอื่นๆ / ส่วนลด</div>
+                        <div className="space-y-2">
+                          <Input
+                            placeholder="รายละเอียดค่าใช้จ่ายอื่นๆ (ถ้ามี)"
+                            value={moveOutOtherDescription}
+                            onChange={(e) => {
+                              setMoveOutOtherDescription(e.target.value);
+                              setMoveOutSaved(false);
+                            }}
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-slate-600">จำนวนเงินค่าใช้จ่ายอื่นๆ</Label>
+                              <Input
+                                type="number"
+                                inputMode="decimal"
+                                value={moveOutOtherAmount}
+                                onChange={(e) => {
+                                  setMoveOutOtherAmount(e.target.value);
+                                  setMoveOutSaved(false);
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-slate-600">ส่วนลด</Label>
+                              <Input
+                                type="number"
+                                inputMode="decimal"
+                                value={moveOutDiscount}
+                                onChange={(e) => {
+                                  setMoveOutDiscount(e.target.value);
+                                  setMoveOutSaved(false);
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <div className="text-sm text-slate-700">
+                            ยอดใบเสร็จย้ายออก: ฿{moveOutTotal.toLocaleString()}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => setMoveOutSaved(true)}
+                              disabled={moveOutTotal <= 0}
+                            >
+                              บันทึกใบเสร็จ
+                            </Button>
+                            {moveOutSaved && (
+                              <span className="text-xs text-green-600">บันทึกแล้ว (ใช้สำหรับสรุปในหน้านี้)</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                      <div className="border rounded-lg p-3">
                        <div className="font-semibold text-slate-700 mb-2">รายการชำระสำเร็จ</div>
                        {settled.filter((s) => s.method === 'CASH').length === 0 ? (
@@ -1087,14 +1275,19 @@ export default function RoomDetailDialog({ room, children }: Props) {
                      </div>
                    </div>
 
-                   <div className="mt-4">
-                     <div className="bg-red-50 text-red-700 border border-red-200 rounded-lg px-4 py-3 inline-flex items-center">
-                       <span className="mr-2">ยอดเงินประกันคืนผู้เช่า</span>
-                       <span className="font-bold">
-                         ฿{Math.max(0, Number(activeContract.deposit || 0) - settled.filter((s) => s.method === 'DEPOSIT').reduce((sum, s) => sum + s.amount, 0)).toLocaleString()}
-                       </span>
-                     </div>
-                   </div>
+                    <div className="mt-4 space-y-2">
+                      <div className="bg-red-50 text-red-700 border border-red-200 rounded-lg px-4 py-3 inline-flex items-center">
+                        <span className="mr-2">ยอดเงินประกันคืนผู้เช่า</span>
+                        <span className="font-bold">
+                          ฿{expectedDepositRefund.toLocaleString()}
+                        </span>
+                      </div>
+                      {additionalCashNeeded > 0 && (
+                        <div className="text-sm text-red-600">
+                          ต้องเก็บเงินจากผู้เช่าเพิ่ม ฿{additionalCashNeeded.toLocaleString()}
+                        </div>
+                      )}
+                    </div>
                  </div>
                )}
             </TabsContent>

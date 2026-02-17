@@ -1,10 +1,16 @@
  'use client';
  
- import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
  import { api, Invoice } from '@/services/api';
  import { useRouter } from 'next/navigation';
  
- export default function SendAllBar({ invoices }: { invoices: Invoice[] }) {
+export default function SendAllBar({
+  invoices,
+  onMonthChange,
+}: {
+  invoices: Invoice[];
+  onMonthChange?: (value: string | null) => void;
+}) {
    const router = useRouter();
    const monthKeys = useMemo(() => {
      const set = new Set<string>();
@@ -56,7 +62,11 @@
       <label className="text-sm text-slate-600">จัดการบิล</label>
       <select
         value={selected || ''}
-        onChange={(e) => setSelected(e.target.value || null)}
+        onChange={(e) => {
+          const value = e.target.value || null;
+          setSelected(value);
+          if (onMonthChange) onMonthChange(value);
+        }}
         className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f5a987] border-slate-200 bg-white"
       >
         {monthKeys.map((key) => {

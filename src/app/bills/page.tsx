@@ -2,14 +2,15 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Search } from "lucide-react"
-import { api, Invoice, Room } from "@/services/api";
-import { CreateInvoiceDialog } from "./CreateInvoiceDialog";
-import SendInvoiceButton from "./SendInvoiceButton";
-import SendAllBar from "./SendAllBar";
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
+import { api, Invoice, Room } from '@/services/api';
+import { CreateInvoiceDialog } from './CreateInvoiceDialog';
+import SendInvoiceButton from './SendInvoiceButton';
+import SendAllBar from './SendAllBar';
+import PrintAllBar from './PrintAllBar';
 
 export default function BillsPage() {
   return (
@@ -82,15 +83,29 @@ function BillsPageContent() {
   }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedMonthKey, setSelectedMonthKey] = useState<string | null>(null);
 
   const filteredInvoices = useMemo(() => {
-    if (!searchTerm.trim()) return invoices;
-    const lower = searchTerm.toLowerCase();
-    return invoices.filter(inv => 
-      inv.contract?.room?.number?.toLowerCase().includes(lower) ||
-      inv.contract?.tenant?.name?.toLowerCase().includes(lower)
-    );
-  }, [invoices, searchTerm]);
+    let result = invoices;
+
+    if (selectedMonthKey) {
+      const [yearStr, monthStr] = selectedMonthKey.split('-');
+      const year = Number(yearStr);
+      const month = Number(monthStr);
+      result = result.filter((inv) => inv.year === year && inv.month === month);
+    }
+
+    if (searchTerm.trim()) {
+      const lower = searchTerm.toLowerCase();
+      result = result.filter(
+        (inv) =>
+          inv.contract?.room?.number?.toLowerCase().includes(lower) ||
+          inv.contract?.tenant?.name?.toLowerCase().includes(lower),
+      );
+    }
+
+    return result;
+  }, [invoices, searchTerm, selectedMonthKey]);
 
   const totalPending = useMemo(() => filteredInvoices.filter(i => i.status === 'SENT' || i.status === 'DRAFT').reduce((acc, curr) => acc + Number(curr.totalAmount), 0), [filteredInvoices]);
   const totalPaid = useMemo(() => filteredInvoices.filter(i => i.status === 'PAID').reduce((acc, curr) => acc + Number(curr.totalAmount), 0), [filteredInvoices]);
@@ -141,10 +156,12 @@ function BillsPageContent() {
     <div className="space-y-8 fade-in">
       <div className="flex justify-between items-center mb-6">
         <div>
-           <h1 className="text-2xl font-bold text-[#8b5a3c]">บิลค่าเช่า</h1>
-           <p className="text-slate-500 text-sm mt-1">จัดการใบแจ้งหนี้และสถานะการชำระเงิน</p>
+          <h1 className="text-2xl font-bold text-[#8b5a3c]">บิลค่าเช่า</h1>
+          <p className="text-slate-500 text-sm mt-1">
+            จัดการใบแจ้งหนี้และสถานะการชำระเงิน
+          </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 justify-end">
           <div className="relative w-64">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
             <Input
@@ -154,7 +171,19 @@ function BillsPageContent() {
               className="pl-8 bg-white"
             />
           </div>
-          <SendAllBar invoices={filteredInvoices} />
+          <button
+            type="button"
+            onClick={() => {
+              setSearchTerm('');
+              setSelectedMonthKey(null);
+              goToPage(1);
+            }}
+            className="px-3 py-1.5 rounded-full text-xs border transition-colors bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+          >
+            ล้างค่า filter
+          </button>
+          <SendAllBar invoices={invoices} onMonthChange={setSelectedMonthKey} />
+          <PrintAllBar invoices={filteredInvoices} />
           <CreateInvoiceDialog
             rooms={rooms}
             onCreated={async () => {
@@ -260,41 +289,45 @@ function BillsPageContent() {
                           ฿{Number(bill.totalAmount).toLocaleString()}
                         </td>
                         <td className="px-6 py-4 text-center">
-                        <Badge
-                          variant={
-                            bill.status === 'PAID'
-                              ? 'secondary'
+                          <Badge
+                            variant={
+                              bill.status === 'PAID'
+                                ? 'secondary'
+                                : bill.status === 'OVERDUE'
+                                ? 'destructive'
+                                : 'outline'
+                            }
+                            className={
+                              bill.status === 'PAID'
+                                ? 'bg-green-100 text-green-700 hover:bg-green-200 border-none'
+                                : bill.status === 'OVERDUE'
+                                ? 'bg-red-100 text-red-700 hover:bg-red-200 border-none'
+                                : bill.status === 'CANCELLED'
+                                ? 'bg-slate-200 text-slate-600 border-none'
+                                : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-none'
+                            }
+                          >
+                            {bill.status === 'PAID'
+                              ? 'ชำระแล้ว'
                               : bill.status === 'OVERDUE'
-                              ? 'destructive'
-                              : 'outline'
-                          }
-                          className={
-                            bill.status === 'PAID'
-                              ? 'bg-green-100 text-green-700 hover:bg-green-200 border-none'
-                              : bill.status === 'OVERDUE'
-                              ? 'bg-red-100 text-red-700 hover:bg-red-200 border-none'
+                              ? 'ค้างชำระ'
+                              : bill.status === 'DRAFT'
+                              ? 'ร่าง'
                               : bill.status === 'CANCELLED'
-                              ? 'bg-slate-200 text-slate-600 border-none'
-                              : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-none'
-                          }
-                        >
-                          {bill.status === 'PAID'
-                            ? 'ชำระแล้ว'
-                            : bill.status === 'OVERDUE'
-                            ? 'ค้างชำระ'
-                            : bill.status === 'DRAFT'
-                            ? 'ร่าง'
-                            : bill.status === 'CANCELLED'
-                            ? 'ยกเลิกแล้ว'
-                            : 'รอชำระ'}
-                        </Badge>
+                              ? 'ยกเลิกแล้ว'
+                              : 'รอชำระ'}
+                          </Badge>
                         </td>
                         <td className="px-6 py-4 text-center">
                           <div className="flex justify-center gap-2">
                             {bill.status === 'CANCELLED' ? (
-                              <span className="text-xs text-slate-400">ยกเลิกแล้ว</span>
+                              <span className="text-xs text-slate-400">
+                                ยกเลิกแล้ว
+                              </span>
                             ) : (
-                              <SendInvoiceButton invoice={bill} />
+                              <>
+                                <SendInvoiceButton invoice={bill} />
+                              </>
                             )}
                           </div>
                         </td>

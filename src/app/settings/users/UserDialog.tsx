@@ -236,7 +236,15 @@ export default function UserDialog({ user, open, onOpenChange, onSubmit }: UserD
             <Input 
               id="lineUserId" 
               value={formData.lineUserId || ''} 
-              onChange={e => setFormData({...formData, lineUserId: e.target.value})}
+              onChange={e => {
+                const raw = e.target.value.trim();
+                const normalized = raw
+                  ? raw.startsWith('U') || raw.startsWith('u')
+                    ? `U${raw.slice(1)}`
+                    : `U${raw}`
+                  : raw;
+                setFormData({...formData, lineUserId: normalized});
+              }}
               placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
             />
             <div className="text-xs text-slate-500">วาง LINE userId เพื่อยืนยันสิทธิเป็น staff/admin หรือ OWNER</div>

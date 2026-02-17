@@ -67,7 +67,7 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
         alert('กรุณากรอก LINE User ID ให้ผู้ใช้ก่อน');
         return;
       }
-      await api.mapLineUserRole(user.id, 'STAFF');
+      await api.mapLineUserRole(user.lineUserId, 'STAFF');
       await api.linkRichMenu(user.lineUserId, 'ADMIN');
       alert('ตั้งเป็น Staff และเชื่อม Rich Menu ผู้ดูแลสำเร็จ');
     } catch {

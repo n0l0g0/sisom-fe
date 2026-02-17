@@ -75,7 +75,11 @@ import { Button } from "@/components/ui/button";
     try {
       await api.addInvoiceItem(detail.id, { description: itemDesc.trim(), amount: amt });
       const data = await api.getInvoice(detail.id);
-      setDetail(data);
+      try {
+        await api.updateInvoice(detail.id, { status: 'DRAFT' as any });
+      } catch {}
+      const refreshed = await api.getInvoice(detail.id);
+      setDetail(refreshed);
       setItemDesc('');
       setItemAmount('');
     } catch {
@@ -87,8 +91,11 @@ import { Button } from "@/components/ui/button";
     if (!detail) return;
     try {
       await api.deleteInvoiceItem(detail.id, id);
-      const data = await api.getInvoice(detail.id);
-      setDetail(data);
+      try {
+        await api.updateInvoice(detail.id, { status: 'DRAFT' as any });
+      } catch {}
+      const refreshed = await api.getInvoice(detail.id);
+      setDetail(refreshed);
     } catch {
       alert('ลบรายการไม่สำเร็จ');
     }
@@ -99,8 +106,11 @@ import { Button } from "@/components/ui/button";
     const d = Math.max(0, Number(discount || 0));
     try {
       await api.updateInvoice(detail.id, { discount: d });
-      const data = await api.getInvoice(detail.id);
-      setDetail(data);
+      try {
+        await api.updateInvoice(detail.id, { status: 'DRAFT' as any });
+      } catch {}
+      const refreshed = await api.getInvoice(detail.id);
+      setDetail(refreshed);
       router.refresh();
     } catch {
       alert('บันทึกส่วนลดไม่สำเร็จ');
@@ -167,6 +177,29 @@ import { Button } from "@/components/ui/button";
               <DialogDescription>
                 ปรับปรุงรายการบิล เพิ่มรายการ และส่วนลด รวมถึงยกเลิกบิล
               </DialogDescription>
+              {detail && (
+                <div className="mt-2">
+                  {detail.status === 'DRAFT' ? (
+                    <Button
+                      onClick={() =>
+                        window.open(
+                          `/bills/${detail.id}/print`,
+                          '_blank',
+                          'noopener,noreferrer',
+                        )
+                      }
+                      className="bg-slate-800 hover:bg-slate-900 text-white"
+                      title="พิมพ์ใบแจ้งหนี้ (A5)"
+                    >
+                      พิมพ์ใบแจ้งหนี้ (A5)
+                    </Button>
+                  ) : (
+                    <span className="text-xs text-slate-500">
+                      พิมพ์ได้เฉพาะบิลสถานะ “ร่าง”
+                    </span>
+                  )}
+                </div>
+              )}
             </DialogHeader>
             {detail ? (
               <div className="space-y-4">
@@ -295,6 +328,23 @@ import { Button } from "@/components/ui/button";
                   ยกเลิกบิล
                 </Button>
                 <div className="flex gap-2">
+                  <Button
+                    onClick={async () => {
+                      if (!detail) return;
+                      try {
+                        await api.updateInvoice(detail.id, { status: 'DRAFT' as any });
+                        const data = await api.getInvoice(detail.id);
+                        setDetail(data);
+                        alert('บันทึกเป็น “ร่าง” เรียบร้อย กรุณาส่งบิลใหม่อีกครั้ง');
+                        // ไม่ปิด dialog เพื่อให้ผู้ใช้ตรวจสอบก่อน
+                      } catch {
+                        alert('บันทึกสถานะเป็นร่างไม่สำเร็จ');
+                      }
+                    }}
+                    className="bg-slate-600 hover:bg-slate-700 text-white"
+                  >
+                    บันทึกเป็นร่าง
+                  </Button>
                   <Button
                     onClick={handleSettle}
                     className="bg-green-600 hover:bg-green-700 text-white"

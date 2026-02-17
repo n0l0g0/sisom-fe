@@ -118,52 +118,57 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
   }, [filteredRooms]);
 
   const submitAll = async () => {
-    const payloads: Array<{ roomId: string; water: string; electric: string }> = [];
-    for (const r of sortedRooms) {
+    const candidates = sortedRooms.filter((r) => {
       const v = values[r.id];
-      if (v && v.water.trim() !== '' && v.electric.trim() !== '') {
-        payloads.push({ roomId: r.id, water: v.water.trim(), electric: v.electric.trim() });
-      }
-    }
-    if (!payloads.length) {
+      return v && v.water.trim() !== '' && v.electric.trim() !== '';
+    });
+    if (!candidates.length) {
       setMessage('กรอกค่าน้ำและค่าไฟอย่างน้อยหนึ่งห้อง');
+      return;
+    }
+    const confirmText = `ยืนยันบันทึกค่ามิเตอร์ ${candidates.length} ห้องใช่หรือไม่?`;
+    if (!window.confirm(confirmText)) {
       return;
     }
     setSubmitting(true);
     setMessage('');
-    setProgressTotal(payloads.length);
+    setProgressTotal(candidates.length);
     setProgressRooms(0);
     setProgressPct(0);
     try {
       const created: string[] = [];
       const invoiced: string[] = [];
-      for (let i = 0; i < payloads.length; i++) {
-        const p = payloads[i];
+      for (let i = 0; i < candidates.length; i++) {
+        const room = candidates[i];
+        const v = values[room.id];
+        if (!v) continue;
         await api.createMeterReading({
-          roomId: p.roomId,
+          roomId: room.id,
           month,
           year,
-          waterReading: Number(p.water),
-          electricReading: Number(p.electric),
+          waterReading: Number(v.water),
+          electricReading: Number(v.electric),
         });
-        created.push(p.roomId);
+        created.push(room.id);
 
-        const hasActiveContract = contracts.some((c) => c.roomId === p.roomId && c.isActive);
+        const hasActiveContract = contracts.some((c) => c.roomId === room.id && c.isActive);
         if (hasActiveContract) {
           try {
-            const invoice = await api.generateInvoice({ roomId: p.roomId, month, year });
-            if (invoice?.id) invoiced.push(p.roomId);
+            const invoice = await api.generateInvoice({ roomId: room.id, month, year });
+            if (invoice?.id) invoiced.push(room.id);
           } catch (e) {
-            // ignore individual generation errors (e.g., already exists)
           }
         }
 
         const done = i + 1;
         setProgressRooms(done);
-        setProgressPct(Math.round((done / payloads.length) * 100));
+        setProgressPct(Math.round((done / candidates.length) * 100));
       }
-      setMessage(`บันทึกสำเร็จ ${created.length} ห้อง${invoiced.length ? ` และสร้างบิลแล้ว ${invoiced.length} ห้อง` : ''}`);
-      // Redirect to bills page as requested
+      setMessage(
+        `บันทึกสำเร็จ ${created.length} ห้อง${
+          invoiced.length ? ` และสร้างบิลแล้ว ${invoiced.length} ห้อง` : ''
+        }`,
+      );
       router.push('/bills');
     } catch (e) {
       setMessage('บันทึกไม่สำเร็จ');
@@ -501,8 +506,18 @@ function MeterPageInner() {
   const params = useSearchParams();
   const uidQuery = params.get('uid') || '';
   const [uidFromLiff, setUidFromLiff] = useState<string>('');
-  const uid = uidQuery || uidFromLiff;
+  const [uidManual, setUidManual] = useState<string>('');
+  const uid = uidQuery || uidFromLiff || uidManual;
   const [allowByLogin, setAllowByLogin] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !uidManual) {
+      const saved = localStorage.getItem('sisom_meter_uid') || '';
+      if (saved) {
+        setUidManual(saved);
+      }
+    }
+  }, [uidManual]);
 
   useEffect(() => {
     const tryCookieProfile = async () => {
@@ -565,24 +580,6 @@ function MeterPageInner() {
           // @ts-expect-error
           const profile = await window.liff.getProfile();
           if (profile?.userId) setUidFromLiff(profile.userId as string);
-        } else {
-          // @ts-expect-error
-          if (!window.liff.isLoggedIn()) {
-            const href = window.location.href;
-            let redirectUri = href;
-            try {
-              const u = new URL(href);
-              if (u.hostname !== 'line-sisom.washqueue.com') {
-                redirectUri = `https://line-sisom.washqueue.com${u.pathname}${u.search}`;
-              }
-            } catch {}
-            // @ts-expect-error
-            window.liff.login({ redirectUri });
-            return;
-          }
-          // @ts-expect-error
-          const profile = await window.liff.getProfile();
-          if (profile?.userId) setUidFromLiff(profile.userId as string);
         }
       } catch {
         // ignore
@@ -593,10 +590,31 @@ function MeterPageInner() {
 
   if (!uid && !allowByLogin) {
     return (
-      <div className="max-w-xl mx-auto p-6 space-y-3">
+      <div className="max-w-xl mx-auto p-6 space-y-4">
         <div className="text-xl font-bold text-[#8b5a3c]">บันทึกมิเตอร์ผ่าน LINE</div>
         <div className="text-slate-600">กำลังตรวจสอบสิทธิจาก LINE...</div>
-        <div className="text-slate-500 text-sm">หากไม่สามารถตรวจจับ LINE ได้ โปรดแนบพารามิเตอร์ uid เช่น /meter?uid=Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</div>
+        <div className="text-slate-500 text-sm">
+          หากไม่สามารถตรวจจับ LINE ได้ ให้พิมพ์คำสั่ง <span className="font-mono">whoami</span> ในห้องแชท
+          แล้วคัดลอก LINE userId มาวางด้านล่าง
+        </div>
+        <div className="space-y-2">
+          <div className="text-sm text-slate-600">LINE userId</div>
+          <input
+            className="w-full border rounded-md px-3 py-2 text-sm"
+            placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            value={uidManual}
+            onChange={(e) => {
+              const value = e.target.value.trim();
+              setUidManual(value);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('sisom_meter_uid', value);
+              }
+            }}
+          />
+          <div className="text-xs text-slate-500">
+            ตัวอย่าง: Uxxxxx
+          </div>
+        </div>
       </div>
     );
   }

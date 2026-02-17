@@ -7,6 +7,47 @@ import SaveDormExtra from "./SaveDormExtra";
 
 export const dynamic = 'force-dynamic';
 
+const bankOptions = [
+  { value: "กรุงเทพ", label: "ธนาคารกรุงเทพ" },
+  { value: "กสิกรไทย", label: "ธนาคารกสิกรไทย" },
+  { value: "ไทยพาณิชย์", label: "ธนาคารไทยพาณิชย์" },
+  { value: "กรุงศรี", label: "ธนาคารกรุงศรีอยุธยา" },
+  { value: "กรุงไทย", label: "ธนาคารกรุงไทย" },
+  { value: "ทหารไทยธนชาต", label: "ธนาคารทหารไทยธนชาต" },
+  { value: "ออมสิน", label: "ธนาคารออมสิน" },
+  { value: "กยศ.", label: "ธนาคารเพื่อการเกษตรและสหกรณ์การเกษตร" },
+];
+
+const parseBankAccount = (raw: string) => {
+  const value = (raw || '').trim();
+  if (!value)
+    return {
+      bankName: '',
+      accountName: '',
+      accountNumber: '',
+      branch: '',
+    };
+
+  const indices = ['ชื่อบัญชี', 'เลขที่บัญชี', 'สาขา']
+    .map((label) => value.indexOf(label))
+    .filter((idx) => idx >= 0);
+  const cutIndex = indices.length ? Math.min(...indices) : value.length;
+  const bankName = value.slice(0, cutIndex).trim();
+
+  const extract = (label: string, endLabels: string[]) => {
+    const end = endLabels.length ? `(?:${endLabels.join('|')}|$)` : '$';
+    const match = value.match(new RegExp(`${label}\\s*([\\s\\S]*?)${end}`));
+    return match?.[1]?.trim() ?? '';
+  };
+
+  return {
+    bankName,
+    accountName: extract('ชื่อบัญชี', ['เลขที่บัญชี', 'สาขา']),
+    accountNumber: extract('เลขที่บัญชี', ['สาขา']),
+    branch: extract('สาขา', []),
+  };
+};
+
 export default async function DormSettingsPage() {
   let config: Awaited<ReturnType<typeof api.getDormConfig>> = null;
   let extra: DormExtra = {};
@@ -17,6 +58,11 @@ export default async function DormSettingsPage() {
     config = null;
     extra = {};
   }
+  const bankAccountRaw = (config?.bankAccount || '').trim();
+  const parsedBank = parseBankAccount(bankAccountRaw);
+  const hasCustomBank =
+    parsedBank.bankName &&
+    !bankOptions.some((opt) => opt.value === parsedBank.bankName);
   return (
     <div className="space-y-8 fade-in bg-gradient-to-br from-[#fffbf7] to-[#f5ede3] min-h-screen p-4 md:p-6 rounded-2xl">
       <div className="flex justify-between items-center mb-6">
@@ -92,31 +138,43 @@ export default async function DormSettingsPage() {
                 <Label htmlFor="bankName">ชื่อธนาคาร</Label>
                 <select
                   id="bankName"
-                  defaultValue=""
+                defaultValue={parsedBank.bankName || ""}
                   className="rounded-2xl border-amber-200 w-full px-3 py-2 bg-white"
                 >
                   <option value="">-- เลือกธนาคาร --</option>
-                  <option value="กรุงเทพ">ธนาคารกรุงเทพ</option>
-                  <option value="กสิกรไทย">ธนาคารกสิกรไทย</option>
-                  <option value="ไทยพาณิชย์">ธนาคารไทยพาณิชย์</option>
-                  <option value="กรุงศรี">ธนาคารกรุงศรีอยุธยา</option>
-                  <option value="กรุงไทย">ธนาคารกรุงไทย</option>
-                  <option value="ทหารไทยธนชาต">ธนาคารทหารไทยธนชาต</option>
-                  <option value="ออมสิน">ธนาคารออมสิน</option>
-                  <option value="กยศ.">ธนาคารเพื่อการเกษตรและสหกรณ์การเกษตร</option>
+                {hasCustomBank && (
+                  <option value={parsedBank.bankName}>{parsedBank.bankName}</option>
+                )}
+                {bankOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
                 </select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bankAccountNumber">เลขที่บัญชี</Label>
-                <Input id="bankAccountNumber" className="rounded-2xl border-amber-200" />
+              <Input
+                id="bankAccountNumber"
+                defaultValue={parsedBank.accountNumber || ""}
+                className="rounded-2xl border-amber-200"
+              />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bankAccountName">ชื่อบัญชี</Label>
-                <Input id="bankAccountName" className="rounded-2xl border-amber-200" />
+              <Input
+                id="bankAccountName"
+                defaultValue={parsedBank.accountName || ""}
+                className="rounded-2xl border-amber-200"
+              />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bankBranch">สาขา</Label>
-                <Input id="bankBranch" className="rounded-2xl border-amber-200" />
+              <Input
+                id="bankBranch"
+                defaultValue={parsedBank.branch || ""}
+                className="rounded-2xl border-amber-200"
+              />
               </div>
             </div>
           </CardContent>

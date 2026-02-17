@@ -1,4 +1,9 @@
+import Link from 'next/link';
+
 export default function ReportsPage() {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
   return (
     <div className="space-y-8 fade-in">
       <div className="flex justify-between items-center mb-6">
@@ -7,6 +12,14 @@ export default function ReportsPage() {
            <p className="text-slate-500 text-sm mt-1">ภาพรวมผลประกอบการและสถิติหอพัก</p>
         </div>
         <div className="flex gap-2">
+           <Link
+             href={`/reports/dorm-summary?month=${month}&year=${year}`}
+             target="_blank"
+             rel="noopener noreferrer"
+             className="px-6 py-2 rounded-full bg-[#f5a987] text-white font-medium hover:bg-[#e09b7d]"
+           >
+             รายงานแยกหอ
+           </Link>
            <select className="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#f5a987]">
              <option>ปี 2567</option>
              <option>ปี 2566</option>

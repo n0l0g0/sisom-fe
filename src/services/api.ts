@@ -193,6 +193,11 @@ export interface Asset {
   updatedAt: string;
 }
 
+export interface RoomGalleryItem {
+  filename: string;
+  url: string;
+}
+
 export interface CreateAsset {
   roomId: string;
   name: string;
@@ -333,6 +338,22 @@ export const api = {
     return (data?.contacts || []) as RoomContact[];
   },
 
+  unlinkRichMenu: async (
+    userId: string,
+    fallbackTo: 'GENERAL' | 'TENANT' | 'ADMIN' = 'GENERAL',
+  ): Promise<{ ok: boolean }> => {
+    const res = await fetch(`${API_URL}/line/richmenu/unlink`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, fallbackTo }),
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new Error(txt || 'Failed to unlink rich menu');
+    }
+    return res.json();
+  },
+
   deleteRoomContact: async (
     roomId: string,
     contactId: string,
@@ -471,6 +492,15 @@ export const api = {
     return res.json();
   },
   
+  getRoomGallery: async (): Promise<RoomGalleryItem[]> => {
+    const res = await fetch(`${API_URL}/media/rooms`, { cache: 'no-store' });
+    if (!res.ok) {
+      return [];
+    }
+    const data = await res.json().catch(() => ({}));
+    return (data?.items || []) as RoomGalleryItem[];
+  },
+  
   updateRoom: async (id: string, data: Partial<Room>): Promise<Room> => {
     const res = await fetch(`${API_URL}/rooms/${id}`, {
       method: 'PATCH',
@@ -539,8 +569,10 @@ export const api = {
   },
 
   // Invoices
-  getInvoices: async (roomId?: string): Promise<Invoice[]> => {
-    const url = roomId ? `${API_URL}/invoices?roomId=${roomId}` : `${API_URL}/invoices`;
+  getInvoices: async (params?: { roomId?: string, ids?: string }): Promise<Invoice[]> => {
+    let url = `${API_URL}/invoices?`;
+    if (params?.roomId) url += `roomId=${params.roomId}&`;
+    if (params?.ids) url += `ids=${params.ids}&`;
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch invoices');
     return res.json();

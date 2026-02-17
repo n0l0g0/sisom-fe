@@ -349,6 +349,7 @@ function MaintenancePageContent() {
               <table className="w-full text-sm text-left">
                 <thead className="bg-slate-50 text-slate-600 font-medium border-b">
                   <tr>
+                    <th className="px-6 py-4">ตึก</th>
                     <th className="px-6 py-4">ห้อง</th>
                     <th className="px-6 py-4">เรื่อง</th>
                     <th className="px-6 py-4">สถานะ</th>
@@ -360,22 +361,37 @@ function MaintenancePageContent() {
                 <tbody className="divide-y divide-slate-100">
                   {loading ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
+                      <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
                         กำลังโหลด...
                       </td>
                     </tr>
                   ) : filteredRequests.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
+                      <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
                         ไม่มีรายการแจ้งซ่อม
                       </td>
                     </tr>
                   ) : (
-                    pagedRequests.map((request) => (
-                      <tr key={request.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-6 py-4 font-medium text-slate-900">
-                          {request.room?.number || request.roomId}
-                        </td>
+                    pagedRequests.map((request) => {
+                      const roomFromList =
+                        rooms.find(
+                          (r) => r.id === (request.room?.id || request.roomId),
+                        ) || request.room;
+                      const buildingLabel =
+                        roomFromList?.building?.name ||
+                        roomFromList?.building?.code ||
+                        '-';
+                      return (
+                        <tr
+                          key={request.id}
+                          className="hover:bg-slate-50 transition-colors"
+                        >
+                          <td className="px-6 py-4 text-slate-600">
+                            {buildingLabel}
+                          </td>
+                          <td className="px-6 py-4 font-medium text-slate-900">
+                            {roomFromList?.number || request.roomId}
+                          </td>
                         <td className="px-6 py-4">
                           <div className="font-medium text-slate-900">{request.title}</div>
                           {request.description && (
@@ -431,7 +447,8 @@ function MaintenancePageContent() {
                           </div>
                         </td>
                       </tr>
-                    ))
+                    );
+                  })
                   )}
                 </tbody>
               </table>
@@ -503,32 +520,57 @@ function MaintenancePageContent() {
         }}
       >
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          {selectedRequest && (
-            <>
-              <DialogHeader>
-                <DialogTitle>
-                  {selectedRequest.title} - ห้อง {selectedRequest.room?.number || selectedRequest.roomId}
-                </DialogTitle>
-                <div className="text-sm text-slate-500 mt-1">
-                  สถานะ: <span className="font-medium">{selectedRequest.status}</span>{' '}
-                  • วันที่แจ้ง:{' '}
-                  {selectedRequest.createdAt
-                    ? new Date(selectedRequest.createdAt).toLocaleString('th-TH')
-                    : '-'}
-                </div>
-              </DialogHeader>
-              <div className="space-y-4 py-2">
-                <div className="space-y-1 text-sm">
-                  <div className="text-slate-500">ผู้แจ้ง</div>
-                  <div className="font-medium">{selectedRequest.reportedBy || '-'}</div>
-                </div>
+          {selectedRequest &&
+            (() => {
+              const roomFromList =
+                rooms.find(
+                  (r) => r.id === (selectedRequest.room?.id || selectedRequest.roomId),
+                ) || selectedRequest.room;
+              const buildingLabel =
+                roomFromList?.building?.name ||
+                roomFromList?.building?.code ||
+                '';
+              const roomLabel = roomFromList?.number || selectedRequest.roomId;
+              return (
+                <>
+                  <DialogHeader>
+                    <DialogTitle>
+                      {selectedRequest.title} -{' '}
+                      {buildingLabel
+                        ? `${buildingLabel} · ห้อง ${roomLabel}`
+                        : `ห้อง ${roomLabel}`}
+                    </DialogTitle>
+                    <div className="text-sm text-slate-500 mt-1">
+                      สถานะ:{' '}
+                      <span className="font-medium">{selectedRequest.status}</span>{' '}
+                      • วันที่แจ้ง:{' '}
+                      {selectedRequest.createdAt
+                        ? new Date(selectedRequest.createdAt).toLocaleString('th-TH')
+                        : '-'}
+                    </div>
+                  </DialogHeader>
+                  <div className="space-y-4 py-2">
+                    <div className="space-y-1 text-sm">
+                      <div className="text-slate-500">ห้อง</div>
+                      <div className="font-medium">
+                        {buildingLabel
+                          ? `${buildingLabel} • ห้อง ${roomLabel}`
+                          : `ห้อง ${roomLabel}`}
+                      </div>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <div className="text-slate-500">ผู้แจ้ง</div>
+                      <div className="font-medium">
+                        {selectedRequest.reportedBy || '-'}
+                      </div>
+                    </div>
                 {(() => {
                   const parsed = parseMoveOutDescription(selectedRequest.description);
                   if (parsed.isMoveOut) {
                     return (
                       <div className="space-y-4">
                         <div className="space-y-1 text-sm">
-                          <div className="text-slate-500">ข้อมูลการย้ายออก</div>
+                          <div className="text-slate-500">ข้อมูล</div>
                           <div className="font-medium">
                             ผู้เช่า: {parsed.tenantName || '-'}
                           </div>
@@ -651,7 +693,8 @@ function MaintenancePageContent() {
                 })()}
               </div>
             </>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>

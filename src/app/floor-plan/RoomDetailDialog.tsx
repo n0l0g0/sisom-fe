@@ -103,6 +103,13 @@ export default function RoomDetailDialog({ room, children }: Props) {
   const [editDeposit, setEditDeposit] = useState<string>('');
   const [savingContractInfo, setSavingContractInfo] = useState(false);
 
+  const computeDepositForRent = (rentValue?: string | number) => {
+    const r = Number(rentValue ?? tenantRent);
+    if (!Number.isFinite(r) || r <= 0) return;
+    if (r === 3000) setTenantDeposit('3000');
+    else setTenantDeposit('1000');
+  };
+
   const outstandingInvoices = invoices.filter(inv => inv.status !== 'PAID' && inv.status !== 'CANCELLED');
   const outstandingTotal = outstandingInvoices.reduce((sum, inv) => sum + Number(inv.totalAmount || 0), 0);
 
@@ -115,10 +122,14 @@ export default function RoomDetailDialog({ room, children }: Props) {
       setTenantAddress('');
       setTenantStartDate(new Date().toISOString().split('T')[0]);
       setTenantRent(room.pricePerMonth !== undefined ? String(room.pricePerMonth) : '');
-      setTenantDeposit('5000');
+      computeDepositForRent(room.pricePerMonth);
       setTenantOccupantCount('1');
     }
   }, [tenantDialogOpen, room.id, room.pricePerMonth]);
+
+  useEffect(() => {
+    computeDepositForRent(tenantRent);
+  }, [tenantRent]);
 
   const activeContract = room.contracts?.find(c => c.isActive);
 

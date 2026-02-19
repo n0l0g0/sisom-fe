@@ -82,6 +82,36 @@ function BillsPageContent() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    let timer: any;
+    const refetch = async () => {
+      if (cancelled) return;
+      try {
+        const [invoicesRes, roomsRes] = await Promise.all([
+          api.getInvoices(),
+          api.getRooms(),
+        ]);
+        if (cancelled) return;
+        setInvoices(invoicesRes);
+        setRooms(roomsRes);
+      } catch {}
+    };
+    const onFocus = () => refetch();
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refetch();
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+    timer = setInterval(refetch, 8000);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+      if (timer) clearInterval(timer);
+    };
+  }, []);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMonthKey, setSelectedMonthKey] = useState<string | null>(null);
 

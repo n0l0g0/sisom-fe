@@ -20,7 +20,7 @@ export default function SendAllBar({
      }
      return Array.from(set).sort().reverse();
    }, [invoices]);
-   const [selected, setSelected] = useState<string | null>(monthKeys[0] || null);
+   const [selected, setSelected] = useState<string | null>(null);
    const thai = [
      'มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
      'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'
@@ -32,9 +32,8 @@ export default function SendAllBar({
     if (!selected && monthKeys[0]) {
       const value = monthKeys[0];
       setSelected(value);
-      if (onMonthChange) onMonthChange(value);
     }
-  }, [monthKeys, selected, onMonthChange]);
+  }, [monthKeys, selected]);
 
   const sendAll = async () => {
     if (!selected || loading) return;

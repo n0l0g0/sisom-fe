@@ -635,6 +635,33 @@ export const api = {
     if (!res.ok) throw new Error('Failed to delete invoice item');
   },
 
+  // Payment Schedule per Room
+  getRoomPaymentSchedule: async (roomId: string): Promise<{ monthlyDay?: number; oneTimeDate?: string } | null> => {
+    const res = await fetch(`${API_URL}/rooms/${roomId}/payment-schedule`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => ({}));
+    return (data?.schedule || null) as { monthlyDay?: number; oneTimeDate?: string } | null;
+  },
+  setRoomPaymentSchedule: async (
+    roomId: string,
+    payload: { date: string; monthly: boolean },
+  ): Promise<{ monthlyDay?: number; oneTimeDate?: string } | null> => {
+    const res = await fetch(`${API_URL}/rooms/${roomId}/payment-schedule`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to set payment schedule');
+    const data = await res.json().catch(() => ({}));
+    return (data?.schedule || null) as { monthlyDay?: number; oneTimeDate?: string } | null;
+  },
+  getRoomPaymentSchedules: async (): Promise<Record<string, { monthlyDay?: number; oneTimeDate?: string }>> => {
+    const res = await fetch(`${API_URL}/rooms/payment-schedules`, { cache: 'no-store' });
+    if (!res.ok) return {};
+    const data = await res.json().catch(() => ({}));
+    return (data?.schedules || {}) as Record<string, { monthlyDay?: number; oneTimeDate?: string }>;
+  },
+
   // Settings
   getDormConfig: async (): Promise<DormConfig | null> => {
     const res = await fetch(`${API_URL}/settings/dorm-config`, { cache: 'no-store' });

@@ -24,6 +24,8 @@ import { Button } from "@/components/ui/button";
   const [discount, setDiscount] = useState('');
   const [currentMR, setCurrentMR] = useState<MeterReading | null>(null);
   const [prevMR, setPrevMR] = useState<MeterReading | null>(null);
+  const [scheduleDate, setScheduleDate] = useState<string>('');
+  const [scheduleMonthly, setScheduleMonthly] = useState<boolean>(false);
  
   const canSend = invoice.status !== 'PAID' && invoice.status !== 'CANCELLED';
   const canEdit = invoice.status === 'SENT' || invoice.status === 'DRAFT';
@@ -61,6 +63,18 @@ import { Button } from "@/components/ui/button";
         }
         const prevList = await api.getMeterReadings(roomId, pm, py);
         setPrevMR(prevList[0] || null);
+        const schedule = await api.getRoomPaymentSchedule(roomId);
+        if (schedule?.oneTimeDate) {
+          setScheduleDate(schedule.oneTimeDate.slice(0, 10));
+          setScheduleMonthly(false);
+        } else if (typeof schedule?.monthlyDay === 'number') {
+          const d = new Date(data.year, data.month - 1, Math.max(1, Math.min(28, schedule.monthlyDay || 1)));
+          setScheduleDate(new Date(d.getFullYear(), d.getMonth(), schedule.monthlyDay || 1).toISOString().slice(0, 10));
+          setScheduleMonthly(true);
+        } else {
+          setScheduleDate('');
+          setScheduleMonthly(false);
+        }
       }
     } catch (e) {
       alert('โหลดบิลไม่สำเร็จ');
@@ -114,6 +128,24 @@ import { Button } from "@/components/ui/button";
       router.refresh();
     } catch {
       alert('บันทึกส่วนลดไม่สำเร็จ');
+    }
+  };
+
+  const saveSchedule = async () => {
+    if (!detail) return;
+    const roomId = detail.contract?.room?.id;
+    if (!roomId) return;
+    const dateStr = (scheduleDate || '').trim();
+    if (!dateStr) {
+      alert('กรุณาเลือกวันที่นัดจ่าย');
+      return;
+    }
+    try {
+      await api.setRoomPaymentSchedule(roomId, { date: dateStr, monthly: scheduleMonthly });
+      router.refresh();
+      alert('บันทึกวันนัดจ่ายเรียบร้อย');
+    } catch (e) {
+      alert((e as Error).message || 'บันทึกวันนัดจ่ายไม่สำเร็จ');
     }
   };
 
@@ -219,6 +251,31 @@ import { Button } from "@/components/ui/button";
                   <div className="space-y-1">
                     <div className="text-sm text-slate-500">ยอดรวม</div>
                     <div className="font-semibold text-slate-800">฿{Number(detail.totalAmount).toLocaleString()}</div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-700">นัดวันจ่าย</div>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      type="date"
+                      value={scheduleDate}
+                      onChange={(e) => setScheduleDate(e.target.value)}
+                      className="w-48"
+                    />
+                    <label className="flex items-center gap-2 text-sm text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={scheduleMonthly}
+                        onChange={(e) => setScheduleMonthly(e.target.checked)}
+                      />
+                      นัดวันนี้ของทุกเดือน
+                    </label>
+                    <Button onClick={saveSchedule} className="bg-[#f5a987] hover:opacity-90 text-white">
+                      บันทึกวันนัด
+                    </Button>
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    ถ้าไม่ติ๊ก จะนัดครั้งเดียวสำหรับบิลนี้
                   </div>
                 </div>
                 <div className="space-y-2">

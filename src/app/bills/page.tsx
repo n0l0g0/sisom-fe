@@ -187,6 +187,38 @@ function BillsPageContent() {
     return filteredInvoices.slice(start, start + pageSize);
   }, [page, pageSize, filteredInvoices]);
 
+  const [schedules, setSchedules] = useState<Record<string, { monthlyDay?: number; oneTimeDate?: string }>>({});
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const data = await api.getRoomPaymentSchedules();
+        if (cancelled) return;
+        setSchedules(data);
+      } catch {}
+    };
+    run();
+  }, []);
+
+  const formatScheduleDate = (bill: Invoice) => {
+    const roomId = bill.contract?.room?.id;
+    if (!roomId) return '-';
+    const s = schedules[roomId];
+    if (!s) return '-';
+    if (typeof s.monthlyDay === 'number') {
+      const day = Math.max(1, Math.min(28, Number(s.monthlyDay)));
+      const d = new Date(bill.year, bill.month - 1, day);
+      return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    if (s.oneTimeDate) {
+      const d = new Date(s.oneTimeDate);
+      if (d.getFullYear() === bill.year && d.getMonth() === bill.month - 1) {
+        return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+    }
+    return '-';
+  };
+
   const currentRangeText = useMemo(() => {
     if (filteredInvoices.length === 0) return '0-0 จาก 0';
     const start = (page - 1) * pageSize + 1;
@@ -317,6 +349,7 @@ function BillsPageContent() {
                   <th className="px-6 py-4 font-semibold text-[#8b5a3c]">ห้อง</th>
                   <th className="px-6 py-4 font-semibold text-[#8b5a3c]">ผู้เช่า</th>
                   <th className="px-6 py-4 font-semibold text-[#8b5a3c]">ประจำเดือน</th>
+                  <th className="px-6 py-4 font-semibold text-[#8b5a3c]">วันนัดจ่าย</th>
                   <th className="px-6 py-4 font-semibold text-[#8b5a3c] text-right">ยอดรวม</th>
                   <th className="px-6 py-4 font-semibold text-[#8b5a3c] text-center">สถานะ</th>
                   <th className="px-6 py-4 font-semibold text-[#8b5a3c] text-center">จัดการ</th>
@@ -363,6 +396,9 @@ function BillsPageContent() {
                             'th-TH',
                             { month: 'long', year: 'numeric' },
                           )}
+                        </td>
+                        <td className="px-6 py-4 text-slate-600">
+                          {formatScheduleDate(bill)}
                         </td>
                         <td className="px-6 py-4 text-right font-mono text-slate-700">
                           ฿{Number(bill.totalAmount).toLocaleString()}

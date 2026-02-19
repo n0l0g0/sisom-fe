@@ -375,16 +375,16 @@ import { Button } from "@/components/ui/button";
             ) : (
               <div className="text-center text-slate-500 py-8">กำลังโหลด...</div>
             )}
-            <DialogFooter>
-              <div className="w-full flex justify-between items-center">
+            <div className="w-full flex justify-between items-center px-1 pb-3">
+              <div className="flex-1 text-right">
                 <Button
-                  variant="destructive"
-                  onClick={cancelInvoice}
-                  className="bg-red-600 hover:bg-red-700"
+                  onClick={() => setOpen(false)}
+                  className="bg-slate-200 text-slate-700 hover:bg-slate-300"
                 >
-                  ยกเลิกบิล
+                  ปิดหน้าต่าง
                 </Button>
-                <div className="flex gap-2">
+              </div>
+              <div className="flex gap-2">
                   <Button
                     onClick={async () => {
                       if (!detail) return;
@@ -427,6 +427,15 @@ import { Button } from "@/components/ui/button";
                     ส่งบิล
                   </Button>
                 </div>
+            </div>
+            <DialogFooter>
+              <div className="w-full flex justify-start">
+                <Button
+                  onClick={cancelInvoice}
+                  className="bg-[#8b5a3c] hover:bg-[#7a4f36] text-white"
+                >
+                  ยกเลิกบิล
+                </Button>
               </div>
             </DialogFooter>
           </DialogContent>

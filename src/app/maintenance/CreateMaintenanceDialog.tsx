@@ -46,7 +46,7 @@ export function CreateMaintenanceDialog({ rooms }: CreateMaintenanceDialogProps)
   const roomLabel = (room: Room) => {
     const buildingLabel = room.building?.name || room.building?.code;
     if (buildingLabel) {
-      return `ตึก ${buildingLabel} • ห้อง ${room.number} (ชั้น ${room.floor})`;
+      return `${buildingLabel} • ห้อง ${room.number} (ชั้น ${room.floor})`;
     }
     return `ห้อง ${room.number} (ชั้น ${room.floor})`;
   };

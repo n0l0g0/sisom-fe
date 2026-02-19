@@ -345,7 +345,7 @@ function MaintenancePageContent() {
       <Card className="border-none shadow-none bg-white/50 backdrop-blur-sm">
         <CardContent className="p-0">
           <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto hidden md:block">
               <table className="w-full text-sm text-left">
                 <thead className="bg-slate-50 text-slate-600 font-medium border-b">
                   <tr>
@@ -460,6 +460,111 @@ function MaintenancePageContent() {
                   )}
                 </tbody>
               </table>
+            </div>
+            <div className="md:hidden">
+              {loading ? (
+                <div className="px-4 py-8 text-center text-slate-500">กำลังโหลด...</div>
+              ) : filteredRequests.length === 0 ? (
+                <div className="px-4 py-8 text-center text-slate-500">ไม่มีรายการแจ้งซ่อม</div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {pagedRequests.map((request) => {
+                    const roomFromList =
+                      rooms.find(
+                        (r) => r.id === (request.room?.id || request.roomId),
+                      ) || request.room;
+                    const buildingLabel =
+                      roomFromList?.building?.name ||
+                      roomFromList?.building?.code ||
+                      '';
+                    const roomLabel = roomFromList?.number || request.roomId;
+                    return (
+                      <div key={request.id} className="p-4 space-y-2">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-slate-900 font-semibold">
+                              {request.title}
+                            </div>
+                            {request.description && (
+                              <div className="text-slate-500 text-xs line-clamp-2">
+                                {request.description}
+                              </div>
+                            )}
+                            <div className="text-xs text-slate-600 mt-1">
+                              {buildingLabel
+                                ? `${buildingLabel} • ห้อง ${roomLabel}`
+                                : `ห้อง ${roomLabel}`}
+                            </div>
+                            <div className="text-xs text-slate-600">
+                              ผู้แจ้ง: {request.reportedBy || '-'}
+                            </div>
+                          </div>
+                          <MaintenanceStatusBadge status={request.status} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
+                          <div>
+                            <div className="text-slate-500">วันที่แจ้ง</div>
+                            <div className="font-medium">
+                              {request.createdAt
+                                ? new Date(request.createdAt).toLocaleString('th-TH', {
+                                    dateStyle: 'short',
+                                    timeStyle: 'short',
+                                  })
+                                : '-'}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-slate-500">วันที่เสร็จงาน</div>
+                            <div className="font-medium">
+                              {request.status === 'COMPLETED' && request.resolvedAt
+                                ? new Date(request.resolvedAt).toLocaleString('th-TH', {
+                                    dateStyle: 'short',
+                                    timeStyle: 'short',
+                                  })
+                                : '-'}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-3 text-xs"
+                            onClick={() => setSelectedRequest(request)}
+                          >
+                            ดู
+                          </Button>
+                          <select
+                            className="text-xs border rounded px-2 py-1 bg-white flex-1"
+                            value={request.status}
+                            onChange={(e) =>
+                              handleStatusUpdate(
+                                request.id,
+                                e.target.value as MaintenanceRequest['status'],
+                              )
+                            }
+                            disabled={actionLoading}
+                          >
+                            <option value="PENDING">รอดำเนินการ</option>
+                            <option value="IN_PROGRESS">กำลังดำเนินการ</option>
+                            <option value="COMPLETED">เสร็จสิ้น</option>
+                            <option value="CANCELLED">ยกเลิก</option>
+                          </select>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="h-8 px-3 text-xs"
+                            onClick={() => handleDelete(request.id)}
+                            disabled={actionLoading}
+                          >
+                            ลบ
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </CardContent>

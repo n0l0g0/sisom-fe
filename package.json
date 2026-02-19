@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "deploy:docker": "docker-compose build frontend && docker-compose up -d frontend",
+    "postdeploy:docker": "git add . && git commit -m \"chore(deploy): auto commit after docker deploy (FE)\" || true && git push origin main"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

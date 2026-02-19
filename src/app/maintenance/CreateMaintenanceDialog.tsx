@@ -25,6 +25,32 @@ export function CreateMaintenanceDialog({ rooms }: CreateMaintenanceDialogProps)
     reportedBy: ''
   });
 
+  const sortedRooms = [...rooms].sort((a, b) => {
+    const nameA = (a.building?.name || a.building?.code || '').trim();
+    const nameB = (b.building?.name || b.building?.code || '').trim();
+    const isBanNoiA = /บ้านน้อย/.test(nameA);
+    const isBanNoiB = /บ้านน้อย/.test(nameB);
+    if (isBanNoiA !== isBanNoiB) {
+      return isBanNoiA ? 1 : -1;
+    }
+    const buildingCmp = nameA.localeCompare(nameB, 'th');
+    if (buildingCmp !== 0) return buildingCmp;
+    const numA = parseInt(String(a.number).replace(/\D+/g, ''), 10);
+    const numB = parseInt(String(b.number).replace(/\D+/g, ''), 10);
+    const validA = Number.isFinite(numA) ? numA : Infinity;
+    const validB = Number.isFinite(numB) ? numB : Infinity;
+    if (validA !== validB) return validA - validB;
+    return String(a.number).localeCompare(String(b.number), 'th');
+  });
+
+  const roomLabel = (room: Room) => {
+    const buildingLabel = room.building?.name || room.building?.code;
+    if (buildingLabel) {
+      return `ตึก ${buildingLabel} • ห้อง ${room.number} (ชั้น ${room.floor})`;
+    }
+    return `ห้อง ${room.number} (ชั้น ${room.floor})`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -68,9 +94,9 @@ export function CreateMaintenanceDialog({ rooms }: CreateMaintenanceDialogProps)
                 <SelectValue placeholder="เลือกห้อง" />
               </SelectTrigger>
               <SelectContent>
-                {rooms.map((room) => (
+                {sortedRooms.map((room) => (
                   <SelectItem key={room.id} value={room.id}>
-                    ห้อง {room.number} (ชั้น {room.floor})
+                    {roomLabel(room)}
                   </SelectItem>
                 ))}
               </SelectContent>

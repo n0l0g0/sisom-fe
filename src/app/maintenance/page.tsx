@@ -408,11 +408,13 @@ function MaintenancePageContent() {
                           {request.reportedBy || '-'}
                         </td>
                         <td className="px-6 py-4 text-slate-600">
-                          {new Date(request.createdAt || '').toLocaleDateString('th-TH')}
+                          {request.createdAt
+                            ? new Date(request.createdAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })
+                            : '-'}
                         </td>
                         <td className="px-6 py-4 text-slate-600">
                           {request.status === 'COMPLETED' && request.resolvedAt
-                            ? new Date(request.resolvedAt).toLocaleDateString('th-TH')
+                            ? new Date(request.resolvedAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })
                             : '-'}
                         </td>
                         <td className="px-6 py-4 text-right">

@@ -355,19 +355,20 @@ function MaintenancePageContent() {
                     <th className="px-6 py-4">สถานะ</th>
                     <th className="px-6 py-4">ผู้แจ้ง</th>
                     <th className="px-6 py-4">วันที่แจ้ง</th>
+                    <th className="px-6 py-4">วันที่เสร็จงาน</th>
                     <th className="px-6 py-4 text-right">จัดการ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {loading ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
+                      <td colSpan={8} className="px-6 py-8 text-center text-slate-500">
                         กำลังโหลด...
                       </td>
                     </tr>
                   ) : filteredRequests.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
+                      <td colSpan={8} className="px-6 py-8 text-center text-slate-500">
                         ไม่มีรายการแจ้งซ่อม
                       </td>
                     </tr>
@@ -408,6 +409,11 @@ function MaintenancePageContent() {
                         </td>
                         <td className="px-6 py-4 text-slate-600">
                           {new Date(request.createdAt || '').toLocaleDateString('th-TH')}
+                        </td>
+                        <td className="px-6 py-4 text-slate-600">
+                          {request.status === 'COMPLETED' && request.resolvedAt
+                            ? new Date(request.resolvedAt).toLocaleDateString('th-TH')
+                            : '-'}
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end items-center gap-2">
@@ -546,6 +552,10 @@ function MaintenancePageContent() {
                       • วันที่แจ้ง:{' '}
                       {selectedRequest.createdAt
                         ? new Date(selectedRequest.createdAt).toLocaleString('th-TH')
+                        : '-'}
+                      {' • '}วันที่เสร็จงาน:{' '}
+                      {selectedRequest.status === 'COMPLETED' && selectedRequest.resolvedAt
+                        ? new Date(selectedRequest.resolvedAt).toLocaleString('th-TH')
                         : '-'}
                     </div>
                   </DialogHeader>

@@ -1,8 +1,9 @@
  'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { api, Invoice } from '@/services/api';
+import { useRouter } from 'next/navigation';
  
-import { useMemo, useState } from 'react';
- import { api, Invoice } from '@/services/api';
- import { useRouter } from 'next/navigation';
  
 export default function SendAllBar({
   invoices,
@@ -19,15 +20,21 @@ export default function SendAllBar({
      }
      return Array.from(set).sort().reverse();
    }, [invoices]);
-   const [selected, setSelected] = useState<string | null>(
-     monthKeys[0] || null,
-   );
+   const [selected, setSelected] = useState<string | null>(monthKeys[0] || null);
    const thai = [
      'มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
      'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'
    ];
    const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    if (!selected && monthKeys[0]) {
+      const value = monthKeys[0];
+      setSelected(value);
+      if (onMonthChange) onMonthChange(value);
+    }
+  }, [monthKeys, selected, onMonthChange]);
 
   const sendAll = async () => {
     if (!selected || loading) return;

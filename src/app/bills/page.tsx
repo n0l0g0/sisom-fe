@@ -85,16 +85,19 @@ function BillsPageContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMonthKey, setSelectedMonthKey] = useState<string | null>(null);
 
-  const filteredInvoices = useMemo(() => {
+  const monthFilteredInvoices = useMemo(() => {
     let result = invoices;
-
     if (selectedMonthKey) {
       const [yearStr, monthStr] = selectedMonthKey.split('-');
       const year = Number(yearStr);
       const month = Number(monthStr);
       result = result.filter((inv) => inv.year === year && inv.month === month);
     }
+    return result;
+  }, [invoices, selectedMonthKey]);
 
+  const filteredInvoices = useMemo(() => {
+    let result = monthFilteredInvoices;
     if (searchTerm.trim()) {
       const lower = searchTerm.toLowerCase();
       result = result.filter(
@@ -103,13 +106,38 @@ function BillsPageContent() {
           inv.contract?.tenant?.name?.toLowerCase().includes(lower),
       );
     }
-
     return result;
-  }, [invoices, searchTerm, selectedMonthKey]);
+  }, [monthFilteredInvoices, searchTerm]);
 
-  const totalPending = useMemo(() => filteredInvoices.filter(i => i.status === 'SENT' || i.status === 'DRAFT').reduce((acc, curr) => acc + Number(curr.totalAmount), 0), [filteredInvoices]);
-  const totalPaid = useMemo(() => filteredInvoices.filter(i => i.status === 'PAID').reduce((acc, curr) => acc + Number(curr.totalAmount), 0), [filteredInvoices]);
-  const totalOverdue = useMemo(() => filteredInvoices.filter(i => i.status === 'OVERDUE').reduce((acc, curr) => acc + Number(curr.totalAmount), 0), [filteredInvoices]);
+  const arrearsInvoices = useMemo(
+    () =>
+      monthFilteredInvoices.filter(
+        (i) => i.status !== 'PAID' && i.status !== 'CANCELLED',
+      ),
+    [monthFilteredInvoices],
+  );
+
+  const totalPending = useMemo(
+    () =>
+      filteredInvoices
+        .filter((i) => i.status === 'SENT' || i.status === 'DRAFT')
+        .reduce((acc, curr) => acc + Number(curr.totalAmount), 0),
+    [filteredInvoices],
+  );
+  const totalPaid = useMemo(
+    () =>
+      filteredInvoices
+        .filter((i) => i.status === 'PAID')
+        .reduce((acc, curr) => acc + Number(curr.totalAmount), 0),
+    [filteredInvoices],
+  );
+  const totalOverdue = useMemo(
+    () =>
+      filteredInvoices
+        .filter((i) => i.status === 'OVERDUE')
+        .reduce((acc, curr) => acc + Number(curr.totalAmount), 0),
+    [filteredInvoices],
+  );
 
   const totalPages = useMemo(() => {
     return Math.max(1, Math.ceil(filteredInvoices.length / pageSize));
@@ -183,6 +211,27 @@ function BillsPageContent() {
             ล้างค่า filter
           </button>
           <SendAllBar invoices={invoices} onMonthChange={setSelectedMonthKey} />
+          <button
+            type="button"
+            onClick={() => {
+              if (!selectedMonthKey) {
+                alert('กรุณาเลือกเดือนก่อนจากเมนูจัดการบิล');
+                return;
+              }
+              if (!arrearsInvoices.length) {
+                alert('ไม่มีห้องค้างชำระในเดือนที่เลือก');
+                return;
+              }
+              const ids = arrearsInvoices.map((i) => i.id).join(',');
+              const params = new URLSearchParams();
+              params.set('ids', ids);
+              params.set('month', selectedMonthKey);
+              window.open(`/bills/arrears-summary?${params.toString()}`, '_blank');
+            }}
+            className="px-3 py-2 rounded-md text-xs font-medium bg-red-600 text-white hover:bg-red-700"
+          >
+            สรุปห้องค้างชำระ ({arrearsInvoices.length})
+          </button>
           <PrintAllBar invoices={filteredInvoices} />
           <CreateInvoiceDialog
             rooms={rooms}

@@ -922,4 +922,46 @@ export const api = {
     });
     if (!res.ok) throw new Error('Failed to delete asset');
   },
+
+  // Backups
+  getBackupSchedule: async (): Promise<{ hour: number; minute?: number }> => {
+    const res = await fetch(`${API_URL}/backups/schedule`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch backup schedule');
+    return res.json();
+  },
+  setBackupSchedule: async (hour: number, minute = 0): Promise<{ hour: number; minute?: number }> => {
+    const res = await fetch(`${API_URL}/backups/schedule`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hour, minute }),
+    });
+    if (!res.ok) throw new Error('Failed to set backup schedule');
+    return res.json();
+  },
+  runBackupNow: async (): Promise<{ ok: boolean; file?: string }> => {
+    const res = await fetch(`${API_URL}/backups/run`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to run backup');
+    return res.json();
+  },
+  listBackups: async (): Promise<Array<{ name: string; size: number; mtime: string }>> => {
+    const res = await fetch(`${API_URL}/backups/files`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to list backups');
+    return res.json();
+  },
+  deleteBackup: async (name: string): Promise<{ ok: boolean }> => {
+    const res = await fetch(`${API_URL}/backups/files/${encodeURIComponent(name)}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete backup');
+    return res.json();
+  },
+  downloadBackup: (name: string) => {
+    const url = `${API_URL}/backups/files/${encodeURIComponent(name)}/download`;
+    const a = typeof document !== 'undefined' ? document.createElement('a') : null;
+    if (a) {
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  },
 };

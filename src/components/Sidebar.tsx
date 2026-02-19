@@ -102,6 +102,7 @@ const MENU_ITEMS = [
 const SETTINGS_ITEMS = [
   { id: 'settings_dorm', href: '/settings/dorm', label: 'ข้อมูลหอพัก' },
   { id: 'settings_rent', href: '/settings/rent', label: 'ค่าเช่ารายเดือน' },
+  { id: 'settings_backups', href: '/settings/backups', label: 'สำรองข้อมูล' },
   { id: 'settings_users', href: '/settings/users', label: 'จัดการผู้ใช้' },
 ];
 

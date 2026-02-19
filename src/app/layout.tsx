@@ -14,7 +14,9 @@ export default function RootLayout({
   const router = useRouter();
   const isLoginPage = pathname === '/login';
   const isPrintPage =
-    pathname.includes('/print') || pathname.startsWith('/reports/dorm-summary');
+    pathname.includes('/print') ||
+    pathname.startsWith('/reports/dorm-summary') ||
+    pathname.startsWith('/bills/arrears-summary');
   const isGalleryPage = pathname === '/gallery';
   const isMeterPage = pathname === '/meter';
   const isPublicPage = isLoginPage || isGalleryPage || isMeterPage;

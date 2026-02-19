@@ -4,6 +4,21 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
 
+const THAI_MONTHS = [
+  'มกราคม',
+  'กุมภาพันธ์',
+  'มีนาคม',
+  'เมษายน',
+  'พฤษภาคม',
+  'มิถุนายน',
+  'กรกฎาคม',
+  'สิงหาคม',
+  'กันยายน',
+  'ตุลาคม',
+  'พฤศจิกายน',
+  'ธันวาคม',
+];
+
 export const dynamic = 'force-dynamic';
 
 function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: boolean }) {
@@ -76,6 +91,24 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
     })();
   }, [userId, allowByLogin, month, year]);
 
+  function activeTenantName(roomId: string) {
+    const c = contracts.find((x) => x.roomId === roomId && x.isActive);
+    return c?.tenant?.name || '-';
+  }
+
+  function usedAmount(roomId: string, type: 'water' | 'electric') {
+    const prev = prevValues[roomId]?.[type] ?? null;
+    const cur = values[roomId]?.[type] ?? '';
+    const prevNum = prev !== null && prev !== undefined ? Number(prev) : null;
+    const curNum = cur.trim() !== '' ? Number(cur) : null;
+    if (prevNum === null || curNum === null || !Number.isFinite(prevNum) || !Number.isFinite(curNum)) return '-';
+    const diff = curNum - prevNum;
+    if (!Number.isFinite(diff)) return '-';
+    if (diff < 0) return '-';
+    const isInteger = Math.floor(diff) === diff;
+    return isInteger ? String(diff) : diff.toFixed(2);
+  }
+
   const filteredRooms = useMemo(() => {
     const byBuilding = rooms.filter((r) => !selectedBuilding || r.buildingId === selectedBuilding);
     const bySearch = search.trim()
@@ -117,8 +150,109 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
     });
   }, [filteredRooms]);
 
+  const tableRows = useMemo(() => {
+    const items: React.ReactNode[] = [
+      <tr className="bg-slate-50" key="header">
+        <th className="px-4 py-3 hidden sm:table-cell" rowSpan={2}>ตึก</th>
+        <th className="px-4 py-3 hidden sm:table-cell" rowSpan={2}>ชั้น</th>
+        <th className="px-4 py-3" rowSpan={2}>ห้อง</th>
+        <th className="px-4 py-3 text-center" colSpan={3}>มิเตอร์ไฟฟ้า</th>
+        <th className="px-4 py-3 text-center" colSpan={3}>มิเตอร์น้ำ</th>
+      </tr>,
+      <tr className="bg-slate-50" key="subheader">
+        <th className="px-4 py-2">ก่อนหน้า</th>
+        <th className="px-4 py-2">ปัจจุบัน</th>
+        <th className="px-4 py-2">ใช้ไป</th>
+        <th className="px-4 py-2">ก่อนหน้า</th>
+        <th className="px-4 py-2">ปัจจุบัน</th>
+        <th className="px-4 py-2">ใช้ไป</th>
+      </tr>
+    ];
+    sortedRooms.forEach((r, idx) => {
+      const prev = sortedRooms[idx - 1];
+      const isNewBuilding = !prev || prev.buildingId !== r.buildingId;
+      const buildingName = r.building?.name || r.building?.code || '-';
+      if (isNewBuilding) {
+        items.push(
+          <tr key={`building-${r.buildingId}`} className="bg-slate-100 sticky top-0 z-20">
+            <td colSpan={8} className="px-4 py-2 font-bold text-slate-700 text-lg pt-6">
+              {buildingName}
+            </td>
+          </tr>,
+        );
+      }
+      items.push(
+        <tr
+          key={r.id}
+          className={`border-t ${
+            idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'
+          }`}
+        >
+          <td className="px-4 py-2 hidden sm:table-cell">{r.building?.name || r.building?.code || '-'}</td>
+          <td className="px-4 py-2 hidden sm:table-cell">{Number(r.floor) || '-'}</td>
+          <td className="px-4 py-2 bg-white sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] min-w-[180px]">
+            <div className="font-medium text-slate-900">{r.number}</div>
+            <div className="text-xs text-slate-500">
+              {activeTenantName(r.id)}
+            </div>
+            <div className="text-[10px] text-slate-400 sm:hidden mt-0.5">
+              {(r.building?.name || r.building?.code || '-')}{' '}• ชั้น {Number(r.floor) || '-'}
+            </div>
+          </td>
+          <td className="px-4 py-2 border-l border-slate-100">
+            <div className="text-slate-700">{prevValues[r.id]?.electric ?? '-'}</div>
+          </td>
+          <td className="px-4 py-2 border-l border-slate-100">
+            <input
+              type="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              autoFocus={idx === 0}
+              value={values[r.id]?.electric ?? ''}
+              onChange={(e) =>
+                setValues((prev) => ({
+                  ...prev,
+                  [r.id]: { water: prev[r.id]?.water ?? '', electric: e.target.value.replace(/\D/g, '') },
+                }))
+              }
+              className="w-full border border-pink-200 rounded-lg px-3 py-2 h-10 text-center font-mono bg-pink-50 focus:bg-pink-100"
+              placeholder="0"
+            />
+          </td>
+          <td className="px-4 py-2">
+            <div className="text-slate-700">{usedAmount(r.id, 'electric')}</div>
+          </td>
+          <td className="px-4 py-2">
+            <div className="text-slate-700">{prevValues[r.id]?.water ?? '-'}</div>
+          </td>
+          <td className="px-4 py-2">
+            <input
+              type="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={values[r.id]?.water ?? ''}
+              onChange={(e) =>
+                setValues((prev) => ({
+                  ...prev,
+                  [r.id]: { water: e.target.value.replace(/\D/g, ''), electric: prev[r.id]?.electric ?? '' },
+                }))
+              }
+              className="w-full border border-blue-200 rounded-lg px-3 py-2 h-10 text-center font-mono bg-blue-50 focus:bg-blue-100"
+              placeholder="0"
+            />
+          </td>
+          <td className="px-4 py-2">
+            <div className="text-slate-700">{usedAmount(r.id, 'water')}</div>
+          </td>
+        </tr>
+      );
+    });
+    return items;
+  }, [sortedRooms, values, prevValues]);
+
   const submitAll = async () => {
     const candidates = sortedRooms.filter((r) => {
+      if (selectedBuilding && r.buildingId !== selectedBuilding) return false;
       const v = values[r.id];
       return v && v.water.trim() !== '' && v.electric.trim() !== '';
     });
@@ -178,24 +312,6 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
     }
   };
 
-  const activeTenantName = (roomId: string) => {
-    const c = contracts.find((x) => x.roomId === roomId && x.isActive);
-    return c?.tenant?.name || '-';
-  };
-
-  const usedAmount = (roomId: string, type: 'water' | 'electric') => {
-    const prev = prevValues[roomId]?.[type] ?? null;
-    const cur = values[roomId]?.[type] ?? '';
-    const prevNum = prev !== null && prev !== undefined ? Number(prev) : null;
-    const curNum = cur.trim() !== '' ? Number(cur) : null;
-    if (prevNum === null || curNum === null || !Number.isFinite(prevNum) || !Number.isFinite(curNum)) return '-';
-    const diff = curNum - prevNum;
-    if (!Number.isFinite(diff)) return '-';
-    if (diff < 0) return '-';
-    const isInteger = Math.floor(diff) === diff;
-    return isInteger ? String(diff) : diff.toFixed(2);
-  };
-
   if (loading) {
     return <div className="p-6 text-center">กำลังโหลด...</div>;
   }
@@ -211,14 +327,24 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <div className="text-sm text-slate-600">เดือน</div>
-          <input
-            type="number"
-            min={1}
-            max={12}
+          <select
             value={month}
-            onChange={(e) => setMonth(parseInt(e.target.value || '1'))}
-            className="w-full border border-slate-200 rounded-lg px-3 py-2"
-          />
+            onChange={(e) => {
+              const value = Number(e.target.value || '1');
+              if (!Number.isFinite(value) || value < 1 || value > 12) return;
+              setMonth(value);
+            }}
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white"
+          >
+            {THAI_MONTHS.map((label, idx) => {
+              const value = idx + 1;
+              return (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              );
+            })}
+          </select>
         </div>
         <div>
           <div className="text-sm text-slate-600">ปี</div>
@@ -277,83 +403,10 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
       <div className="relative overflow-x-auto rounded-xl border border-slate-200 hidden lg:block">
         <table className="w-full text-sm text-left">
           <thead>
-            <tr className="bg-slate-50">
-              <th className="px-4 py-3 hidden sm:table-cell" rowSpan={2}>ตึก</th>
-              <th className="px-4 py-3 hidden sm:table-cell" rowSpan={2}>ชั้น</th>
-              <th className="px-4 py-3" rowSpan={2}>ห้อง</th>
-              <th className="px-4 py-3 text-center" colSpan={3}>มิเตอร์ไฟฟ้า</th>
-              <th className="px-4 py-3 text-center" colSpan={3}>มิเตอร์น้ำ</th>
-            </tr>
-            <tr className="bg-slate-50">
-              <th className="px-4 py-2">ก่อนหน้า</th>
-              <th className="px-4 py-2">ปัจจุบัน</th>
-              <th className="px-4 py-2">ใช้ไป</th>
-              <th className="px-4 py-2">ก่อนหน้า</th>
-              <th className="px-4 py-2">ปัจจุบัน</th>
-              <th className="px-4 py-2">ใช้ไป</th>
-            </tr>
+            {tableRows.slice(0, 2)}
           </thead>
           <tbody>
-            {sortedRooms.map((r, idx) => (
-              <tr key={r.id} className={`border-t ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                <td className="px-4 py-2 hidden sm:table-cell">{r.building?.name || r.building?.code || '-'}</td>
-                <td className="px-4 py-2 hidden sm:table-cell">{Number(r.floor) || '-'}</td>
-                <td className="px-4 py-2 bg-white sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] min-w-[180px]">
-                  <div className="font-medium text-slate-900">{r.number}</div>
-                  <div className="text-xs text-slate-500">
-                    {activeTenantName(r.id)}
-                  </div>
-                  <div className="text-[10px] text-slate-400 sm:hidden mt-0.5">
-                    {(r.building?.name || r.building?.code || '-')}{' '}• ชั้น {Number(r.floor) || '-'}
-                  </div>
-                </td>
-                <td className="px-4 py-2">
-                  <div className="text-slate-700">{prevValues[r.id]?.electric ?? '-'}</div>
-                </td>
-                <td className="px-4 py-2">
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    autoFocus={idx === 0}
-                    value={values[r.id]?.electric ?? ''}
-                    onChange={(e) =>
-                      setValues((prev) => ({
-                        ...prev,
-                        [r.id]: { water: prev[r.id]?.water ?? '', electric: e.target.value.replace(/\D/g, '') },
-                      }))
-                    }
-                    className="w-full border border-pink-200 rounded-lg px-3 py-2 h-10 text-center font-mono bg-pink-50 focus:bg-pink-100"
-                    placeholder="0"
-                  />
-                </td>
-                <td className="px-4 py-2">
-                  <div className="text-slate-700">{usedAmount(r.id, 'electric')}</div>
-                </td>
-                <td className="px-4 py-2">
-                  <div className="text-slate-700">{prevValues[r.id]?.water ?? '-'}</div>
-                </td>
-                <td className="px-4 py-2">
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={values[r.id]?.water ?? ''}
-                    onChange={(e) =>
-                      setValues((prev) => ({
-                        ...prev,
-                        [r.id]: { water: e.target.value.replace(/\D/g, ''), electric: prev[r.id]?.electric ?? '' },
-                      }))
-                    }
-                    className="w-full border border-blue-200 rounded-lg px-3 py-2 h-10 text-center font-mono bg-blue-50 focus:bg-blue-100"
-                    placeholder="0"
-                  />
-                </td>
-                <td className="px-4 py-2">
-                  <div className="text-slate-700">{usedAmount(r.id, 'water')}</div>
-                </td>
-              </tr>
-            ))}
+            {tableRows.slice(2)}
           </tbody>
         </table>
       </div>
@@ -369,8 +422,16 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
             </tr>
           </thead>
           <tbody>
-            {sortedRooms.map((r, idx) => (
-              <tr key={r.id} className={`border-t ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+            {sortedRooms.map((r, idx) => {
+              const prev = sortedRooms[idx - 1];
+              const isNewBuilding = !prev || prev.buildingId !== r.buildingId;
+              return (
+              <tr
+                key={r.id}
+                className={`border-t ${isNewBuilding ? 'border-t-2 border-t-slate-300' : ''} ${
+                  idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'
+                }`}
+              >
                 <td className="px-4 py-2 min-w-[160px]">
                   <div className="font-medium text-slate-900">{r.number}</div>
                   <div className="text-xs text-slate-500">{activeTenantName(r.id)}</div>
@@ -411,67 +472,83 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
                   />
                 </td>
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
       </div>
       <div className="sm:hidden space-y-3">
-        {sortedRooms.map((r, idx) => (
-          <div key={r.id} className="rounded-xl border border-slate-200 bg-white p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-semibold text-slate-900">{r.number}</div>
-                <div className="text-xs text-slate-500">{activeTenantName(r.id)}</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">
+        {sortedRooms.flatMap((r, idx) => {
+          const prev = sortedRooms[idx - 1];
+          const isNewBuilding = !prev || prev.buildingId !== r.buildingId;
+          const buildingName = r.building?.name || r.building?.code || '-';
+          const items = [];
+          if (isNewBuilding) {
+            items.push(
+              <div key={`building-sm-${r.buildingId}`} className="bg-slate-200/60 rounded-lg px-3 py-2 font-semibold text-slate-800 text-base">
+                {buildingName}
+              </div>
+            );
+          }
+          items.push(
+            <div key={r.id} className="rounded-xl border border-slate-200 bg-white p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-semibold text-slate-900">{r.number}</div>
+                  <div className="text-xs text-slate-500">{activeTenantName(r.id)}</div>
+                </div>
+                <div className="text-xs text-slate-400">
                   {(r.building?.name || r.building?.code || '-')}{' '}• ชั้น {Number(r.floor) || '-'}
                 </div>
               </div>
-              <div className="text-right text-xs text-slate-500">
-                <div>ไฟก่อนหน้า: <span className="text-slate-700">{prevValues[r.id]?.electric ?? '-'}</span></div>
-                <div>น้ำก่อนหน้า: <span className="text-slate-700">{prevValues[r.id]?.water ?? '-'}</span></div>
+              <div className="grid grid-cols-2 gap-4 mt-3">
+                <div>
+                  <div className="text-sm text-slate-600">ค่าไฟ</div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-500">{prevValues[r.id]?.electric ?? '-'}</span>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoFocus={idx === 0}
+                      value={values[r.id]?.electric ?? ''}
+                      onChange={(e) =>
+                        setValues((prev) => ({
+                          ...prev,
+                          [r.id]: { water: prev[r.id]?.water ?? '', electric: e.target.value.replace(/\D/g, '') },
+                        }))
+                      }
+                      className="w-full border border-pink-200 rounded-lg px-3 py-2 h-10 text-center font-mono bg-pink-50 focus:bg-pink-100"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="text-xs text-slate-500 text-center mt-1">ใช้ไป {usedAmount(r.id, 'electric')}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-slate-600">ค่าน้ำ</div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-500">{prevValues[r.id]?.water ?? '-'}</span>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={values[r.id]?.water ?? ''}
+                      onChange={(e) =>
+                        setValues((prev) => ({
+                          ...prev,
+                          [r.id]: { water: e.target.value.replace(/\D/g, ''), electric: prev[r.id]?.electric ?? '' },
+                        }))
+                      }
+                      className="w-full border border-blue-200 rounded-lg px-3 py-2 h-10 text-center font-mono bg-blue-50 focus:bg-blue-100"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="text-xs text-slate-500 text-center mt-1">ใช้ไป {usedAmount(r.id, 'water')}</div>
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 mt-3">
-              <div>
-                <div className="text-xs text-slate-600 mb-1">ไฟปัจจุบัน</div>
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  autoFocus={idx === 0}
-                  value={values[r.id]?.electric ?? ''}
-                  onChange={(e) =>
-                    setValues((prev) => ({
-                      ...prev,
-                      [r.id]: { water: prev[r.id]?.water ?? '', electric: e.target.value.replace(/\D/g, '') },
-                    }))
-                  }
-                  className="w-full border border-pink-200 rounded-lg px-3 py-2 h-10 text-center font-mono bg-pink-50 focus:bg-pink-100"
-                  placeholder="0"
-                />
-                <div className="mt-1 text-[11px] text-slate-500">ใช้ไป: <span className="text-slate-700">{usedAmount(r.id, 'electric')}</span></div>
-              </div>
-              <div>
-                <div className="text-xs text-slate-600 mb-1">น้ำปัจจุบัน</div>
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={values[r.id]?.water ?? ''}
-                  onChange={(e) =>
-                    setValues((prev) => ({
-                      ...prev,
-                      [r.id]: { water: e.target.value.replace(/\D/g, ''), electric: prev[r.id]?.electric ?? '' },
-                    }))
-                  }
-                  className="w-full border border-blue-200 rounded-lg px-3 py-2 h-10 text-center font-mono bg-blue-50 focus:bg-blue-100"
-                  placeholder="0"
-                />
-                <div className="mt-1 text-[11px] text-slate-500">ใช้ไป: <span className="text-slate-700">{usedAmount(r.id, 'water')}</span></div>
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+          return items;
+        })}
       </div>
       <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-t border-slate-200 z-50">
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-3 flex items-center gap-3">

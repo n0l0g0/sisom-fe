@@ -122,6 +122,16 @@ export default function UserDialog({ user, open, onOpenChange, onSubmit }: UserD
       return { ...prev, permissions };
     });
   };
+  const isLineNotifyEnabled = formData.permissions.includes('line_notifications');
+  const toggleLineNotify = () => {
+    setFormData(prev => {
+      const has = prev.permissions.includes('line_notifications');
+      const permissions = has
+        ? prev.permissions.filter(p => p !== 'line_notifications')
+        : [...prev.permissions, 'line_notifications'];
+      return { ...prev, permissions };
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -248,6 +258,25 @@ export default function UserDialog({ user, open, onOpenChange, onSubmit }: UserD
               placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
             />
             <div className="text-xs text-slate-500">วาง LINE userId เพื่อยืนยันสิทธิเป็น staff/admin หรือ OWNER</div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>การแจ้งเตือนผ่าน LINE</Label>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="perm-line-notify"
+                checked={isLineNotifyEnabled}
+                onChange={toggleLineNotify}
+                className="h-4 w-4 rounded border-gray-300 text-[#f5a987] focus:ring-[#f5a987]"
+              />
+              <Label htmlFor="perm-line-notify" className="text-sm font-normal cursor-pointer">
+                รับการแจ้งเตือนทุก flow (ชำระเงิน, แจ้งซ่อม ฯลฯ)
+              </Label>
+            </div>
+            <div className="text-xs text-slate-500">
+              หากไม่ติ๊ก จะไม่ได้รับการแจ้งเตือนใดๆ ผ่าน LINE
+            </div>
           </div>
 
           <div className="space-y-2">

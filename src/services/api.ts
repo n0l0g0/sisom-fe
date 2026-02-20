@@ -991,4 +991,38 @@ export const api = {
       document.body.removeChild(a);
     }
   },
+  
+  // Activity Logs
+  getActivityLogs: async (limit = 500): Promise<Array<{
+    timestamp: string;
+    userId?: string;
+    username?: string;
+    action: string;
+    path?: string;
+    entityType?: string;
+    entityId?: string;
+    details?: any;
+  }>> => {
+    const res = await fetch(`${API_URL}/activity-logs?limit=${limit}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch activity logs');
+    const data = await res.json().catch(() => ({}));
+    return (data?.items || []) as Array<any>;
+  },
+  createActivityLog: async (payload: {
+    action: string;
+    path?: string;
+    entityType?: string;
+    entityId?: string;
+    details?: any;
+    userId?: string;
+    username?: string;
+  }): Promise<{ ok: boolean }> => {
+    const res = await fetch(`${API_URL}/activity-logs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to create activity log');
+    return res.json();
+  },
 };

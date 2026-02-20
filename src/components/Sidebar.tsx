@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { User } from '@/services/api';
+import { User, api } from '@/services/api';
 
 const MENU_ITEMS = [
   { 
@@ -94,6 +94,16 @@ const MENU_ITEMS = [
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+    )
+  },
+  { 
+    id: 'activity_logs', 
+    href: '/activity-logs', 
+    label: 'Activity logs',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-7a9 9 0 11-18 0 9 9 0 0118 0z"/>
       </svg>
     )
   },
@@ -189,6 +199,18 @@ export function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
               href={item.href} 
               title={isCollapsed ? item.label : ''}
               className={`sidebar-item w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2.5 rounded-lg ${isActive(item.href) ? 'active' : ''}`}
+              onClick={() => {
+                try {
+                  const payload = {
+                    action: 'CLICK',
+                    path: item.href,
+                    userId: currentUser?.id,
+                    username: currentUser?.username,
+                  };
+                  // fire and forget
+                  api.createActivityLog(payload).catch(() => {});
+                } catch {}
+              }}
             >
               <div className="flex-shrink-0">{item.icon}</div>
               {!isCollapsed && <span className="text-sm whitespace-nowrap">{item.label}</span>}
@@ -230,6 +252,17 @@ export function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
                       key={item.id}
                       href={item.href} 
                       className={`block px-3 py-2 rounded-lg text-sm text-white/80 hover:text-white hover:bg-white/10 ${isActive(item.href) ? 'bg-white/10 text-white' : ''}`}
+                      onClick={() => {
+                        try {
+                          const payload = {
+                            action: 'CLICK',
+                            path: item.href,
+                            userId: currentUser?.id,
+                            username: currentUser?.username,
+                          };
+                          api.createActivityLog(payload).catch(() => {});
+                        } catch {}
+                      }}
                     >
                       {item.label}
                     </Link>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { User, CreateUserDto, UpdateUserDto, api } from '@/services/api';
+import { User, CreateUserDto, UpdateUserDto, api, LineProfile } from '@/services/api';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import UserDialog from './UserDialog';
@@ -22,6 +22,7 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
     percent: number;
     breakdown: { pushText: number; pushFlex: number };
   } | null>(null);
+  const [lineNames, setLineNames] = useState<Record<string, LineProfile>>({});
 
   useEffect(() => {
     const run = async () => {
@@ -32,6 +33,23 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
     };
     run();
   }, []);
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const ids = Array.from(
+          new Set(
+            (users || [])
+              .map((u) => (u.lineUserId || '').trim())
+              .filter((s) => s.length > 0),
+          ),
+        );
+        if (ids.length === 0) return;
+        const prof = await api.getLineProfiles(ids);
+        setLineNames(prof);
+      } catch {}
+    };
+    run();
+  }, [users]);
 
   const handleMakeTenant = async (user: User) => {
     try {
@@ -199,7 +217,9 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
                 {users.map((user) => (
                   <tr key={user.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 font-medium text-slate-900">{user.username}</td>
-                    <td className="px-6 py-4 text-slate-600">{user.name || '-'}</td>
+                    <td className="px-6 py-4 text-slate-600">
+                      {user.lineUserId ? (lineNames[user.lineUserId]?.displayName || user.name || '-') : (user.name || '-')}
+                    </td>
                     <td className="px-6 py-4 text-slate-600 font-mono text-xs">{user.lineUserId || '-'}</td>
                     <td className="px-6 py-4 text-center">
                       <Badge variant="outline" className={user.role === 'OWNER' ? 'bg-purple-100 text-purple-700 border-none' : 'bg-blue-100 text-blue-700 border-none'}>

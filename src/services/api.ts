@@ -244,6 +244,10 @@ export interface RecentChat {
   altText?: string;
   timestamp: string;
 }
+export interface LineProfile {
+  displayName?: string;
+  pictureUrl?: string;
+}
 export interface LineUsage {
   month: string;
   sent: number;
@@ -409,6 +413,15 @@ export const api = {
     if (!res.ok) throw new Error('Failed to fetch recent chats');
     const data = await res.json().catch(() => ({}));
     return (data?.items || []) as RecentChat[];
+  },
+  getLineProfiles: async (userIds: string[]): Promise<Record<string, LineProfile>> => {
+    const ids = Array.from(new Set((userIds || []).map((s) => (s || '').trim()).filter((s) => s.length > 0)));
+    if (ids.length === 0) return {};
+    const query = encodeURIComponent(ids.join(','));
+    const res = await fetch(`${API_URL}/line/profiles?userIds=${query}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch LINE profiles');
+    const data = await res.json().catch(() => ({}));
+    return (data?.profiles || {}) as Record<string, LineProfile>;
   },
   getLineUsage: async (): Promise<LineUsage> => {
     const res = await fetch(`${API_URL}/line/usage`, { cache: 'no-store' });

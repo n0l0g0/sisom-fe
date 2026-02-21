@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { api, RecentChat, LineUsage } from '@/services/api';
+import { api, RecentChat, LineUsage, LineProfile } from '@/services/api';
 
 interface Props {
   chats: RecentChat[];
@@ -16,12 +16,21 @@ export default function ChatsClient({ chats, usage }: Props) {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [query, setQuery] = useState('');
+  const [names, setNames] = useState<Record<string, LineProfile>>({});
 
   useEffect(() => {
     setItems(chats);
     if (!selectedUserId && chats.length > 0) {
       setSelectedUserId(chats[0].userId);
     }
+    const run = async () => {
+      try {
+        const ids = Array.from(new Set(chats.map((c) => c.userId)));
+        const prof = await api.getLineProfiles(ids);
+        setNames(prof);
+      } catch {}
+    };
+    run();
   }, [chats]);
 
   const conversations = useMemo(() => {
@@ -40,13 +49,16 @@ export default function ChatsClient({ chats, usage }: Props) {
       ? entries.filter(
           (e) =>
             e.userId.toLowerCase().includes(query.toLowerCase()) ||
+            (names[e.userId]?.displayName || '')
+              .toLowerCase()
+              .includes(query.toLowerCase()) ||
             (e.last.text || e.last.altText || '')
               .toLowerCase()
               .includes(query.toLowerCase()),
         )
       : entries;
     return filtered;
-  }, [items, query]);
+  }, [items, query, names]);
 
   const currentMessages = useMemo(() => {
     if (!selectedUserId) return [];
@@ -103,7 +115,9 @@ export default function ChatsClient({ chats, usage }: Props) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">{icon}</span>
-                    <span className="font-semibold text-indigo-900 text-sm">{c.userId}</span>
+                    <span className="font-semibold text-indigo-900 text-sm">
+                      {names[c.userId]?.displayName || c.userId}
+                    </span>
                   </div>
                   <span className="text-xs text-indigo-700">{c.count} รายการ</span>
                 </div>
@@ -121,7 +135,7 @@ export default function ChatsClient({ chats, usage }: Props) {
           <div className="flex items-center gap-2">
             <span className="text-2xl">💬</span>
             <span className="text-sm text-indigo-900 font-semibold">
-              {selectedUserId || 'เลือกผู้ใช้เพื่อดูบทสนทนา'}
+              {selectedUserId ? (names[selectedUserId]?.displayName || selectedUserId) : 'เลือกผู้ใช้เพื่อดูบทสนทนา'}
             </span>
           </div>
           <span className="text-xs text-indigo-700 bg-indigo-200 px-2 py-1 rounded-full">

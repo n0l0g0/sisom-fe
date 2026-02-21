@@ -415,6 +415,18 @@ export const api = {
     if (!res.ok) throw new Error('Failed to fetch LINE usage');
     return res.json();
   },
+  sendLineMessage: async (userId: string, text: string): Promise<{ ok: boolean }> => {
+    const res = await fetch(`${API_URL}/line/push`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, text }),
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new Error(txt || 'Failed to send LINE message');
+    }
+    return res.json();
+  },
 
   settleInvoice: async (id: string, method: 'DEPOSIT' | 'CASH'): Promise<Invoice> => {
     const res = await fetch(`${API_URL}/invoices/${id}/settle`, {

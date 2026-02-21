@@ -1,4 +1,5 @@
 import { api } from '@/services/api';
+import ChatsClient from './ChatsClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,95 +53,8 @@ export default async function ChatsPage({
           </div>
         </div>
       </header>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-2 card-hover bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-200 rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-2xl">🗂️</span>
-            <span className="text-xs text-indigo-700 bg-indigo-200 px-2 py-1 rounded-full">ล่าสุด 50 รายการ</span>
-          </div>
-          <form method="GET" className="mb-4 grid grid-cols-1 md:grid-cols-4 gap-2">
-            <input
-              name="q"
-              defaultValue={q}
-              placeholder="ค้นหา: UID หรือข้อความ"
-              className="border rounded px-3 py-2 text-sm bg-white"
-            />
-            <select name="type" defaultValue={typeParam} className="border rounded px-3 py-2 text-sm bg-white">
-              <option value="">ทุกประเภท</option>
-              <option value="received_text">รับ (ข้อความ)</option>
-              <option value="received_image">รับ (รูปภาพ)</option>
-              <option value="sent_text">ส่ง (ข้อความ)</option>
-              <option value="sent_flex">ส่ง (Flex)</option>
-            </select>
-            <input name="from" type="date" defaultValue={from} className="border rounded px-3 py-2 text-sm bg-white" />
-            <input name="to" type="date" defaultValue={to} className="border rounded px-3 py-2 text-sm bg-white" />
-            <div className="md:col-span-4 flex items-center gap-2">
-              <button type="submit" className="px-4 py-2 rounded bg-indigo-600 text-white text-sm">กรอง</button>
-              <a href="/chats" className="px-4 py-2 rounded bg-white border text-sm">ล้างตัวกรอง</a>
-            </div>
-          </form>
-          <div className="space-y-2">
-            {filtered.length === 0 ? (
-              <p className="text-indigo-700 text-sm">ยังไม่มีรายการแชท</p>
-            ) : (
-              filtered.map((c) => {
-                const isRecv = c.type === 'received_text' || c.type === 'received_image';
-                const icon = isRecv ? '📩' : '📤';
-                const label = isRecv ? 'รับ' : 'ส่ง';
-                const content =
-                  c.type === 'received_image'
-                    ? 'รูปภาพ'
-                    : c.text
-                      ? c.text
-                      : c.altText
-                        ? c.altText
-                        : 'ข้อความ';
-                const when = new Date(c.timestamp).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
-                return (
-                  <div key={c.id} className="flex items-start gap-3 p-3 bg-white/70 rounded-xl border border-indigo-200">
-                    <div className="text-xl">{icon}</div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-indigo-900">{label}</span>
-                        <span className="text-xs text-indigo-700">{when}</span>
-                      </div>
-                      <p className="text-indigo-800 text-sm mt-1 break-words">{content}</p>
-                      <p className="text-indigo-600 text-xs mt-1">UID: {c.userId}</p>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-        <div className="card-hover bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-2xl">📈</span>
-            <span className="text-xs text-purple-700 bg-purple-200 px-2 py-1 rounded-full">จำนวนข้อความที่ส่ง</span>
-          </div>
-          {usage ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-purple-900">เดือน {usage.month}</span>
-                <span className="text-sm text-purple-900">{usage.percent}%</span>
-              </div>
-              <div className="w-full h-3 bg-purple-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-purple-400 to-purple-600 rounded-full transition-all duration-500"
-                  style={{ width: `${usage.percent}%` }}
-                />
-              </div>
-              <div className="text-purple-900 text-sm">
-                ส่งแล้ว {usage.sent.toLocaleString()} / {usage.limit.toLocaleString()} เหลือ {usage.remaining.toLocaleString()}
-              </div>
-              <div className="text-purple-800 text-xs">
-                รายละเอียด: ข้อความ {usage.breakdown.pushText?.toLocaleString?.() ?? usage.breakdown.pushText} | Flex {usage.breakdown.pushFlex?.toLocaleString?.() ?? usage.breakdown.pushFlex}
-              </div>
-            </div>
-          ) : (
-            <p className="text-purple-700 text-sm">ไม่สามารถโหลดข้อมูลการใช้งาน LINE ได้</p>
-          )}
-        </div>
+      <div>
+        <ChatsClient chats={filtered} usage={usage} />
       </div>
     </div>
   );

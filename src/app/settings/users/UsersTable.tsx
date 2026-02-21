@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { User, CreateUserDto, UpdateUserDto, api } from '@/services/api';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,24 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [usage, setUsage] = useState<{
+    month: string;
+    sent: number;
+    limit: number;
+    remaining: number;
+    percent: number;
+    breakdown: { pushText: number; pushFlex: number };
+  } | null>(null);
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const u = await api.getLineUsage();
+        setUsage(u);
+      } catch {}
+    };
+    run();
+  }, []);
 
   const handleMakeTenant = async (user: User) => {
     try {
@@ -131,6 +149,26 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
 
   return (
     <>
+      {usage && (
+        <div className="mb-4 rounded-lg border p-4 bg-white shadow-sm">
+          <div className="text-sm text-slate-700 font-medium">การส่งข้อความในเดือนนี้ ({usage.month})</div>
+          <div className="text-xs text-slate-500 mt-1">
+            ข้อความที่ส่งฟรีที่มี: {usage.sent} / {usage.limit}
+          </div>
+          <div className="w-full h-3 bg-slate-200 rounded mt-2">
+            <div
+              className="h-3 bg-emerald-500 rounded"
+              style={{ width: `${usage.percent}%` }}
+            />
+          </div>
+          <div className="text-xs text-slate-500 mt-1">
+            ข้อความเพิ่มเติมที่ส่ง: ไม่สามารถใช้ได้ในแพ็กเกจที่ใช้อยู่ขณะนี้
+          </div>
+          <div className="mt-2 text-xs text-slate-600">
+            รายละเอียด: ข้อความทั่วไป {usage.breakdown.pushText} | Flex {usage.breakdown.pushFlex}
+          </div>
+        </div>
+      )}
       <div className="flex justify-end mb-4">
         <button 
           onClick={openCreateDialog}

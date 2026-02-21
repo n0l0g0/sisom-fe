@@ -1025,4 +1025,17 @@ export const api = {
     if (!res.ok) throw new Error('Failed to create activity log');
     return res.json();
   },
+  
+  getLineUsage: async (): Promise<{
+    month: string;
+    sent: number;
+    limit: number;
+    remaining: number;
+    percent: number;
+    breakdown: { pushText: number; pushFlex: number };
+  }> => {
+    const res = await fetch(`${API_URL}/line/usage`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch LINE usage');
+    return res.json();
+  },
 };

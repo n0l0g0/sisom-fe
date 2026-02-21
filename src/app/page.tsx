@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { api, DormExtra } from '@/services/api';
+import { api, DormExtra, LineProfile } from '@/services/api';
 import DashboardRoomsList from './DashboardRoomsList';
 import type { Room, DormConfig } from '@/services/api';
 
@@ -18,6 +18,7 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
   let dormExtra = {} as DormExtra;
   let recentChats = [] as Awaited<ReturnType<typeof api.getRecentChats>>;
   let lineUsage = null as Awaited<ReturnType<typeof api.getLineUsage>> | null;
+  let lineProfiles: Record<string, LineProfile> = {};
   try {
     [rooms, invoices, buildings, dormConfig, dormExtra, recentChats, lineUsage] = await Promise.all([
       api.getRooms(),
@@ -28,6 +29,8 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
       api.getRecentChats(),
       api.getLineUsage(),
     ]);
+    const ids = Array.from(new Set(recentChats.map(c => c.userId))).filter(s => s && s.trim().length > 0);
+    lineProfiles = ids.length ? await api.getLineProfiles(ids) : {};
   } catch {
     rooms = [];
     invoices = [];
@@ -36,6 +39,7 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
     dormExtra = {};
     recentChats = [];
     lineUsage = null;
+    lineProfiles = {};
   }
   
   const occupiedRooms = rooms.filter(r => r.status === 'OCCUPIED').length;
@@ -213,7 +217,9 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
                         <span className="text-xs text-indigo-700">{when}</span>
                       </div>
                       <p className="text-indigo-800 text-sm mt-1 break-words">{content}</p>
-                      <p className="text-indigo-600 text-xs mt-1">UID: {c.userId}</p>
+                      <p className="text-indigo-600 text-xs mt-1">
+                        LINE: {lineProfiles[c.userId]?.displayName || c.userId}
+                      </p>
                     </div>
                   </div>
                 );

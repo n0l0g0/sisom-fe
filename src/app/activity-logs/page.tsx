@@ -15,6 +15,13 @@ type ActivityItem = {
   details?: any;
 };
 
+function toYMD(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export default function ActivityLogsPage() {
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -29,6 +36,20 @@ export default function ActivityLogsPage() {
   const [appliedAction, setAppliedAction] = useState<string>('');
   const [appliedStart, setAppliedStart] = useState<string>('');
   const [appliedEnd, setAppliedEnd] = useState<string>('');
+
+  useEffect(() => {
+    if (!start && !end && !appliedStart && !appliedEnd) {
+      const now = new Date();
+      const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const startStr = toYMD(prevMonthStart);
+      const endStr = toYMD(now);
+      setStart(startStr);
+      setEnd(endStr);
+      setAppliedStart(startStr);
+      setAppliedEnd(endStr);
+      setPage(1);
+    }
+  }, []);
 
   useEffect(() => {
     const run = async () => {

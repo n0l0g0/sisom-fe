@@ -94,18 +94,16 @@ export default function ActivityLogsPage() {
           <option value="UPDATE">UPDATE</option>
           <option value="DELETE">DELETE</option>
         </select>
-        <div className="flex gap-2">
+        <div className="flex gap-2 md:col-span-2">
           <input
             type="date"
-            className={`border rounded px-3 py-2 text-sm flex-1 date-input ${start ? 'has-value' : ''}`}
-            placeholder="dd/mm/yyyy"
+            className="border rounded px-3 py-2 text-sm flex-1"
             value={start}
             onChange={(e) => { setStart(e.target.value); }}
           />
           <input
             type="date"
-            className={`border rounded px-3 py-2 text-sm flex-1 date-input ${end ? 'has-value' : ''}`}
-            placeholder="dd/mm/yyyy"
+            className="border rounded px-3 py-2 text-sm flex-1"
             value={end}
             onChange={(e) => { setEnd(e.target.value); }}
           />

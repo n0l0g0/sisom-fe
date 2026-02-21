@@ -1008,6 +1008,25 @@ export const api = {
     const data = await res.json().catch(() => ({}));
     return (data?.items || []) as Array<any>;
   },
+  getActivityLogsPaged: async (params: {
+    page?: number;
+    pageSize?: number;
+    user?: string;
+    action?: string;
+    start?: string;
+    end?: string;
+  }): Promise<{ items: any[]; total: number; page: number; pageSize: number }> => {
+    const qs = new URLSearchParams();
+    if (params.page) qs.set('page', String(params.page));
+    if (params.pageSize) qs.set('pageSize', String(params.pageSize));
+    if (params.user) qs.set('user', params.user);
+    if (params.action) qs.set('action', params.action);
+    if (params.start) qs.set('start', params.start);
+    if (params.end) qs.set('end', params.end);
+    const res = await fetch(`${API_URL}/activity-logs?${qs.toString()}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch activity logs');
+    return res.json();
+  },
   createActivityLog: async (payload: {
     action: string;
     path?: string;

@@ -97,13 +97,15 @@ export default function ActivityLogsPage() {
         <div className="flex gap-2">
           <input
             type="date"
-            className="border rounded px-3 py-2 text-sm flex-1"
+            className={`border rounded px-3 py-2 text-sm flex-1 date-input ${start ? 'has-value' : ''}`}
+            placeholder="dd/mm/yyyy"
             value={start}
             onChange={(e) => { setStart(e.target.value); }}
           />
           <input
             type="date"
-            className="border rounded px-3 py-2 text-sm flex-1"
+            className={`border rounded px-3 py-2 text-sm flex-1 date-input ${end ? 'has-value' : ''}`}
+            placeholder="dd/mm/yyyy"
             value={end}
             onChange={(e) => { setEnd(e.target.value); }}
           />

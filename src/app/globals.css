@@ -136,3 +136,25 @@ body {
   background: rgba(255,255,255,0.2);
   border-left: 4px solid #fac4b0;
 }
+
+.date-input {
+  position: relative;
+}
+.date-input:not(.has-value)::before {
+  content: attr(placeholder);
+  color: var(--foreground);
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.date-input:not(.has-value)::-webkit-datetime-edit-text,
+.date-input:not(.has-value)::-webkit-datetime-edit-month-field,
+.date-input:not(.has-value)::-webkit-datetime-edit-day-field,
+.date-input:not(.has-value)::-webkit-datetime-edit-year-field {
+  color: transparent;
+}
+.date-input:focus::before {
+  content: '';
+}

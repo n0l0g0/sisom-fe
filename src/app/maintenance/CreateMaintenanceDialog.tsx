@@ -24,6 +24,7 @@ export function CreateMaintenanceDialog({ rooms }: CreateMaintenanceDialogProps)
     description: '',
     reportedBy: ''
   });
+  const [reportType, setReportType] = useState<'MAINTENANCE' | 'MOVE_OUT'>('MAINTENANCE');
 
   const sortedRooms = [...rooms].sort((a, b) => {
     const nameA = (a.building?.name || a.building?.code || '').trim();
@@ -55,7 +56,15 @@ export function CreateMaintenanceDialog({ rooms }: CreateMaintenanceDialogProps)
     e.preventDefault();
     setLoading(true);
     try {
-      await api.createMaintenanceRequest(formData);
+      const desc =
+        reportType === 'MOVE_OUT'
+          ? ['TYPE: MOVE_OUT', formData.description].filter(Boolean).join('\n')
+          : formData.description;
+      await api.createMaintenanceRequest({
+        ...formData,
+        description: desc,
+        title: formData.title || (reportType === 'MOVE_OUT' ? 'แจ้งย้ายออก' : 'แจ้งซ่อม'),
+      });
       setOpen(false);
       router.refresh();
       setFormData({
@@ -64,6 +73,7 @@ export function CreateMaintenanceDialog({ rooms }: CreateMaintenanceDialogProps)
         description: '',
         reportedBy: ''
       });
+      setReportType('MAINTENANCE');
     } catch (error) {
       console.error('Failed to create maintenance request:', error);
       alert('Failed to create maintenance request');
@@ -87,6 +97,23 @@ export function CreateMaintenanceDialog({ rooms }: CreateMaintenanceDialogProps)
           <DialogTitle className="text-[#8b5a3c]">แจ้งซ่อมใหม่</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <div className="space-y-2">
+            <Label htmlFor="type">ประเภท</Label>
+            <Select
+              value={reportType}
+              onValueChange={(value) =>
+                setReportType((value as 'MAINTENANCE' | 'MOVE_OUT') || 'MAINTENANCE')
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="เลือกประเภท" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MAINTENANCE">แจ้งซ่อม</SelectItem>
+                <SelectItem value="MOVE_OUT">แจ้งย้ายออก</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="room">ห้อง</Label>
             <Select onValueChange={(value) => setFormData({...formData, roomId: value})} required>

@@ -29,6 +29,10 @@ function parseMoveOutDescription(description?: string) {
   if (!description) return result;
   const lines = description.split('\n').map((l) => l.trim()).filter(Boolean);
   for (const line of lines) {
+    if (line.toUpperCase() === 'TYPE: MOVE_OUT') {
+      result.isMoveOut = true;
+      continue;
+    }
     if (line.toUpperCase().startsWith('WATER_IMG:')) {
       const url = line.split(':').slice(1).join(':').trim();
       if (url) result.waterImageUrl = url;

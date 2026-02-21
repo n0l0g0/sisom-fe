@@ -79,27 +79,36 @@ export default function ChatsClient({ chats, usage }: Props) {
     }
   };
 
+  const isOnline = useMemo(() => {
+    const last = currentMessages[0];
+    if (!last) return false;
+    const diff = Date.now() - new Date(last.timestamp).getTime();
+    return diff < 5 * 60 * 1000;
+  }, [currentMessages]);
+
+  const formatTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+  const getInitial = (uid: string) => {
+    const name = names[uid]?.displayName || uid;
+    const t = (name || '').trim();
+    return t[0] || '?';
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div className="card-hover bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-200 rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-2xl">📚</span>
-          <span className="text-xs text-indigo-700 bg-indigo-200 px-2 py-1 rounded-full">แชท</span>
-        </div>
+    <div className="grid grid-cols-12 gap-4">
+      <div className="col-span-12 md:col-span-4 bg-white border rounded-xl p-4">
         <div className="flex items-center gap-2 mb-3">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="ค้นหา UID/ข้อความ"
+            placeholder="Search conversations..."
             className="flex-1 border rounded px-3 py-2 text-sm bg-white"
           />
         </div>
-        <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+        <div className="space-y-1 max-h-[60vh] overflow-y-auto">
           {conversations.map((c) => {
             const active = c.userId === selectedUserId;
-            const isRecv =
-              c.last.type === 'received_text' || c.last.type === 'received_image';
-            const icon = isRecv ? '📩' : '📤';
             const preview =
               c.last.type === 'received_image'
                 ? 'รูปภาพ'
@@ -108,49 +117,58 @@ export default function ChatsClient({ chats, usage }: Props) {
               <button
                 key={c.userId}
                 onClick={() => setSelectedUserId(c.userId)}
-                className={`w-full text-left p-3 rounded-xl border transition ${
-                  active ? 'border-indigo-400 bg-white' : 'border-indigo-200 bg-white/70 hover:bg-white'
+                className={`w-full text-left px-3 py-2 rounded-lg transition ${
+                  active ? 'bg-indigo-50 border border-indigo-200' : 'hover:bg-slate-50'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{icon}</span>
-                    <span className="font-semibold text-indigo-900 text-sm">
-                      {names[c.userId]?.displayName || c.userId}
-                    </span>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-slate-300 flex items-center justify-center text-slate-700 font-semibold">
+                    {getInitial(c.userId)}
                   </div>
-                  <span className="text-xs text-indigo-700">{c.count} รายการ</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-slate-900 truncate">
+                        {names[c.userId]?.displayName || c.userId}
+                      </span>
+                      <span className="text-xs text-slate-500">{formatTime(c.last.timestamp)}</span>
+                    </div>
+                    <div className="text-xs text-slate-600 truncate">{preview}</div>
+                  </div>
                 </div>
-                <div className="text-xs text-indigo-700 mt-1 break-words">{preview}</div>
               </button>
             );
           })}
           {conversations.length === 0 && (
-            <p className="text-indigo-700 text-sm">ไม่พบรายการ</p>
+            <p className="text-slate-700 text-sm">ไม่พบรายการ</p>
           )}
         </div>
       </div>
-      <div className="md:col-span-2 card-hover bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-200 rounded-2xl p-5">
+
+      <div className="col-span-12 md:col-span-8 bg-white border rounded-xl p-4 flex flex-col">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">💬</span>
-            <span className="text-sm text-indigo-900 font-semibold">
-              {selectedUserId ? (names[selectedUserId]?.displayName || selectedUserId) : 'เลือกผู้ใช้เพื่อดูบทสนทนา'}
-            </span>
+            <div className="w-8 h-8 rounded-full bg-slate-300 flex items-center justify-center text-slate-700 font-semibold">
+              {selectedUserId ? getInitial(selectedUserId) : '?'}
+            </div>
+            <div>
+              <div className="font-semibold text-slate-900">
+                {selectedUserId ? (names[selectedUserId]?.displayName || selectedUserId) : 'เลือกผู้ใช้'}
+              </div>
+              <div className={`text-xs ${isOnline ? 'text-green-600' : 'text-slate-500'}`}>
+                {isOnline ? 'Online' : 'Offline'}
+              </div>
+            </div>
           </div>
-          <span className="text-xs text-indigo-700 bg-indigo-200 px-2 py-1 rounded-full">
-            ล่าสุด 50 รายการ
-          </span>
+          <div className="text-xs text-slate-500">ล่าสุด 50 รายการ</div>
         </div>
-        <div className="space-y-2 max-h-[45vh] overflow-y-auto">
+
+        <div className="space-y-2 flex-1 overflow-y-auto">
           {currentMessages.length === 0 ? (
-            <p className="text-indigo-700 text-sm">ยังไม่มีรายการแชท</p>
+            <p className="text-slate-700 text-sm">ยังไม่มีรายการแชท</p>
           ) : (
             currentMessages.map((c) => {
               const isRecv =
                 c.type === 'received_text' || c.type === 'received_image';
-              const icon = isRecv ? '📩' : '📤';
-              const label = isRecv ? 'รับ' : 'ส่ง';
               const content =
                 c.type === 'received_image'
                   ? 'รูปภาพ'
@@ -159,79 +177,58 @@ export default function ChatsClient({ chats, usage }: Props) {
                   : c.altText
                   ? c.altText
                   : 'ข้อความ';
-              const when = new Date(c.timestamp).toLocaleString('th-TH', {
-                timeZone: 'Asia/Bangkok',
-              });
               return (
                 <div
                   key={c.id}
-                  className={`flex items-start gap-3 p-3 rounded-xl border ${
-                    isRecv
-                      ? 'bg-white/70 border-indigo-200'
-                      : 'bg-orange-100 border-orange-200'
-                  }`}
+                  className={`w-full flex ${isRecv ? 'justify-start' : 'justify-end'}`}
                 >
-                  <div className="text-xl">{icon}</div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={`text-sm font-semibold ${
-                          isRecv ? 'text-indigo-900' : 'text-orange-900'
-                        }`}
-                      >
-                        {label}
-                      </span>
-                      <span
-                        className={`text-xs ${
-                          isRecv ? 'text-indigo-700' : 'text-orange-700'
-                        }`}
-                      >
-                        {when}
-                      </span>
+                  <div
+                    className={`max-w-[70%] px-3 py-2 rounded-2xl ${
+                      isRecv ? 'bg-slate-100 text-slate-900 rounded-tl-none' : 'bg-orange-100 text-orange-900 rounded-tr-none'
+                    }`}
+                  >
+                    <div className="text-sm break-words">{content}</div>
+                    <div className={`text-[11px] mt-1 ${isRecv ? 'text-slate-500' : 'text-orange-700'} text-right`}>
+                      {formatTime(c.timestamp)}
                     </div>
-                    <p
-                      className={`text-sm mt-1 break-words ${
-                        isRecv ? 'text-indigo-800' : 'text-orange-800'
-                      }`}
-                    >
-                      {content}
-                    </p>
                   </div>
                 </div>
               );
             })
           )}
         </div>
-        <div className="mt-4 flex items-center gap-2">
+
+        <div className="mt-4 border-t pt-3 flex items-center gap-2">
           <input
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="พิมพ์ข้อความเพื่อส่ง"
-            className="flex-1 border rounded px-3 py-2 text-sm bg-white"
+            placeholder="Type a message..."
+            className="flex-1 border rounded-full px-4 py-2 text-sm bg-white"
             disabled={!selectedUserId || sending}
           />
           <button
             onClick={send}
             disabled={!selectedUserId || sending || !message.trim()}
-            className="px-4 py-2 rounded bg-indigo-600 text-white text-sm disabled:opacity-60"
+            className="px-4 py-2 rounded-full bg-orange-500 text-white text-sm disabled:opacity-60"
             title={selectedUserId ? `ส่งหา ${selectedUserId}` : 'เลือกผู้ใช้ก่อน'}
           >
             {sending ? 'กำลังส่ง...' : 'ส่ง'}
           </button>
         </div>
+
         {usage && (
-          <div className="mt-4 pt-4 border-t border-indigo-200">
+          <div className="mt-4 pt-3 border-t">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-indigo-900">เดือน {usage.month}</span>
-              <span className="text-sm text-indigo-900">{usage.percent}%</span>
+              <span className="text-sm text-slate-900">เดือน {usage.month}</span>
+              <span className="text-sm text-slate-900">{usage.percent}%</span>
             </div>
-            <div className="w-full h-3 bg-indigo-200 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full transition-all duration-500"
+                className="h-full bg-indigo-500 rounded-full transition-all duration-500"
                 style={{ width: `${usage.percent}%` }}
               />
             </div>
-            <div className="text-indigo-900 text-sm mt-2">
+            <div className="text-slate-900 text-sm mt-2">
               ส่งแล้ว {usage.sent.toLocaleString()} / {usage.limit.toLocaleString()} เหลือ {usage.remaining.toLocaleString()}
             </div>
           </div>

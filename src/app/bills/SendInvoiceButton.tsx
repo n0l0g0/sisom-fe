@@ -287,133 +287,139 @@ import { Button } from "@/components/ui/button";
                     <div className="font-semibold text-slate-800">฿{Number(detail.totalAmount).toLocaleString()}</div>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="font-semibold text-slate-700">นัดวันจ่าย</div>
-                  <div className="flex items-center gap-3">
-                    <Input
-                      type="date"
-                      value={scheduleDate}
-                      onChange={(e) => setScheduleDate(e.target.value)}
-                      className="w-48"
-                    />
-                    <label className="flex items-center gap-2 text-sm text-slate-700">
-                      <input
-                        type="checkbox"
-                        checked={scheduleMonthly}
-                        onChange={(e) => setScheduleMonthly(e.target.checked)}
-                      />
-                      นัดวันนี้ของทุกเดือน
-                    </label>
-                    <Button onClick={saveSchedule} className="bg-[#f5a987] hover:opacity-90 text-white">
-                      บันทึกวันนัด
-                    </Button>
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    ถ้าไม่ติ๊ก จะนัดครั้งเดียวสำหรับบิลนี้
-                  </div>
-                </div>
-                <div className="space-y-2">
-                   <div className="font-semibold text-slate-700">วันที่รับชำระ</div>
-                   <div className="flex items-center gap-3">
-                     <Input
-                       type="datetime-local"
-                       value={settlePaidAt}
-                       onChange={(e) => setSettlePaidAt(e.target.value)}
-                       className="w-64"
-                     />
-                   </div>
-                 </div>
-                 <div className="space-y-2">
-                  <div className="font-semibold text-slate-700">รายละเอียดบิล</div>
-                  <div className="rounded border">
-                    <div className="flex justify-between p-2 text-sm">
-                      <div>ค่าเช่าห้อง</div>
-                      <div className="font-medium">฿{Number(detail.rentAmount).toLocaleString()}</div>
-                    </div>
-                    <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
-                      <div>เดือน {new Date(detail.year, detail.month - 1).toLocaleDateString('th-TH', { month: 'numeric', year: 'numeric' })}</div>
-                    </div>
-                    <div className="flex justify-between p-2 text-sm">
-                      <div>ค่าน้ำ (Water rate)</div>
-                      <div className="font-medium">฿{Number(detail.waterAmount).toLocaleString()}</div>
-                    </div>
-                    <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
-                      <div>
-                        {prevMR && currentMR
-                          ? `เดือน ${prevMR.month}/${prevMR.year} (${prevMR.waterReading}) → ${currentMR.month}/${currentMR.year} (${currentMR.waterReading}) = ${usage.waterUnits} ยูนิต`
-                          : 'ไม่มีข้อมูลมิเตอร์เดือนก่อน'}
-                      </div>
-                    </div>
-                    <div className="flex justify-between p-2 text-sm">
-                      <div>ค่าไฟฟ้า (Electrical rate)</div>
-                      <div className="font-medium">฿{Number(detail.electricAmount).toLocaleString()}</div>
-                    </div>
-                    <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
-                      <div>
-                        {prevMR && currentMR
-                          ? `เดือน ${prevMR.month}/${prevMR.year} (${prevMR.electricReading}) → ${currentMR.month}/${currentMR.year} (${currentMR.electricReading}) = ${usage.electricUnits} ยูนิต`
-                          : 'ไม่มีข้อมูลมิเตอร์เดือนก่อน'}
-                      </div>
-                    </div>
-                    <div className="flex justify-between p-2 text-sm border-t">
-                      <div className="font-semibold">รวมทั้งหมด</div>
-                      <div className="font-semibold">฿{Number(detail.totalAmount).toLocaleString()}</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="font-semibold text-slate-700">รายการเพิ่มเติม</div>
-                  <div className="space-y-2">
-                    {(detail.items || []).length === 0 ? (
-                      <div className="text-sm text-slate-500">ไม่มีรายการเพิ่มเติม</div>
-                    ) : (
-                      <div className="space-y-2">
-                        {detail.items!.map((it: any) => (
-                          <div key={it.id} className="flex items-center justify-between border rounded p-2">
-                            <div className="text-sm text-slate-700">{it.description}</div>
-                            <div className="flex items-center gap-3">
-                              <div className="font-mono text-sm">฿{Number(it.amount).toLocaleString()}</div>
-                              <button
-                                onClick={() => removeItem(it.id)}
-                                className="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-700"
-                              >
-                                ลบ
-                              </button>
-                            </div>
+                <div className="md:grid md:grid-cols-2 md:gap-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="font-semibold text-slate-700">รายละเอียดบิล</div>
+                      <div className="rounded border">
+                        <div className="flex justify-between p-2 text-sm">
+                          <div>ค่าเช่าห้อง</div>
+                          <div className="font-medium">฿{Number(detail.rentAmount).toLocaleString()}</div>
+                        </div>
+                        <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
+                          <div>เดือน {new Date(detail.year, detail.month - 1).toLocaleDateString('th-TH', { month: 'numeric', year: 'numeric' })}</div>
+                        </div>
+                        <div className="flex justify-between p-2 text-sm">
+                          <div>ค่าน้ำ (Water rate)</div>
+                          <div className="font-medium">฿{Number(detail.waterAmount).toLocaleString()}</div>
+                        </div>
+                        <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
+                          <div>
+                            {prevMR && currentMR
+                              ? `เดือน ${prevMR.month}/${prevMR.year} (${prevMR.waterReading}) → ${currentMR.month}/${currentMR.year} (${currentMR.waterReading}) = ${usage.waterUnits} ยูนิต`
+                              : 'ไม่มีข้อมูลมิเตอร์เดือนก่อน'}
                           </div>
-                        ))}
+                        </div>
+                        <div className="flex justify-between p-2 text-sm">
+                          <div>ค่าไฟฟ้า (Electrical rate)</div>
+                          <div className="font-medium">฿{Number(detail.electricAmount).toLocaleString()}</div>
+                        </div>
+                        <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
+                          <div>
+                            {prevMR && currentMR
+                              ? `เดือน ${prevMR.month}/${prevMR.year} (${prevMR.electricReading}) → ${currentMR.month}/${currentMR.year} (${currentMR.electricReading}) = ${usage.electricUnits} ยูนิต`
+                              : 'ไม่มีข้อมูลมิเตอร์เดือนก่อน'}
+                          </div>
+                        </div>
+                        <div className="flex justify-between p-2 text-sm border-t">
+                          <div className="font-semibold">รวมทั้งหมด</div>
+                          <div className="font-semibold">฿{Number(detail.totalAmount).toLocaleString()}</div>
+                        </div>
                       </div>
-                    )}
+                    </div>
+                    <div className="space-y-2">
+                      <div className="font-semibold text-slate-700">รายการเพิ่มเติม</div>
+                      <div className="space-y-2">
+                        {(detail.items || []).length === 0 ? (
+                          <div className="text-sm text-slate-500">ไม่มีรายการเพิ่มเติม</div>
+                        ) : (
+                          <div className="space-y-2">
+                            {detail.items!.map((it: any) => (
+                              <div key={it.id} className="flex items-center justify-between border rounded p-2">
+                                <div className="text-sm text-slate-700">{it.description}</div>
+                                <div className="flex items-center gap-3">
+                                  <div className="font-mono text-sm">฿{Number(it.amount).toLocaleString()}</div>
+                                  <button
+                                    onClick={() => removeItem(it.id)}
+                                    className="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-700"
+                                  >
+                                    ลบ
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Input
+                          placeholder="รายละเอียด"
+                          value={itemDesc}
+                          onChange={(e) => setItemDesc(e.target.value)}
+                        />
+                        <Input
+                          placeholder="จำนวนเงิน"
+                          type="number"
+                          value={itemAmount}
+                          onChange={(e) => setItemAmount(e.target.value)}
+                        />
+                        <Button onClick={addItem} className="bg-[#f5a987] hover:bg-[#e09b7d]">
+                          เพิ่มรายการ
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Input
-                      placeholder="รายละเอียด"
-                      value={itemDesc}
-                      onChange={(e) => setItemDesc(e.target.value)}
-                    />
-                    <Input
-                      placeholder="จำนวนเงิน"
-                      type="number"
-                      value={itemAmount}
-                      onChange={(e) => setItemAmount(e.target.value)}
-                    />
-                    <Button onClick={addItem} className="bg-[#f5a987] hover:bg-[#e09b7d]">
-                      เพิ่มรายการ
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="font-semibold text-slate-700">ส่วนลด</div>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      value={discount}
-                      onChange={(e) => setDiscount(e.target.value)}
-                      className="flex-1"
-                    />
-                    <Button onClick={saveDiscount} className="bg-[#f5a987] hover:bg-[#e09b7d]">
-                      บันทึกส่วนลด
-                    </Button>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="font-semibold text-slate-700">วันที่รับชำระ</div>
+                      <div className="flex items-center gap-3">
+                        <Input
+                          type="datetime-local"
+                          value={settlePaidAt}
+                          onChange={(e) => setSettlePaidAt(e.target.value)}
+                          className="w-64"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="font-semibold text-slate-700">นัดวันจ่าย</div>
+                      <div className="flex items-center gap-3">
+                        <Input
+                          type="date"
+                          value={scheduleDate}
+                          onChange={(e) => setScheduleDate(e.target.value)}
+                          className="w-48"
+                        />
+                        <label className="flex items-center gap-2 text-sm text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={scheduleMonthly}
+                            onChange={(e) => setScheduleMonthly(e.target.checked)}
+                          />
+                          นัดวันนี้ของทุกเดือน
+                        </label>
+                        <Button onClick={saveSchedule} className="bg-[#f5a987] hover:opacity-90 text-white">
+                          บันทึกวันนัด
+                        </Button>
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        ถ้าไม่ติ๊ก จะนัดครั้งเดียวสำหรับบิลนี้
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="font-semibold text-slate-700">ส่วนลด</div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={discount}
+                          onChange={(e) => setDiscount(e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button onClick={saveDiscount} className="bg-[#f5a987] hover:bg-[#e09b7d]">
+                          บันทึกส่วนลด
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
             </div>
@@ -535,59 +541,61 @@ import { Button } from "@/components/ui/button";
                     </div>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="font-semibold text-slate-700">รายละเอียดบิล</div>
-                  <div className="rounded border">
-                    <div className="flex justify-between p-2 text-sm">
-                      <div>ค่าเช่าห้อง</div>
-                      <div className="font-medium">฿{Number(detail.rentAmount).toLocaleString()}</div>
-                    </div>
-                    <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
-                      <div>เดือน {new Date(detail.year, detail.month - 1).toLocaleDateString('th-TH', { month: 'numeric', year: 'numeric' })}</div>
-                    </div>
-                    <div className="flex justify-between p-2 text-sm">
-                      <div>ค่าน้ำ</div>
-                      <div className="font-medium">฿{Number(detail.waterAmount).toLocaleString()}</div>
-                    </div>
-                    <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
-                      <div>
-                        {prevMR && currentMR
-                          ? `เดือน ${prevMR.month}/${prevMR.year} (${prevMR.waterReading}) → ${currentMR.month}/${currentMR.year} (${currentMR.waterReading}) = ${usage.waterUnits} ยูนิต`
-                          : 'ไม่มีข้อมูลมิเตอร์เดือนก่อน'}
+                <div className="md:grid md:grid-cols-2 md:gap-6">
+                  <div className="space-y-2">
+                    <div className="font-semibold text-slate-700">รายละเอียดบิล</div>
+                    <div className="rounded border">
+                      <div className="flex justify-between p-2 text-sm">
+                        <div>ค่าเช่าห้อง</div>
+                        <div className="font-medium">฿{Number(detail.rentAmount).toLocaleString()}</div>
                       </div>
-                    </div>
-                    <div className="flex justify-between p-2 text-sm">
-                      <div>ค่าไฟฟ้า</div>
-                      <div className="font-medium">฿{Number(detail.electricAmount).toLocaleString()}</div>
-                    </div>
-                    <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
-                      <div>
-                        {prevMR && currentMR
-                          ? `เดือน ${prevMR.month}/${prevMR.year} (${prevMR.electricReading}) → ${currentMR.month}/${currentMR.year} (${currentMR.electricReading}) = ${usage.electricUnits} ยูนิต`
-                          : 'ไม่มีข้อมูลมิเตอร์เดือนก่อน'}
+                      <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
+                        <div>เดือน {new Date(detail.year, detail.month - 1).toLocaleDateString('th-TH', { month: 'numeric', year: 'numeric' })}</div>
                       </div>
-                    </div>
-                    <div className="flex justify-between p-2 text-sm border-t">
-                      <div className="font-semibold">รวมทั้งหมด</div>
-                      <div className="font-semibold">฿{Number(detail.totalAmount).toLocaleString()}</div>
+                      <div className="flex justify-between p-2 text-sm">
+                        <div>ค่าน้ำ</div>
+                        <div className="font-medium">฿{Number(detail.waterAmount).toLocaleString()}</div>
+                      </div>
+                      <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
+                        <div>
+                          {prevMR && currentMR
+                            ? `เดือน ${prevMR.month}/${prevMR.year} (${prevMR.waterReading}) → ${currentMR.month}/${currentMR.year} (${currentMR.waterReading}) = ${usage.waterUnits} ยูนิต`
+                            : 'ไม่มีข้อมูลมิเตอร์เดือนก่อน'}
+                        </div>
+                      </div>
+                      <div className="flex justify-between p-2 text-sm">
+                        <div>ค่าไฟฟ้า</div>
+                        <div className="font-medium">฿{Number(detail.electricAmount).toLocaleString()}</div>
+                      </div>
+                      <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
+                        <div>
+                          {prevMR && currentMR
+                            ? `เดือน ${prevMR.month}/${prevMR.year} (${prevMR.electricReading}) → ${currentMR.month}/${currentMR.year} (${currentMR.electricReading}) = ${usage.electricUnits} ยูนิต`
+                            : 'ไม่มีข้อมูลมิเตอร์เดือนก่อน'}
+                        </div>
+                      </div>
+                      <div className="flex justify-between p-2 text-sm border-t">
+                        <div className="font-semibold">รวมทั้งหมด</div>
+                        <div className="font-semibold">฿{Number(detail.totalAmount).toLocaleString()}</div>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="font-semibold text-slate-700">รายการเพิ่มเติม</div>
                   <div className="space-y-2">
-                    {(detail.items || []).length === 0 ? (
-                      <div className="text-sm text-slate-500">ไม่มีรายการเพิ่มเติม</div>
-                    ) : (
-                      <div className="space-y-2">
-                        {detail.items!.map((it: any) => (
-                          <div key={it.id} className="flex items-center justify-between border rounded p-2">
-                            <div className="text-sm text-slate-700">{it.description}</div>
-                            <div className="font-mono text-sm">฿{Number(it.amount).toLocaleString()}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <div className="font-semibold text-slate-700">รายการเพิ่มเติม</div>
+                    <div className="space-y-2">
+                      {(detail.items || []).length === 0 ? (
+                        <div className="text-sm text-slate-500">ไม่มีรายการเพิ่มเติม</div>
+                      ) : (
+                        <div className="space-y-2">
+                          {detail.items!.map((it: any) => (
+                            <div key={it.id} className="flex items-center justify-between border rounded p-2">
+                              <div className="text-sm text-slate-700">{it.description}</div>
+                              <div className="font-mono text-sm">฿{Number(it.amount).toLocaleString()}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

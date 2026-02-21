@@ -17,6 +17,7 @@ export default function ChatsClient({ chats, usage }: Props) {
   const [sending, setSending] = useState(false);
   const [query, setQuery] = useState('');
   const [names, setNames] = useState<Record<string, LineProfile>>({});
+  const [usageState, setUsageState] = useState<LineUsage | null>(usage);
 
   useEffect(() => {
     setItems(chats);
@@ -32,6 +33,44 @@ export default function ChatsClient({ chats, usage }: Props) {
     };
     run();
   }, [chats]);
+
+  useEffect(() => {
+    let stopped = false;
+    const tick = async () => {
+      try {
+        const refreshed = await api.getRecentChats(50);
+        if (stopped) return;
+        setItems(refreshed);
+        const ids = Array.from(new Set(refreshed.map((c) => c.userId)));
+        const prof = await api.getLineProfiles(ids);
+        if (stopped) return;
+        setNames(prof);
+      } catch {}
+    };
+    tick();
+    const t = setInterval(tick, 3000);
+    return () => {
+      stopped = true;
+      clearInterval(t);
+    };
+  }, []);
+
+  useEffect(() => {
+    let stopped = false;
+    const tick = async () => {
+      try {
+        const u = await api.getLineUsage();
+        if (stopped) return;
+        setUsageState(u);
+      } catch {}
+    };
+    tick();
+    const t = setInterval(tick, 60000);
+    return () => {
+      stopped = true;
+      clearInterval(t);
+    };
+  }, []);
 
   const conversations = useMemo(() => {
     const grouped = new Map<string, RecentChat[]>();
@@ -216,20 +255,20 @@ export default function ChatsClient({ chats, usage }: Props) {
           </button>
         </div>
 
-        {usage && (
+        {usageState && (
           <div className="mt-4 pt-3 border-t">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-900">เดือน {usage.month}</span>
-              <span className="text-sm text-slate-900">{usage.percent}%</span>
+              <span className="text-sm text-slate-900">เดือน {usageState.month}</span>
+              <span className="text-sm text-slate-900">{usageState.percent}%</span>
             </div>
             <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
               <div
                 className="h-full bg-indigo-500 rounded-full transition-all duration-500"
-                style={{ width: `${usage.percent}%` }}
+                style={{ width: `${usageState.percent}%` }}
               />
             </div>
             <div className="text-slate-900 text-sm mt-2">
-              ส่งแล้ว {usage.sent.toLocaleString()} / {usage.limit.toLocaleString()} เหลือ {usage.remaining.toLocaleString()}
+              ส่งแล้ว {usageState.sent.toLocaleString()} / {usageState.limit.toLocaleString()} เหลือ {usageState.remaining.toLocaleString()}
             </div>
           </div>
         )}

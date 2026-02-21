@@ -25,13 +25,19 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
   const [lineNames, setLineNames] = useState<Record<string, LineProfile>>({});
 
   useEffect(() => {
+    let stopped = false;
     const run = async () => {
       try {
         const u = await api.getLineUsage();
-        setUsage(u);
+        if (!stopped) setUsage(u);
       } catch {}
     };
     run();
+    const t = setInterval(run, 60000);
+    return () => {
+      stopped = true;
+      clearInterval(t);
+    };
   }, []);
   useEffect(() => {
     const run = async () => {
@@ -50,6 +56,21 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
     };
     run();
   }, [users]);
+  useEffect(() => {
+    let stopped = false;
+    const tick = async () => {
+      try {
+        const list = await api.getUsers();
+        if (!stopped) setUsers(list);
+      } catch {}
+    };
+    tick();
+    const t = setInterval(tick, 5000);
+    return () => {
+      stopped = true;
+      clearInterval(t);
+    };
+  }, []);
 
   const handleMakeTenant = async (user: User) => {
     try {

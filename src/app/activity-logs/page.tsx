@@ -24,6 +24,10 @@ export default function ActivityLogsPage() {
   const [action, setAction] = useState<string>('');
   const [start, setStart] = useState<string>('');
   const [end, setEnd] = useState<string>('');
+  const [appliedUser, setAppliedUser] = useState('');
+  const [appliedAction, setAppliedAction] = useState<string>('');
+  const [appliedStart, setAppliedStart] = useState<string>('');
+  const [appliedEnd, setAppliedEnd] = useState<string>('');
 
   useEffect(() => {
     const run = async () => {
@@ -32,10 +36,10 @@ export default function ActivityLogsPage() {
         const data = await api.getActivityLogsPaged({
           page,
           pageSize,
-          user: userQuery || undefined,
-          action: action || undefined,
-          start: start || undefined,
-          end: end || undefined,
+          user: appliedUser || undefined,
+          action: appliedAction || undefined,
+          start: appliedStart || undefined,
+          end: appliedEnd || undefined,
         });
         setItems(data.items as ActivityItem[]);
         setTotal(data.total || 0);
@@ -46,7 +50,7 @@ export default function ActivityLogsPage() {
       }
     };
     run();
-  }, [page, pageSize, userQuery, action, start, end]);
+  }, [page, pageSize, appliedUser, appliedAction, appliedStart, appliedEnd]);
 
   const totalPages = useMemo(() => {
     return Math.max(1, Math.ceil(total / pageSize));
@@ -76,12 +80,12 @@ export default function ActivityLogsPage() {
           className="border rounded px-3 py-2 text-sm"
           placeholder="ค้นหาผู้ใช้ (username หรือ userId)"
           value={userQuery}
-          onChange={(e) => { setPage(1); setUserQuery(e.target.value); }}
+          onChange={(e) => { setUserQuery(e.target.value); }}
         />
         <select
           className="border rounded px-3 py-2 text-sm"
           value={action}
-          onChange={(e) => { setPage(1); setAction(e.target.value); }}
+          onChange={(e) => { setAction(e.target.value); }}
         >
           <option value="">ทุกการกระทำ</option>
           <option value="CLICK">CLICK</option>
@@ -94,35 +98,40 @@ export default function ActivityLogsPage() {
           <input
             type="date"
             className="border rounded px-3 py-2 text-sm flex-1"
-            placeholder="วันที่เริ่ม"
             value={start}
-            onChange={(e) => { setPage(1); setStart(e.target.value); }}
+            onChange={(e) => { setStart(e.target.value); }}
           />
           <input
             type="date"
             className="border rounded px-3 py-2 text-sm flex-1"
-            placeholder="ถึง"
             value={end}
-            onChange={(e) => { setPage(1); setEnd(e.target.value); }}
+            onChange={(e) => { setEnd(e.target.value); }}
           />
         </div>
         <button
           type="button"
-          onClick={() => { setUserQuery(''); setAction(''); setStart(''); setEnd(''); setPage(1); }}
+          onClick={() => { 
+            setAppliedUser(userQuery.trim()); 
+            setAppliedAction(action.trim());
+            setAppliedStart(start.trim());
+            setAppliedEnd(end.trim());
+            setPage(1);
+          }}
+          className="px-3 py-2 border rounded text-sm bg-white hover:bg-slate-50"
+        >
+          ค้นหา
+        </button>
+        <button
+          type="button"
+          onClick={() => { 
+            setUserQuery(''); setAction(''); setStart(''); setEnd(''); 
+            setAppliedUser(''); setAppliedAction(''); setAppliedStart(''); setAppliedEnd('');
+            setPage(1); 
+          }}
           className="px-3 py-2 border rounded text-sm bg-white hover:bg-slate-50"
         >
           ล้างค่า filter
         </button>
-        <select
-          className="border rounded px-3 py-2 text-sm"
-          value={pageSize}
-          onChange={(e) => { setNextPageSize(Number(e.target.value)); }}
-        >
-          <option value={10}>10 ต่อหน้า</option>
-          <option value={20}>20 ต่อหน้า</option>
-          <option value={50}>50 ต่อหน้า</option>
-          <option value={100}>100 ต่อหน้า</option>
-        </select>
       </div>
       {loading ? (
         <div>กำลังโหลด...</div>

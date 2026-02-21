@@ -18,6 +18,8 @@ export default function ChatsClient({ chats, usage }: Props) {
   const [query, setQuery] = useState('');
   const [names, setNames] = useState<Record<string, LineProfile>>({});
   const [usageState, setUsageState] = useState<LineUsage | null>(usage);
+  const [limit, setLimit] = useState<number>(50);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
 
   useEffect(() => {
     setItems(chats);
@@ -38,7 +40,7 @@ export default function ChatsClient({ chats, usage }: Props) {
     let stopped = false;
     const tick = async () => {
       try {
-        const refreshed = await api.getRecentChats(50);
+        const refreshed = await api.getRecentChats(limit);
         if (stopped) return;
         setItems(refreshed);
         const ids = Array.from(new Set(refreshed.map((c) => c.userId)));
@@ -53,7 +55,7 @@ export default function ChatsClient({ chats, usage }: Props) {
       stopped = true;
       clearInterval(t);
     };
-  }, []);
+  }, [limit]);
 
   useEffect(() => {
     let stopped = false;
@@ -101,16 +103,27 @@ export default function ChatsClient({ chats, usage }: Props) {
 
   const currentMessages = useMemo(() => {
     if (!selectedUserId) return [];
-    return items.filter((c) => c.userId === selectedUserId);
+    return items
+      .filter((c) => c.userId === selectedUserId)
+      .slice()
+      .reverse();
   }, [items, selectedUserId]);
 
   const send = async () => {
     if (!selectedUserId || !message.trim()) return;
     setSending(true);
     try {
-      await api.sendLineMessage(selectedUserId, message.trim());
+      let actor: string | undefined = undefined;
+      try {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem('sisom_user') : null;
+        if (raw) {
+          const u = JSON.parse(raw);
+          actor = (u?.username || u?.name || '').trim() || undefined;
+        }
+      } catch {}
+      await api.sendLineMessage(selectedUserId, message.trim(), actor);
       setMessage('');
-      const refreshed = await api.getRecentChats(50);
+      const refreshed = await api.getRecentChats(limit);
       setItems(refreshed);
     } catch {
     } finally {
@@ -119,7 +132,7 @@ export default function ChatsClient({ chats, usage }: Props) {
   };
 
   const isOnline = useMemo(() => {
-    const last = currentMessages[0];
+    const last = currentMessages[currentMessages.length - 1];
     if (!last) return false;
     const diff = Date.now() - new Date(last.timestamp).getTime();
     return diff < 5 * 60 * 1000;
@@ -132,6 +145,24 @@ export default function ChatsClient({ chats, usage }: Props) {
     const name = names[uid]?.displayName || uid;
     const t = (name || '').trim();
     return t[0] || '?';
+  };
+
+  const loadMore = async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const next = Math.min(500, limit + 50);
+      setLimit(next);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const onMessagesScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (el.scrollTop <= 24) {
+      loadMore().catch(() => {});
+    }
   };
 
   return (
@@ -198,10 +229,19 @@ export default function ChatsClient({ chats, usage }: Props) {
               </div>
             </div>
           </div>
-          <div className="text-xs text-slate-500">ล่าสุด 50 รายการ</div>
+          <div className="text-xs text-slate-500">ล่าสุด {limit} รายการ</div>
         </div>
 
-        <div className="space-y-2 flex-1 overflow-y-auto">
+        <div className="space-y-2 flex-1 overflow-y-auto" onScroll={onMessagesScroll}>
+          <div className="flex justify-center">
+            <button
+              onClick={loadMore}
+              disabled={loadingMore || limit >= 500}
+              className="px-3 py-1 text-xs rounded-full border bg-white hover:bg-slate-50 disabled:opacity-60"
+            >
+              {limit >= 500 ? 'โหลดครบแล้ว' : loadingMore ? 'กำลังโหลด...' : 'โหลดย้อนหลัง'}
+            </button>
+          </div>
           {currentMessages.length === 0 ? (
             <p className="text-slate-700 text-sm">ยังไม่มีรายการแชท</p>
           ) : (
@@ -227,8 +267,11 @@ export default function ChatsClient({ chats, usage }: Props) {
                     }`}
                   >
                     <div className="text-sm break-words">{content}</div>
-                    <div className={`text-[11px] mt-1 ${isRecv ? 'text-slate-500' : 'text-orange-700'} text-right`}>
-                      {formatTime(c.timestamp)}
+                    <div className={`text-[11px] mt-1 ${isRecv ? 'text-slate-500' : 'text-orange-700'} flex items-center justify-between gap-2`}>
+                      <span className="whitespace-nowrap">{formatTime(c.timestamp)}</span>
+                      {!isRecv && (
+                        <span className="whitespace-nowrap">{c.actor ? `ตอบโดย ${c.actor}` : 'ตอบโดย เจ้าหน้าที่'}</span>
+                      )}
                     </div>
                   </div>
                 </div>

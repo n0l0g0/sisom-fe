@@ -242,6 +242,7 @@ export interface RecentChat {
   type: 'received_text' | 'received_image' | 'sent_text' | 'sent_flex';
   text?: string;
   altText?: string;
+  actor?: string;
   timestamp: string;
 }
 export interface LineProfile {
@@ -428,11 +429,11 @@ export const api = {
     if (!res.ok) throw new Error('Failed to fetch LINE usage');
     return res.json();
   },
-  sendLineMessage: async (userId: string, text: string): Promise<{ ok: boolean }> => {
+  sendLineMessage: async (userId: string, text: string, actor?: string): Promise<{ ok: boolean }> => {
     const res = await fetch(`${API_URL}/line/push`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, text }),
+      body: JSON.stringify({ userId, text, actor }),
     });
     if (!res.ok) {
       const txt = await res.text().catch(() => '');

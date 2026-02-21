@@ -231,7 +231,7 @@ import { Button } from "@/components/ui/button";
           แก้ไขบิล
         </button>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="sm:max-w-[640px]">
+          <DialogContent className="sm:max-w-[900px] md:max-w-[1024px]">
             <DialogHeader>
               <DialogTitle>แก้ไขบิล</DialogTitle>
               <DialogDescription>
@@ -481,7 +481,7 @@ import { Button } from "@/components/ui/button";
           ดูข้อมูล
         </button>
         <Dialog open={open && mode === 'VIEW'} onOpenChange={setOpen}>
-          <DialogContent className="sm:max-w-[640px]">
+          <DialogContent className="sm:max-w-[900px] md:max-w-[1024px]">
             <DialogHeader>
               <DialogTitle>รายละเอียดบิล</DialogTitle>
               <DialogDescription>ข้อมูลบิลที่ชำระแล้ว</DialogDescription>

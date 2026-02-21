@@ -415,6 +415,16 @@ export const api = {
     const data = await res.json().catch(() => ({}));
     return (data?.items || []) as RecentChat[];
   },
+  getUserChats: async (userId: string, limit = 50, before?: string): Promise<RecentChat[]> => {
+    const params = new URLSearchParams();
+    params.set('userId', userId);
+    params.set('limit', String(limit));
+    if (before) params.set('before', before);
+    const res = await fetch(`${API_URL}/line/chats?${params.toString()}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch user chats');
+    const data = await res.json().catch(() => ({}));
+    return (data?.items || []) as RecentChat[];
+  },
   getLineProfiles: async (userIds: string[]): Promise<Record<string, LineProfile>> => {
     const ids = Array.from(new Set((userIds || []).map((s) => (s || '').trim()).filter((s) => s.length > 0)));
     if (ids.length === 0) return {};

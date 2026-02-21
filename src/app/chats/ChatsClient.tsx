@@ -20,6 +20,7 @@ export default function ChatsClient({ chats, usage }: Props) {
   const [usageState, setUsageState] = useState<LineUsage | null>(usage);
   const [limit, setLimit] = useState<number>(50);
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const [userMessages, setUserMessages] = useState<RecentChat[]>([]);
 
   useEffect(() => {
     setItems(chats);
@@ -56,6 +57,27 @@ export default function ChatsClient({ chats, usage }: Props) {
       clearInterval(t);
     };
   }, [limit]);
+
+  useEffect(() => {
+    let stopped = false;
+    const tick = async () => {
+      try {
+        if (!selectedUserId) {
+          setUserMessages([]);
+          return;
+        }
+        const msgs = await api.getUserChats(selectedUserId, limit);
+        if (stopped) return;
+        setUserMessages(msgs.slice().reverse());
+      } catch {}
+    };
+    tick();
+    const t = setInterval(tick, 3000);
+    return () => {
+      stopped = true;
+      clearInterval(t);
+    };
+  }, [selectedUserId, limit]);
 
   useEffect(() => {
     let stopped = false;
@@ -103,11 +125,8 @@ export default function ChatsClient({ chats, usage }: Props) {
 
   const currentMessages = useMemo(() => {
     if (!selectedUserId) return [];
-    return items
-      .filter((c) => c.userId === selectedUserId)
-      .slice()
-      .reverse();
-  }, [items, selectedUserId]);
+    return userMessages;
+  }, [userMessages, selectedUserId]);
 
   const send = async () => {
     if (!selectedUserId || !message.trim()) return;
@@ -125,6 +144,8 @@ export default function ChatsClient({ chats, usage }: Props) {
       setMessage('');
       const refreshed = await api.getRecentChats(limit);
       setItems(refreshed);
+      const msgs = await api.getUserChats(selectedUserId, limit);
+      setUserMessages(msgs.slice().reverse());
     } catch {
     } finally {
       setSending(false);

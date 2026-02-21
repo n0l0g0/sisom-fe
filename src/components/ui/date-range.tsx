@@ -61,8 +61,17 @@ export function DateRangeInput(props: {
   const startD = parseYMD(value?.start);
   const endD = parseYMD(value?.end);
 
-  const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
-  const [viewMonth, setViewMonth] = useState(() => new Date().getMonth()); // 0..11
+  const [viewYear, setViewYear] = useState(() => {
+    const now = new Date();
+    const m = now.getMonth() - 1;
+    const y = now.getFullYear();
+    return m < 0 ? y - 1 : y;
+  });
+  const [viewMonth, setViewMonth] = useState(() => {
+    const now = new Date();
+    const m = now.getMonth() - 1;
+    return m < 0 ? 11 : m;
+  });
 
   // drag selection state
   const [dragStart, setDragStart] = useState<Date | undefined>(undefined);

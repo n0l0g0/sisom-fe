@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
    const router = useRouter();
    const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<'EDIT' | 'VIEW' | null>(null);
   const [detail, setDetail] = useState<Invoice | null>(null);
   const [itemDesc, setItemDesc] = useState('');
   const [itemAmount, setItemAmount] = useState('');
@@ -29,6 +30,7 @@ import { Button } from "@/components/ui/button";
  
   const canSend = invoice.status !== 'PAID' && invoice.status !== 'CANCELLED';
   const canEdit = invoice.status === 'SENT' || invoice.status === 'DRAFT';
+  const isPaid = invoice.status === 'PAID';
  
    const doSend = async () => {
      if (!canSend || loading) return;
@@ -47,6 +49,7 @@ import { Button } from "@/components/ui/button";
     if (!canEdit) return;
     try {
       setOpen(true);
+      setMode('EDIT');
       const data = await api.getInvoice(invoice.id);
       setDetail(data);
       setDiscount('');
@@ -77,6 +80,31 @@ import { Button } from "@/components/ui/button";
         }
       }
     } catch (e) {
+      alert('โหลดบิลไม่สำเร็จ');
+      setOpen(false);
+    }
+  };
+  const openView = async () => {
+    if (!isPaid) return;
+    try {
+      setOpen(true);
+      setMode('VIEW');
+      const data = await api.getInvoice(invoice.id);
+      setDetail(data);
+      if (data.contract?.room?.id) {
+        const roomId = data.contract.room.id;
+        const list = await api.getMeterReadings(roomId, data.month, data.year);
+        setCurrentMR(list[0] || null);
+        let pm = data.month - 1;
+        let py = data.year;
+        if (pm <= 0) {
+          pm = 12;
+          py = data.year - 1;
+        }
+        const prevList = await api.getMeterReadings(roomId, pm, py);
+        setPrevMR(prevList[0] || null);
+      }
+    } catch {
       alert('โหลดบิลไม่สำเร็จ');
       setOpen(false);
     }
@@ -426,6 +454,117 @@ import { Button } from "@/components/ui/button";
                   </Button>
                 </div>
             </div>
+            <DialogFooter>
+              <div className="w-full flex justify-start">
+                <Button
+                  onClick={() => setOpen(false)}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  ปิดหน้าต่าง
+                </Button>
+              </div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
+  if (isPaid) {
+    return (
+      <>
+        <button
+          onClick={openView}
+          className="px-3 py-1 rounded-md text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200"
+          title="ดูข้อมูลบิลที่ชำระแล้ว"
+        >
+          ดูข้อมูล
+        </button>
+        <Dialog open={open && mode === 'VIEW'} onOpenChange={setOpen}>
+          <DialogContent className="sm:max-w-[640px]">
+            <DialogHeader>
+              <DialogTitle>รายละเอียดบิล</DialogTitle>
+              <DialogDescription>ข้อมูลบิลที่ชำระแล้ว</DialogDescription>
+            </DialogHeader>
+            {detail ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <div className="text-sm text-slate-500">ห้อง</div>
+                    <div className="font-semibold text-slate-800">{detail.contract?.room?.number}</div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-sm text-slate-500">ผู้เช่า</div>
+                    <div className="font-semibold text-slate-800">{detail.contract?.tenant?.name}</div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-sm text-slate-500">เดือน</div>
+                    <div className="font-semibold text-slate-800">{new Date(detail.year, detail.month - 1).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })}</div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-sm text-slate-500">ยอดรวม</div>
+                    <div className="font-semibold text-slate-800">฿{Number(detail.totalAmount).toLocaleString()}</div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-700">รายละเอียดบิล</div>
+                  <div className="rounded border">
+                    <div className="flex justify-between p-2 text-sm">
+                      <div>ค่าเช่าห้อง</div>
+                      <div className="font-medium">฿{Number(detail.rentAmount).toLocaleString()}</div>
+                    </div>
+                    <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
+                      <div>เดือน {new Date(detail.year, detail.month - 1).toLocaleDateString('th-TH', { month: 'numeric', year: 'numeric' })}</div>
+                    </div>
+                    <div className="flex justify-between p-2 text-sm">
+                      <div>ค่าน้ำ</div>
+                      <div className="font-medium">฿{Number(detail.waterAmount).toLocaleString()}</div>
+                    </div>
+                    <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
+                      <div>
+                        {prevMR && currentMR
+                          ? `เดือน ${prevMR.month}/${prevMR.year} (${prevMR.waterReading}) → ${currentMR.month}/${currentMR.year} (${currentMR.waterReading}) = ${usage.waterUnits} ยูนิต`
+                          : 'ไม่มีข้อมูลมิเตอร์เดือนก่อน'}
+                      </div>
+                    </div>
+                    <div className="flex justify-between p-2 text-sm">
+                      <div>ค่าไฟฟ้า</div>
+                      <div className="font-medium">฿{Number(detail.electricAmount).toLocaleString()}</div>
+                    </div>
+                    <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
+                      <div>
+                        {prevMR && currentMR
+                          ? `เดือน ${prevMR.month}/${prevMR.year} (${prevMR.electricReading}) → ${currentMR.month}/${currentMR.year} (${currentMR.electricReading}) = ${usage.electricUnits} ยูนิต`
+                          : 'ไม่มีข้อมูลมิเตอร์เดือนก่อน'}
+                      </div>
+                    </div>
+                    <div className="flex justify-between p-2 text-sm border-t">
+                      <div className="font-semibold">รวมทั้งหมด</div>
+                      <div className="font-semibold">฿{Number(detail.totalAmount).toLocaleString()}</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-700">รายการเพิ่มเติม</div>
+                  <div className="space-y-2">
+                    {(detail.items || []).length === 0 ? (
+                      <div className="text-sm text-slate-500">ไม่มีรายการเพิ่มเติม</div>
+                    ) : (
+                      <div className="space-y-2">
+                        {detail.items!.map((it: any) => (
+                          <div key={it.id} className="flex items-center justify-between border rounded p-2">
+                            <div className="text-sm text-slate-700">{it.description}</div>
+                            <div className="font-mono text-sm">฿{Number(it.amount).toLocaleString()}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-slate-500 py-8">กำลังโหลด...</div>
+            )}
             <DialogFooter>
               <div className="w-full flex justify-start">
                 <Button

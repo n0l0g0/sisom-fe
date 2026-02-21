@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/services/api';
+import { DateRangeInput } from '@/components/ui/date-range';
 
 type ActivityItem = {
   timestamp: string;
@@ -94,20 +95,14 @@ export default function ActivityLogsPage() {
           <option value="UPDATE">UPDATE</option>
           <option value="DELETE">DELETE</option>
         </select>
-        <div className="flex gap-2 md:col-span-2">
-          <input
-            type="date"
-            className="border rounded px-3 py-2 text-sm flex-1"
-            value={start}
-            onChange={(e) => { setStart(e.target.value); }}
-          />
-          <input
-            type="date"
-            className="border rounded px-3 py-2 text-sm flex-1"
-            value={end}
-            onChange={(e) => { setEnd(e.target.value); }}
-          />
-        </div>
+        <DateRangeInput
+          className="md:col-span-2"
+          value={{ start, end }}
+          onChange={(v) => {
+            setStart(v.start || '');
+            setEnd(v.end || '');
+          }}
+        />
         <button
           type="button"
           onClick={() => { 

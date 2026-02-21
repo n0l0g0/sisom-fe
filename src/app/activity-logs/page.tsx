@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/services/api';
 
 type ActivityItem = {
@@ -18,7 +18,7 @@ export default function ActivityLogsPage() {
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [userQuery, setUserQuery] = useState('');
   const [action, setAction] = useState<string>('');
@@ -48,10 +48,30 @@ export default function ActivityLogsPage() {
     run();
   }, [page, pageSize, userQuery, action, start, end]);
 
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(total / pageSize));
+  }, [total, pageSize]);
+  const currentRangeText = useMemo(() => {
+    if (total === 0) return '0-0 จาก 0';
+    const startIdx = (page - 1) * pageSize + 1;
+    const endIdx = Math.min(page * pageSize, total);
+    return `${startIdx}-${endIdx} จาก ${total}`;
+  }, [page, pageSize, total]);
+  const goToPage = (nextPage: number) => {
+    const p = Math.max(1, Math.min(totalPages, Math.floor(nextPage)));
+    setPage(p);
+  };
+  const setNextPageSize = (nextSize: number) => {
+    const allowed = [10, 20, 50, 100];
+    const size = allowed.includes(nextSize) ? nextSize : 10;
+    setPageSize(size);
+    setPage(1);
+  };
+
   return (
     <div className="p-4">
-      <h1 className="text-xl font-semibold mb-4">Activity Logs</h1>
-      <div className="mb-4 grid grid-cols-1 md:grid-cols-5 gap-2">
+      <h1 className="text-xl font-semibold mb-4">บันทึกกิจกรรม</h1>
+      <div className="mb-4 grid grid-cols-1 md:grid-cols-6 gap-2">
         <input
           className="border rounded px-3 py-2 text-sm"
           placeholder="ค้นหาผู้ใช้ (username หรือ userId)"
@@ -70,23 +90,35 @@ export default function ActivityLogsPage() {
           <option value="UPDATE">UPDATE</option>
           <option value="DELETE">DELETE</option>
         </select>
-        <input
-          type="date"
-          className="border rounded px-3 py-2 text-sm"
-          value={start}
-          onChange={(e) => { setPage(1); setStart(e.target.value); }}
-        />
-        <input
-          type="date"
-          className="border rounded px-3 py-2 text-sm"
-          value={end}
-          onChange={(e) => { setPage(1); setEnd(e.target.value); }}
-        />
+        <div className="flex gap-2">
+          <input
+            type="date"
+            className="border rounded px-3 py-2 text-sm flex-1"
+            placeholder="วันที่เริ่ม"
+            value={start}
+            onChange={(e) => { setPage(1); setStart(e.target.value); }}
+          />
+          <input
+            type="date"
+            className="border rounded px-3 py-2 text-sm flex-1"
+            placeholder="ถึง"
+            value={end}
+            onChange={(e) => { setPage(1); setEnd(e.target.value); }}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => { setUserQuery(''); setAction(''); setStart(''); setEnd(''); setPage(1); }}
+          className="px-3 py-2 border rounded text-sm bg-white hover:bg-slate-50"
+        >
+          ล้างค่า filter
+        </button>
         <select
           className="border rounded px-3 py-2 text-sm"
           value={pageSize}
-          onChange={(e) => { setPage(1); setPageSize(Number(e.target.value)); }}
+          onChange={(e) => { setNextPageSize(Number(e.target.value)); }}
         >
+          <option value={10}>10 ต่อหน้า</option>
           <option value={20}>20 ต่อหน้า</option>
           <option value={50}>50 ต่อหน้า</option>
           <option value={100}>100 ต่อหน้า</option>
@@ -135,28 +167,57 @@ export default function ActivityLogsPage() {
               )}
             </tbody>
           </table>
-          <div className="flex items-center justify-between px-4 py-2">
-            <div className="text-sm text-gray-600">
-              ทั้งหมด {total} รายการ
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="text-sm text-slate-600">แสดง</div>
+              <select
+                value={pageSize}
+                onChange={(e) => setNextPageSize(Number(e.target.value))}
+                className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f5a987] border-slate-200 bg-white"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <div className="text-sm text-slate-600">รายการต่อหน้า</div>
+              <div className="text-sm text-slate-500">{currentRangeText}</div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 justify-end">
               <button
-                className="px-3 py-1 rounded border text-sm disabled:opacity-50"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
+                onClick={() => goToPage(1)}
+                disabled={loading || total === 0 || page === 1}
+                className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white"
+                title="หน้าแรก"
               >
-                ก่อนหน้า
+                «
               </button>
-              <span className="text-sm">หน้า {page}</span>
               <button
-                className="px-3 py-1 rounded border text-sm disabled:opacity-50"
-                onClick={() => {
-                  const maxPage = Math.max(1, Math.ceil(total / pageSize));
-                  setPage((p) => Math.min(maxPage, p + 1));
-                }}
-                disabled={page >= Math.max(1, Math.ceil(total / pageSize))}
+                onClick={() => goToPage(page - 1)}
+                disabled={loading || total === 0 || page === 1}
+                className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white"
+                title="ก่อนหน้า"
               >
-                ถัดไป
+                ‹
+              </button>
+              <div className="text-sm text-slate-700 px-2">
+                หน้า {Math.min(page, totalPages)} / {totalPages}
+              </div>
+              <button
+                onClick={() => goToPage(page + 1)}
+                disabled={loading || total === 0 || page >= totalPages}
+                className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white"
+                title="ถัดไป"
+              >
+                ›
+              </button>
+              <button
+                onClick={() => goToPage(totalPages)}
+                disabled={loading || total === 0 || page >= totalPages}
+                className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white"
+                title="หน้าสุดท้าย"
+              >
+                »
               </button>
             </div>
           </div>

@@ -24,6 +24,7 @@ const MENUS = [
   { id: 'reports', label: 'รายงานสรุป' },
   { id: 'maintenance', label: 'แจ้งซ่อม' },
   { id: 'former_tenants', label: 'ผู้เช่าเก่า' },
+  { id: 'chats', label: 'แชทรวม' },
   { id: 'settings_dorm', label: 'ตั้งค่า: ข้อมูลหอพัก' },
   { id: 'settings_rent', label: 'ตั้งค่า: ค่าเช่ารายเดือน' },
   { id: 'settings_users', label: 'ตั้งค่า: จัดการผู้ใช้' },

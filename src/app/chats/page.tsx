@@ -2,7 +2,11 @@ import { api } from '@/services/api';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ChatsPage() {
+export default async function ChatsPage({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
   let chats = [] as Awaited<ReturnType<typeof api.getRecentChats>>;
   let usage = null as Awaited<ReturnType<typeof api.getLineUsage>> | null;
   try {
@@ -14,6 +18,27 @@ export default async function ChatsPage() {
     chats = [];
     usage = null;
   }
+  const q = typeof searchParams?.q === 'string' ? searchParams?.q.trim() : '';
+  const typeParam = typeof searchParams?.type === 'string' ? searchParams?.type.trim() : '';
+  const from = typeof searchParams?.from === 'string' ? searchParams?.from.trim() : '';
+  const to = typeof searchParams?.to === 'string' ? searchParams?.to.trim() : '';
+  const fromD = from ? new Date(from) : undefined;
+  const toD = to ? new Date(to) : undefined;
+  const filtered = chats.filter((c) => {
+    if (typeParam && c.type !== typeParam) return false;
+    if (q) {
+      const hay = `${c.userId || ''} ${c.text || ''} ${c.altText || ''}`.toLowerCase();
+      const needle = q.toLowerCase();
+      if (!hay.includes(needle)) return false;
+    }
+    if (fromD || toD) {
+      const t = new Date(c.timestamp).getTime();
+      const lo = fromD ? new Date(fromD.getFullYear(), fromD.getMonth(), fromD.getDate()).getTime() : -Infinity;
+      const hi = toD ? new Date(toD.getFullYear(), toD.getMonth(), toD.getDate(), 23, 59, 59, 999).getTime() : Infinity;
+      if (t < lo || t > hi) return false;
+    }
+    return true;
+  });
   return (
     <div className="fade-in space-y-8">
       <header className="mb-2">
@@ -33,11 +58,32 @@ export default async function ChatsPage() {
             <span className="text-2xl">🗂️</span>
             <span className="text-xs text-indigo-700 bg-indigo-200 px-2 py-1 rounded-full">ล่าสุด 50 รายการ</span>
           </div>
+          <form method="GET" className="mb-4 grid grid-cols-1 md:grid-cols-4 gap-2">
+            <input
+              name="q"
+              defaultValue={q}
+              placeholder="ค้นหา: UID หรือข้อความ"
+              className="border rounded px-3 py-2 text-sm bg-white"
+            />
+            <select name="type" defaultValue={typeParam} className="border rounded px-3 py-2 text-sm bg-white">
+              <option value="">ทุกประเภท</option>
+              <option value="received_text">รับ (ข้อความ)</option>
+              <option value="received_image">รับ (รูปภาพ)</option>
+              <option value="sent_text">ส่ง (ข้อความ)</option>
+              <option value="sent_flex">ส่ง (Flex)</option>
+            </select>
+            <input name="from" type="date" defaultValue={from} className="border rounded px-3 py-2 text-sm bg-white" />
+            <input name="to" type="date" defaultValue={to} className="border rounded px-3 py-2 text-sm bg-white" />
+            <div className="md:col-span-4 flex items-center gap-2">
+              <button type="submit" className="px-4 py-2 rounded bg-indigo-600 text-white text-sm">กรอง</button>
+              <a href="/chats" className="px-4 py-2 rounded bg-white border text-sm">ล้างตัวกรอง</a>
+            </div>
+          </form>
           <div className="space-y-2">
-            {chats.length === 0 ? (
+            {filtered.length === 0 ? (
               <p className="text-indigo-700 text-sm">ยังไม่มีรายการแชท</p>
             ) : (
-              chats.map((c) => {
+              filtered.map((c) => {
                 const isRecv = c.type === 'received_text' || c.type === 'received_image';
                 const icon = isRecv ? '📩' : '📤';
                 const label = isRecv ? 'รับ' : 'ส่ง';

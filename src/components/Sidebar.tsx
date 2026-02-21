@@ -17,6 +17,16 @@ const MENU_ITEMS = [
     )
   },
   { 
+    id: 'chats', 
+    href: '/chats', 
+    label: 'แชทรวม',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h8M8 14h5m7-10H6a2 2 0 00-2 2v12l4-4h12a2 2 0 002-2V6a2 2 0 00-2-2z"/>
+      </svg>
+    )
+  },
+  { 
     id: 'floor_plan', 
     href: '/floor-plan', 
     label: 'ผังหอพัก',

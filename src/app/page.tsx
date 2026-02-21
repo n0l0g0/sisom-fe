@@ -16,13 +16,17 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
   let buildings = [] as Awaited<ReturnType<typeof api.getBuildings>>;
   let dormConfig = null as DormConfig | null;
   let dormExtra = {} as DormExtra;
+  let recentChats = [] as Awaited<ReturnType<typeof api.getRecentChats>>;
+  let lineUsage = null as Awaited<ReturnType<typeof api.getLineUsage>> | null;
   try {
-    [rooms, invoices, buildings, dormConfig, dormExtra] = await Promise.all([
+    [rooms, invoices, buildings, dormConfig, dormExtra, recentChats, lineUsage] = await Promise.all([
       api.getRooms(),
       api.getInvoices(),
       api.getBuildings(),
       api.getDormConfig(),
       api.getDormExtra(),
+      api.getRecentChats(),
+      api.getLineUsage(),
     ]);
   } catch {
     rooms = [];
@@ -30,6 +34,8 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
     buildings = [];
     dormConfig = null;
     dormExtra = {};
+    recentChats = [];
+    lineUsage = null;
   }
   
   const occupiedRooms = rooms.filter(r => r.status === 'OCCUPIED').length;
@@ -172,6 +178,79 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
           </div>
           <p className="text-4xl font-bold text-red-600 mb-1">{unpaidBillsCount}</p>
           <p className="text-red-700 text-sm">฿{totalUnpaidAmount.toLocaleString()}</p>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="card-hover bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-200 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-2xl">💬</span>
+            <span className="text-xs text-indigo-700 bg-indigo-200 px-2 py-1 rounded-full">แชทล่าสุด</span>
+          </div>
+          <div className="space-y-2">
+            {recentChats.length === 0 ? (
+              <p className="text-indigo-700 text-sm">ยังไม่มีรายการแชท</p>
+            ) : (
+              recentChats.map((c) => {
+                const isRecv = c.type === 'received_text' || c.type === 'received_image';
+                const icon = isRecv ? '📩' : '📤';
+                const label = isRecv ? 'รับ' : 'ส่ง';
+                const content =
+                  c.type === 'received_image'
+                    ? 'รูปภาพ'
+                    : c.text
+                      ? c.text
+                      : c.altText
+                        ? c.altText
+                        : 'ข้อความ';
+                const when = new Date(c.timestamp).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
+                return (
+                  <div key={c.id} className="flex items-start gap-3 p-3 bg-white/70 rounded-xl border border-indigo-200">
+                    <div className="text-xl">{icon}</div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-indigo-900">{label}</span>
+                        <span className="text-xs text-indigo-700">{when}</span>
+                      </div>
+                      <p className="text-indigo-800 text-sm mt-1 break-words">{content}</p>
+                      <p className="text-indigo-600 text-xs mt-1">UID: {c.userId}</p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+        <div className="card-hover bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-2xl">📈</span>
+            <span className="text-xs text-purple-700 bg-purple-200 px-2 py-1 rounded-full">การใช้งาน LINE</span>
+          </div>
+          {lineUsage ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-purple-900">เดือน {lineUsage.month}</span>
+                <span className="text-sm text-purple-900">{lineUsage.percent}%</span>
+              </div>
+              <div className="w-full h-3 bg-purple-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-purple-400 to-purple-600 rounded-full transition-all duration-500"
+                  style={{ width: `${lineUsage.percent}%` }}
+                />
+              </div>
+              <div className="text-purple-900 text-sm">
+                ส่งแล้ว {lineUsage.sent.toLocaleString()} / {lineUsage.limit.toLocaleString()} เหลือ {lineUsage.remaining.toLocaleString()}
+              </div>
+              <div className="text-purple-800 text-xs">
+                รายละเอียด: ข้อความ {lineUsage.breakdown.pushText?.toLocaleString?.() ?? lineUsage.breakdown.pushText} | Flex {lineUsage.breakdown.pushFlex?.toLocaleString?.() ?? lineUsage.breakdown.pushFlex}
+              </div>
+              <div className="mt-2 text-xs text-purple-700">
+                โควตาอ้างอิงจาก LINE Official หากมี
+              </div>
+            </div>
+          ) : (
+            <p className="text-purple-700 text-sm">ไม่สามารถโหลดข้อมูลการใช้งาน LINE ได้</p>
+          )}
         </div>
       </div>
       

@@ -236,6 +236,22 @@ export interface User {
   phone?: string;
   verifyCode?: string;
 }
+export interface RecentChat {
+  id: string;
+  userId: string;
+  type: 'received_text' | 'received_image' | 'sent_text' | 'sent_flex';
+  text?: string;
+  altText?: string;
+  timestamp: string;
+}
+export interface LineUsage {
+  month: string;
+  sent: number;
+  limit: number;
+  remaining: number;
+  percent: number;
+  breakdown: { pushText: number; pushFlex: number };
+}
 
 export interface CreateUserDto {
   username: string;
@@ -386,6 +402,17 @@ export const api = {
       body: JSON.stringify({ userId }),
     });
     if (!res.ok) throw new Error('Failed to reject link request');
+    return res.json();
+  },
+  getRecentChats: async (limit = 5): Promise<RecentChat[]> => {
+    const res = await fetch(`${API_URL}/line/recent-chats?limit=${limit}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch recent chats');
+    const data = await res.json().catch(() => ({}));
+    return (data?.items || []) as RecentChat[];
+  },
+  getLineUsage: async (): Promise<LineUsage> => {
+    const res = await fetch(`${API_URL}/line/usage`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch LINE usage');
     return res.json();
   },
 
@@ -1042,19 +1069,6 @@ export const api = {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error('Failed to create activity log');
-    return res.json();
-  },
-  
-  getLineUsage: async (): Promise<{
-    month: string;
-    sent: number;
-    limit: number;
-    remaining: number;
-    percent: number;
-    breakdown: { pushText: number; pushFlex: number };
-  }> => {
-    const res = await fetch(`${API_URL}/line/usage`, { cache: 'no-store' });
-    if (!res.ok) throw new Error('Failed to fetch LINE usage');
     return res.json();
   },
 };

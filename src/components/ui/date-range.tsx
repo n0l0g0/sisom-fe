@@ -68,6 +68,7 @@ export function DateRangeInput(props: {
   const [dragStart, setDragStart] = useState<Date | undefined>(undefined);
   const [dragEnd, setDragEnd] = useState<Date | undefined>(undefined);
   const [dragging, setDragging] = useState(false);
+  const [clickAnchor, setClickAnchor] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -121,6 +122,27 @@ export function DateRangeInput(props: {
 
   const clear = () => {
     onChange?.({ start: undefined, end: undefined });
+    setDragStart(undefined);
+    setDragEnd(undefined);
+    setClickAnchor(undefined);
+  };
+
+  const handleDayClick = (d: Date) => {
+    if (!clickAnchor) {
+      setClickAnchor(d);
+      onChange?.({ start: toYMD(d), end: undefined });
+      setDragging(false);
+      setDragStart(undefined);
+      setDragEnd(undefined);
+      return;
+    }
+    const a = clickAnchor.getTime();
+    const b = d.getTime();
+    const lo = new Date(Math.min(a, b));
+    const hi = new Date(Math.max(a, b));
+    onChange?.({ start: toYMD(lo), end: toYMD(hi) });
+    setClickAnchor(undefined);
+    setDragging(false);
     setDragStart(undefined);
     setDragEnd(undefined);
   };
@@ -199,25 +221,27 @@ export function DateRangeInput(props: {
                   ))}
                 </div>
                 <div className="grid grid-cols-7 gap-1">
-                  {/* leading blanks */}
                   {Array.from({ length: (cal.first.getDay() + 6) % 7 }).map((_, i) => (
                     <div key={`b-${i}`} className="py-2"></div>
                   ))}
                   {cal.days.map((d) => {
                     const selected =
-                      isInRange(d, dragStart ?? startD, dragEnd ?? endD) ||
-                      isInRange(d, startD, endD);
+                      isInRange(d, dragStart ?? (clickAnchor ?? startD), dragEnd ?? endD) ||
+                      isInRange(d, startD, endD) ||
+                      (!!clickAnchor && d.getTime() === clickAnchor.getTime());
                     const isEdge =
                       !!startD && d.getTime() === startD.getTime() ||
                       !!endD && d.getTime() === endD.getTime() ||
                       !!dragStart && d.getTime() === dragStart.getTime() ||
-                      !!dragEnd && d.getTime() === dragEnd.getTime();
+                      !!dragEnd && d.getTime() === dragEnd.getTime() ||
+                      (!!clickAnchor && d.getTime() === clickAnchor.getTime());
                     return (
                       <div
                         key={toYMD(d)}
                         onMouseDown={() => handleDayMouseDown(d)}
                         onMouseEnter={() => handleDayMouseEnter(d)}
                         onMouseUp={handleDayMouseUp}
+                        onClick={() => handleDayClick(d)}
                         className={`text-center py-2 rounded cursor-pointer transition-colors
                           ${selected ? 'bg-[#fbe8de]' : 'hover:bg-slate-100'}
                           ${isEdge ? 'font-semibold text-[#8b5a3c] border border-[#f5a987]' : 'text-slate-700'}
@@ -240,4 +264,3 @@ export function DateRangeInput(props: {
     </div>
   );
 }
-

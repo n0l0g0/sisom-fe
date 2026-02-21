@@ -1,5 +1,5 @@
  'use client';
- import { useState } from 'react';
+import { useState } from 'react';
  import { api, Payment } from '@/services/api';
  
  type Props = {
@@ -7,7 +7,12 @@
  };
  
  export default function PaymentActions({ payment }: Props) {
-   const [loading, setLoading] = useState<'verify' | 'reject' | null>(null);
+  const [loading, setLoading] = useState<'verify' | 'reject' | null>(null);
+  const [paidAt, setPaidAt] = useState<string>(() => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  });
    const canVerify = payment.status === 'PENDING' && !!payment.slipImageUrl;
  
    const doVerify = async () => {
@@ -17,7 +22,7 @@
       const ok = window.confirm(`ยืนยันตัดยอดชำระเงินห้อง ${room} จำนวน ฿${amt} ?`);
       if (!ok) return;
        setLoading('verify');
-       await api.confirmSlip({ paymentId: payment.id, status: 'VERIFIED' });
+      await api.confirmSlip({ paymentId: payment.id, status: 'VERIFIED', paidAt });
        window.location.reload();
      } catch (e) {
        alert((e as Error).message || 'ยืนยันการชำระเงินไม่สำเร็จ');
@@ -44,7 +49,14 @@
    if (!canVerify) return null;
  
    return (
-     <div className="flex items-center justify-center gap-2 mt-2">
+    <div className="flex items-center justify-center gap-2 mt-2">
+      <input
+        type="datetime-local"
+        value={paidAt}
+        onChange={(e) => setPaidAt(e.target.value)}
+        className="px-2 py-1 border rounded text-xs"
+        title="วันที่รับชำระ"
+      />
        <button
          onClick={doVerify}
          disabled={!!loading}

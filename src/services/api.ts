@@ -441,11 +441,11 @@ export const api = {
     return res.json();
   },
 
-  settleInvoice: async (id: string, method: 'DEPOSIT' | 'CASH'): Promise<Invoice> => {
+  settleInvoice: async (id: string, method: 'DEPOSIT' | 'CASH', paidAt?: string): Promise<Invoice> => {
     const res = await fetch(`${API_URL}/invoices/${id}/settle`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ method }),
+      body: JSON.stringify({ method, paidAt }),
     });
     if (!res.ok) {
       const txt = await res.text().catch(() => '');

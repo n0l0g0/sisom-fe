@@ -27,6 +27,11 @@ import { Button } from "@/components/ui/button";
   const [prevMR, setPrevMR] = useState<MeterReading | null>(null);
   const [scheduleDate, setScheduleDate] = useState<string>('');
   const [scheduleMonthly, setScheduleMonthly] = useState<boolean>(false);
+  const [settlePaidAt, setSettlePaidAt] = useState<string>('');
+  const formatLocalDateTime = (d: Date) => {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
  
   const canSend = invoice.status !== 'PAID' && invoice.status !== 'CANCELLED';
   const canEdit = invoice.status === 'SENT' || invoice.status === 'DRAFT';
@@ -52,6 +57,7 @@ import { Button } from "@/components/ui/button";
       setMode('EDIT');
       const data = await api.getInvoice(invoice.id);
       setDetail(data);
+      setSettlePaidAt(formatLocalDateTime(new Date()));
       setDiscount('');
       if (data.contract?.room?.id) {
         const roomId = data.contract.room.id;
@@ -194,7 +200,7 @@ import { Button } from "@/components/ui/button";
     if (!confirm('ยืนยันการรับชำระเงิน?')) return;
     try {
       setLoading(true);
-      await api.settleInvoice(detail.id, 'CASH');
+      await api.settleInvoice(detail.id, 'CASH', settlePaidAt || undefined);
       setOpen(false);
       router.refresh();
     } catch (e) {
@@ -307,6 +313,17 @@ import { Button } from "@/components/ui/button";
                   </div>
                 </div>
                 <div className="space-y-2">
+                   <div className="font-semibold text-slate-700">วันที่รับชำระ</div>
+                   <div className="flex items-center gap-3">
+                     <Input
+                       type="datetime-local"
+                       value={settlePaidAt}
+                       onChange={(e) => setSettlePaidAt(e.target.value)}
+                       className="w-64"
+                     />
+                   </div>
+                 </div>
+                 <div className="space-y-2">
                   <div className="font-semibold text-slate-700">รายละเอียดบิล</div>
                   <div className="rounded border">
                     <div className="flex justify-between p-2 text-sm">
@@ -504,6 +521,18 @@ import { Button } from "@/components/ui/button";
                   <div className="space-y-1">
                     <div className="text-sm text-slate-500">ยอดรวม</div>
                     <div className="font-semibold text-slate-800">฿{Number(detail.totalAmount).toLocaleString()}</div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-sm text-slate-500">รับชำระเมื่อ</div>
+                    <div className="font-semibold text-slate-800">
+                      {(() => {
+                        const list = (detail.payments || []).filter((p: any) => !!p.paidAt);
+                        if (list.length === 0) return '-';
+                        const latest = list.sort((a: any, b: any) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime())[0];
+                        const d = new Date(latest.paidAt);
+                        return `${d.toLocaleDateString('th-TH')} ${d.toLocaleTimeString('th-TH')}`;
+                      })()}
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-2">

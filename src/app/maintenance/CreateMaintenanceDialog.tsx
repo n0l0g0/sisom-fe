@@ -25,6 +25,7 @@ export function CreateMaintenanceDialog({ rooms }: CreateMaintenanceDialogProps)
     reportedBy: ''
   });
   const [reportType, setReportType] = useState<'MAINTENANCE' | 'MOVE_OUT'>('MAINTENANCE');
+  const [moveoutDate, setMoveoutDate] = useState<string>('');
 
   const sortedRooms = [...rooms].sort((a, b) => {
     const nameA = (a.building?.name || a.building?.code || '').trim();
@@ -58,7 +59,13 @@ export function CreateMaintenanceDialog({ rooms }: CreateMaintenanceDialogProps)
     try {
       const desc =
         reportType === 'MOVE_OUT'
-          ? ['TYPE: MOVE_OUT', formData.description].filter(Boolean).join('\n')
+          ? [
+              'TYPE: MOVE_OUT',
+              moveoutDate ? `MOVEOUT_DATE: ${moveoutDate}` : undefined,
+              formData.description,
+            ]
+              .filter(Boolean)
+              .join('\n')
           : formData.description;
       await api.createMaintenanceRequest({
         ...formData,
@@ -74,6 +81,7 @@ export function CreateMaintenanceDialog({ rooms }: CreateMaintenanceDialogProps)
         reportedBy: ''
       });
       setReportType('MAINTENANCE');
+      setMoveoutDate('');
     } catch (error) {
       console.error('Failed to create maintenance request:', error);
       alert('Failed to create maintenance request');
@@ -140,6 +148,20 @@ export function CreateMaintenanceDialog({ rooms }: CreateMaintenanceDialogProps)
               placeholder="เช่น ไฟห้องน้ำเสีย, ท่อน้ำรั่ว"
             />
           </div>
+
+          {reportType === 'MOVE_OUT' && (
+            <div className="space-y-2">
+              <Label htmlFor="moveoutDate">วันที่ต้องการออก</Label>
+              <Input
+                id="moveoutDate"
+                type="date"
+                value={moveoutDate}
+                onChange={(e) => setMoveoutDate(e.target.value)}
+                required
+              />
+              <div className="text-xs text-slate-500">จะถูกบันทึกในรายละเอียดเพื่อแจ้งเจ้าหน้าที่</div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="description">รายละเอียด</Label>

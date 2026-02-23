@@ -349,6 +349,7 @@ export function InvoicePrint({
             <div className="font-semibold">ติดต่อสอบถาม</div>
             <div>โทร. 092 426 9477</div>
             <div>Line ID: @sisomoffice</div>
+            <div>เนื่องด้วยหอพักได้เปลี่ยนระบบใหม่ใช้ Line ในการบริหารจัดการ และจะยกเลิกระบบเดิมของ Application Horganice</div>
           </div>
           <div className="w-24 h-24 bg-white p-1 border">
             <img

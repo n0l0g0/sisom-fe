@@ -11,6 +11,7 @@ import { CreateInvoiceDialog } from './CreateInvoiceDialog';
 import SendInvoiceButton from './SendInvoiceButton';
 import SendAllBar from './SendAllBar';
 import PrintAllBar from './PrintAllBar';
+import AutoSendSettingsDialog from './AutoSendSettingsDialog';
 
 export default function BillsPage() {
   return (
@@ -313,6 +314,8 @@ function BillsPageContent() {
             สรุปห้องค้างชำระ ({arrearsInvoices.length})
           </button>
           <PrintAllBar invoices={filteredInvoices} />
+          {/* Settings button for auto-send */}
+          <AutoSendSettingsDialog />
           <CreateInvoiceDialog
             rooms={rooms}
             onCreated={async () => {

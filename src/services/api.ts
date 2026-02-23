@@ -258,6 +258,14 @@ export interface LineUsage {
   breakdown: { pushText: number; pushFlex: number };
 }
 
+export interface AutoSendConfig {
+  enabled: boolean;
+  hour: number;
+  minute?: number;
+  dayOfMonth?: number;
+  timezone?: string;
+}
+
 export interface CreateUserDto {
   username: string;
   passwordHash: string;
@@ -799,6 +807,25 @@ export const api = {
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
+  },
+
+  // Auto-send invoices config
+  getAutoSendConfig: async (): Promise<AutoSendConfig> => {
+    const res = await fetch(`${API_URL}/invoices/auto-send/config`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch auto-send config');
+    return res.json();
+  },
+  setAutoSendConfig: async (payload: AutoSendConfig): Promise<AutoSendConfig> => {
+    const res = await fetch(`${API_URL}/invoices/auto-send/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new Error(txt || 'Failed to update auto-send config');
+    }
+    return res.json();
   },
 
   // Payments

@@ -27,9 +27,39 @@ function PrintAllPage() {
         setError(null);
         const data = await api.getInvoices({ ids });
         if (cancelled) return;
-        setInvoices(
-          data.filter((inv) => inv.status !== 'CANCELLED' && inv.status !== 'PAID'),
+        const filtered = data.filter(
+          (inv) => inv.status !== 'CANCELLED' && inv.status !== 'PAID',
         );
+        const sorted = filtered.sort((a, b) => {
+          const ab =
+            a.contract?.room?.building?.code ||
+            a.contract?.room?.building?.name ||
+            '';
+          const bb =
+            b.contract?.room?.building?.code ||
+            b.contract?.room?.building?.name ||
+            '';
+          const an = Number((ab.match(/\d+/)?.[0] ?? '0'));
+          const bn = Number((bb.match(/\d+/)?.[0] ?? '0'));
+          if (an !== bn) return an - bn;
+          const ar =
+            (a.contract?.room?.number || '')
+              .replace(/^\s*B\s*/i, '')
+              .trim() || '';
+          const br =
+            (b.contract?.room?.number || '')
+              .replace(/^\s*B\s*/i, '')
+              .trim() || '';
+          const arn = parseInt(ar, 10);
+          const brn = parseInt(br, 10);
+          const aIsNum = Number.isFinite(arn);
+          const bIsNum = Number.isFinite(brn);
+          if (aIsNum && bIsNum) return arn - brn;
+          if (aIsNum) return -1;
+          if (bIsNum) return 1;
+          return ar.localeCompare(br, 'th');
+        });
+        setInvoices(sorted);
       } catch (e) {
         if (cancelled) return;
         setError((e as Error).message || 'โหลดบิลไม่สำเร็จ');

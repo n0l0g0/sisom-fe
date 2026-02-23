@@ -137,6 +137,11 @@ export function RentSettingsTable({ rooms }: { rooms: Room[] }) {
       <Card className="border-none shadow-none bg-white/50 backdrop-blur-sm">
         <CardContent className="p-0 pb-24">
           <div className="relative overflow-x-auto rounded-xl border border-slate-200">
+            <div className="px-4 py-3 text-xs text-slate-600 bg-slate-50 border-b">
+              หมายเหตุ: ช่องค่าน้ำ/ค่าไฟในตารางนี้เป็น “ราคาต่อหน่วยแบบ Override ต่อห้อง”
+              หากปล่อยว่างหรือใส่ 0 ระบบจะใช้ “ราคาต่อหน่วยค่าเริ่มต้น” จากหน้า ตั้งค่าหอพัก เพื่อคูณกับจำนวนหน่วยมิเตอร์
+              กรณีเลือกแบบเหมาจ่ายรายเดือน (Flat Monthly) ค่า Override จะหมายถึง “จำนวนเงินเหมาจ่ายต่อเดือน”
+            </div>
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-gray-700 uppercase bg-slate-50 border-b">
                 <tr>
@@ -146,8 +151,8 @@ export function RentSettingsTable({ rooms }: { rooms: Room[] }) {
                   <th className="px-6 py-4 font-semibold text-[#8b5a3c] text-center">สถานะ</th>
                   <th className="px-6 py-4 font-semibold text-[#8b5a3c] text-right">ค่าเช่าปัจจุบัน</th>
                   <th className="px-6 py-4 font-semibold text-[#8b5a3c] text-right">ปรับค่าเช่า</th>
-                  <th className="px-6 py-4 font-semibold text-[#8b5a3c] text-right">ค่าน้ำ (กำหนดรายห้อง)</th>
-                  <th className="px-6 py-4 font-semibold text-[#8b5a3c] text-right">ค่าไฟ (กำหนดรายห้อง)</th>
+                  <th className="px-6 py-4 font-semibold text-[#8b5a3c] text-right">ค่าน้ำต่อหน่วย (Override)</th>
+                  <th className="px-6 py-4 font-semibold text-[#8b5a3c] text-right">ค่าไฟต่อหน่วย (Override)</th>
                 </tr>
               </thead>
               <tbody>
@@ -188,7 +193,7 @@ export function RentSettingsTable({ rooms }: { rooms: Room[] }) {
                           type="number"
                           value={values[room.id]?.water ?? ''}
                           onChange={(e) => setValues((prev) => ({ ...prev, [room.id]: { ...(prev[room.id] || { price: '' }), water: e.target.value } }))}
-                          placeholder="เช่น 0 หรือ 200"
+                          placeholder="ราคาต่อหน่วย เช่น 4"
                           className="text-right font-mono border-slate-200 focus:ring-[#f5a987] focus:border-[#f5a987]"
                         />
                       </td>
@@ -198,7 +203,7 @@ export function RentSettingsTable({ rooms }: { rooms: Room[] }) {
                           type="number"
                           value={values[room.id]?.electric ?? ''}
                           onChange={(e) => setValues((prev) => ({ ...prev, [room.id]: { ...(prev[room.id] || { price: '' }), electric: e.target.value } }))}
-                          placeholder="เช่น 0 หรือ 500"
+                          placeholder="ราคาต่อหน่วย เช่น 4"
                           className="text-right font-mono border-slate-200 focus:ring-[#f5a987] focus:border-[#f5a987]"
                         />
                       </td>

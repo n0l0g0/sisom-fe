@@ -280,23 +280,28 @@ import { Button } from "@/components/ui/button";
     const eMinAmt = Math.max(0, Number(dormConfig.electricMinAmount ?? 0));
     const eMinUnits = Math.max(0, Number(dormConfig.electricMinUnits ?? 0));
     const eMethod = (dormConfig.electricFeeMethod || 'METER_USAGE') as DormConfig['electricFeeMethod'];
-    if (electricOverride > 0) {
-      electricAmount = electricOverride;
-    } else if (eMethod === 'FLAT_MONTHLY') {
-      electricAmount = Math.max(0, Number(dormConfig.electricFlatMonthlyFee ?? 0));
+    if (eMethod === 'FLAT_MONTHLY') {
+      electricAmount =
+        electricOverride > 0
+          ? electricOverride
+          : Math.max(0, Number(dormConfig.electricFlatMonthlyFee ?? 0));
     } else if (eMethod === 'METER_USAGE_MIN_AMOUNT') {
-      electricAmount = Math.max(eUsage * eUnit, eMinAmt);
+      const unit = electricOverride > 0 ? electricOverride : eUnit;
+      electricAmount = Math.max(eUsage * unit, eMinAmt);
     } else if (eMethod === 'METER_USAGE_MIN_UNITS') {
-      electricAmount = eUsage <= eMinUnits ? eMinAmt : eUsage * eUnit;
+      const unit = electricOverride > 0 ? electricOverride : eUnit;
+      electricAmount = eUsage <= eMinUnits ? eMinAmt : eUsage * unit;
     } else if (eMethod === 'METER_USAGE_PLUS_BASE') {
-      electricAmount = eUsage <= eMinUnits ? eMinAmt : eMinAmt + (eUsage - eMinUnits) * eUnit;
+      const unit = electricOverride > 0 ? electricOverride : eUnit;
+      electricAmount = eUsage <= eMinUnits ? eMinAmt : eMinAmt + (eUsage - eMinUnits) * unit;
     } else if (eMethod === 'METER_USAGE_TIERED') {
       electricAmount = computeTiered(
         eUsage,
         Array.isArray(dormConfig.electricTieredRates) ? dormConfig.electricTieredRates : undefined,
       );
     } else {
-      electricAmount = eUsage * eUnit;
+      const unit = electricOverride > 0 ? electricOverride : eUnit;
+      electricAmount = eUsage * unit;
     }
     // Compute water
     const wUsage = Math.max(0, usage.waterUnits);
@@ -305,27 +310,32 @@ import { Button } from "@/components/ui/button";
     const wMinAmt = Math.max(0, Number(dormConfig.waterMinAmount ?? 0));
     const wMinUnits = Math.max(0, Number(dormConfig.waterMinUnits ?? 0));
     const wMethod = (dormConfig.waterFeeMethod || 'METER_USAGE') as DormConfig['waterFeeMethod'];
-    if (waterOverride > 0) {
-      waterAmount = waterOverride;
-    } else if (wMethod === 'FLAT_MONTHLY') {
-      waterAmount = Math.max(0, Number(dormConfig.waterFlatMonthlyFee ?? 0));
+    if (wMethod === 'FLAT_MONTHLY') {
+      waterAmount =
+        waterOverride > 0
+          ? waterOverride
+          : Math.max(0, Number(dormConfig.waterFlatMonthlyFee ?? 0));
     } else if (wMethod === 'FLAT_PER_PERSON') {
       const perPerson = Math.max(0, Number(dormConfig.waterFlatPerPersonFee ?? 0));
       const occupants = Math.max(1, Number(detail.contract?.occupantCount ?? 1));
       waterAmount = perPerson * occupants;
     } else if (wMethod === 'METER_USAGE_MIN_AMOUNT') {
-      waterAmount = Math.max(wUsage * wUnit, wMinAmt);
+      const unit = waterOverride > 0 ? waterOverride : wUnit;
+      waterAmount = Math.max(wUsage * unit, wMinAmt);
     } else if (wMethod === 'METER_USAGE_MIN_UNITS') {
-      waterAmount = wUsage <= wMinUnits ? wMinAmt : wUsage * wUnit;
+      const unit = waterOverride > 0 ? waterOverride : wUnit;
+      waterAmount = wUsage <= wMinUnits ? wMinAmt : wUsage * unit;
     } else if (wMethod === 'METER_USAGE_PLUS_BASE') {
-      waterAmount = wUsage <= wMinUnits ? wMinAmt : wMinAmt + (wUsage - wMinUnits) * wUnit;
+      const unit = waterOverride > 0 ? waterOverride : wUnit;
+      waterAmount = wUsage <= wMinUnits ? wMinAmt : wMinAmt + (wUsage - wMinUnits) * unit;
     } else if (wMethod === 'METER_USAGE_TIERED') {
       waterAmount = computeTiered(
         wUsage,
         Array.isArray(dormConfig.waterTieredRates) ? dormConfig.waterTieredRates : undefined,
       );
     } else {
-      waterAmount = wUsage * wUnit;
+      const unit = waterOverride > 0 ? waterOverride : wUnit;
+      waterAmount = wUsage * unit;
     }
     electricAmount = round2(electricAmount);
     waterAmount = round2(waterAmount);

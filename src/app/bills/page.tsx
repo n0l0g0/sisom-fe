@@ -114,6 +114,7 @@ function BillsPageContent() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMonthKey, setSelectedMonthKey] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'ALL'|'DRAFT'|'SENT'|'PAID'|'OVERDUE'|'CANCELLED'>('ALL');
 
   const monthFilteredInvoices = useMemo(() => {
     let result = invoices;
@@ -128,6 +129,9 @@ function BillsPageContent() {
 
   const filteredInvoices = useMemo(() => {
     let result = monthFilteredInvoices;
+    if (statusFilter !== 'ALL') {
+      result = result.filter((inv) => inv.status === statusFilter);
+    }
     if (searchTerm.trim()) {
       const lower = searchTerm.toLowerCase();
       result = result.filter(
@@ -137,7 +141,7 @@ function BillsPageContent() {
       );
     }
     return result;
-  }, [monthFilteredInvoices, searchTerm]);
+  }, [monthFilteredInvoices, searchTerm, statusFilter]);
 
   const arrearsInvoices = useMemo(
     () =>
@@ -266,6 +270,7 @@ function BillsPageContent() {
             onClick={() => {
               setSearchTerm('');
               setSelectedMonthKey(null);
+              setStatusFilter('ALL');
               goToPage(1);
             }}
             className="px-3 py-1.5 rounded-full text-xs border transition-colors bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
@@ -273,6 +278,19 @@ function BillsPageContent() {
             ล้างค่า filter
           </button>
           <SendAllBar invoices={invoices} onMonthChange={setSelectedMonthKey} />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+            className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f5a987] border-slate-200 bg-white"
+            title="กรองตามสถานะบิล"
+          >
+            <option value="ALL">ทั้งหมด</option>
+            <option value="DRAFT">ร่าง</option>
+            <option value="SENT">รอชำระ</option>
+            <option value="PAID">ชำระแล้ว</option>
+            <option value="OVERDUE">ค้างชำระ</option>
+            <option value="CANCELLED">ยกเลิกแล้ว</option>
+          </select>
           <button
             type="button"
             onClick={() => {

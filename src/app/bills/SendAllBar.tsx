@@ -32,6 +32,7 @@ export default function SendAllBar({
     if (!selected && monthKeys[0]) {
       const value = monthKeys[0];
       setSelected(value);
+      if (onMonthChange) onMonthChange(value);
     }
   }, [monthKeys, selected]);
 

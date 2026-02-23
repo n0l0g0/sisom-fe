@@ -167,14 +167,11 @@ export function InvoicePrint({
     }
     return d;
   };
-  const currentWaterDateValue =
-    currentMR?.createdAt
-      ? new Date(currentMR.createdAt)
-      : new Date(
-          invoice.year,
-          invoice.month - 1,
-          22,
-        );
+  const currentWaterDateValue = new Date(
+    invoice.year,
+    invoice.month - 1,
+    22,
+  );
   const prevWaterDateValue = getDateMinusOneMonth(currentWaterDateValue);
   const currentWaterDate = formatDateThai(currentWaterDateValue);
   const prevWaterDate = formatDateThai(prevWaterDateValue);

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, Invoice } from '@/services/api';
 import { useRouter } from 'next/navigation';
+import SendAllProgressDialog, { RoomProgress } from './SendAllProgressDialog';
  
  
 export default function SendAllBar({
@@ -27,6 +28,11 @@ export default function SendAllBar({
    ];
    const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [completed, setCompleted] = useState(0);
+  const [failed, setFailed] = useState(0);
+  const [roomStatuses, setRoomStatuses] = useState<RoomProgress[]>([]);
 
   useEffect(() => {
     if (!selected && monthKeys[0]) {
@@ -39,11 +45,56 @@ export default function SendAllBar({
   const sendAll = async () => {
     if (!selected || loading) return;
     const [y, m] = selected.split('-');
+    const year = Number(y);
+    const month = Number(m);
+    const targets = invoices
+      .filter((inv) => inv.year === year && inv.month === month)
+      .map((inv) => ({
+        roomId: inv.contract?.room?.id || '',
+        roomLabel:
+          (inv.contract?.room?.building?.code ||
+            inv.contract?.room?.building?.name ||
+            '') +
+          '/' +
+          String((inv.contract?.room?.number || '').replace(/^\s*B\s*/i, '').trim() || '-'),
+      }))
+      .filter((t) => t.roomId.length > 0);
+    if (targets.length === 0) return;
     try {
       setLoading(true);
-      await api.sendAllInvoices(Number(m), Number(y));
+      setOpen(true);
+      setCompleted(0);
+      setFailed(0);
+      setProgress(0);
+      setRoomStatuses(
+        targets.map<RoomProgress>((t) => ({
+          roomLabel: t.roomLabel,
+          status: 'pending',
+        })),
+      );
+      for (let i = 0; i < targets.length; i++) {
+        const t = targets[i];
+        try {
+          await api.sendRoomInvoice(t.roomId, month, year);
+          setRoomStatuses((prev) => {
+            const next = [...prev];
+            next[i] = { ...next[i], status: 'success' };
+            return next;
+          });
+          setCompleted((c) => c + 1);
+        } catch (e: any) {
+          setRoomStatuses((prev) => {
+            const next = [...prev];
+            next[i] = { ...next[i], status: 'failed', message: e?.message };
+            return next;
+          });
+          setFailed((f) => f + 1);
+        } finally {
+          const pct = Math.round(((i + 1) / targets.length) * 100);
+          setProgress(pct);
+        }
+      }
       router.refresh();
-      alert('ส่งบิลทั้งหมดเรียบร้อย');
     } catch (e) {
       alert((e as Error).message || 'ส่งบิลทั้งหมดไม่สำเร็จ');
     } finally {
@@ -100,6 +151,15 @@ export default function SendAllBar({
       >
         {loading ? 'กำลังส่ง...' : 'ส่งทั้งหมด'}
       </button>
+      <SendAllProgressDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        progress={progress}
+        total={roomStatuses.length}
+        completed={completed}
+        failed={failed}
+        roomStatuses={roomStatuses}
+      />
     </div>
   );
  }

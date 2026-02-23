@@ -792,6 +792,18 @@ export const api = {
     if (!res.ok) throw new Error('Failed to send all invoices');
     return res.json();
   },
+  sendRoomInvoice: async (roomId: string, month: number, year: number): Promise<{ ok: boolean; id?: string }> => {
+    const res = await fetch(`${API_URL}/invoices/send-room`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roomId, month, year }),
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new Error(txt || 'Failed to send invoice for room');
+    }
+    return res.json();
+  },
 
   exportInvoices: async (month: number, year: number): Promise<void> => {
     const res = await fetch(`${API_URL}/invoices/export?month=${month}&year=${year}`, {

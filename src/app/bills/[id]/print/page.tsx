@@ -349,7 +349,6 @@ export function InvoicePrint({
             <div className="font-semibold">ติดต่อสอบถาม</div>
             <div>โทร. 092 426 9477</div>
             <div>Line ID: @sisomoffice</div>
-            <div>เนื่องด้วยหอพักได้เปลี่ยนระบบใหม่ใช้ Line ในการบริหารจัดการ และจะยกเลิกระบบเดิมของ Application Horganice</div>
           </div>
           <div className="w-24 h-24 bg-white p-1 border">
             <img
@@ -358,6 +357,11 @@ export function InvoicePrint({
               className="w-full h-full object-contain"
             />
           </div>
+        </div>
+      </div>
+      <div className="mt-3">
+        <div className="w-full text-center text-[12px] px-3 py-2 bg-[#fff4e6] border border-[#f5a987] rounded">
+          เนื่องด้วยหอพักได้เปลี่ยนระบบใหม่ใช้ Line ในการบริหารจัดการ และจะยกเลิกระบบเดิมของ Application Horganice
         </div>
       </div>
     </div>

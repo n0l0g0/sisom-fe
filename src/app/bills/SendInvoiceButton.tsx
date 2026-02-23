@@ -1,7 +1,7 @@
  'use client';
  
 import { useEffect, useMemo, useState } from 'react';
-import { api, Invoice, MeterReading } from '@/services/api';
+import { api, Invoice, MeterReading, DormConfig } from '@/services/api';
  import { useRouter } from 'next/navigation';
 import {
   Dialog,
@@ -25,6 +25,8 @@ import { Button } from "@/components/ui/button";
   const [discount, setDiscount] = useState('');
   const [currentMR, setCurrentMR] = useState<MeterReading | null>(null);
   const [prevMR, setPrevMR] = useState<MeterReading | null>(null);
+  const [dormConfig, setDormConfig] = useState<DormConfig | null>(null);
+  const [pendingUtilities, setPendingUtilities] = useState<{ waterAmount?: number; electricAmount?: number } | null>(null);
   const [scheduleDate, setScheduleDate] = useState<string>('');
   const [scheduleMonthly, setScheduleMonthly] = useState<boolean>(false);
   const [settlePaidAt, setSettlePaidAt] = useState<string>('');
@@ -59,6 +61,10 @@ import { Button } from "@/components/ui/button";
       setDetail(data);
       setSettlePaidAt(formatLocalDateTime(new Date()));
       setDiscount('');
+      try {
+        const cfg = await api.getDormConfig();
+        setDormConfig(cfg || null);
+      } catch {}
       if (data.contract?.room?.id) {
         const roomId = data.contract.room.id;
         const list = await api.getMeterReadings(roomId, data.month, data.year);
@@ -226,6 +232,116 @@ import { Button } from "@/components/ui/button";
     return { waterUnits, electricUnits };
   }, [currentMR, prevMR]);
 
+  const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+  const computeTiered = (u: number, tiers?: Array<{ uptoUnit?: number | null; unitPrice: number; chargeType?: 'PER_UNIT' | 'FLAT' }>) => {
+    const list = Array.isArray(tiers) ? tiers : [];
+    if (!list.length) return 0;
+    const normalized = list
+      .map((t) => ({
+        uptoUnit: t.uptoUnit === null || t.uptoUnit === undefined ? undefined : Number(t.uptoUnit),
+        unitPrice: Math.max(0, Number(t.unitPrice ?? 0)),
+        chargeType: t.chargeType === 'FLAT' ? 'FLAT' as const : 'PER_UNIT' as const,
+      }))
+      .filter((t) => t.unitPrice > 0);
+    const finite = normalized.filter((t) => t.uptoUnit !== undefined).sort((a, b) => (a.uptoUnit as number) - (b.uptoUnit as number));
+    const infinite = normalized.filter((t) => t.uptoUnit === undefined);
+    const ordered = [...finite, ...infinite];
+    let remaining = Math.max(0, u);
+    let previousUpto = 0;
+    let total = 0;
+    for (const tier of ordered) {
+      if (remaining <= 0) break;
+      const upto = tier.uptoUnit ?? Number.POSITIVE_INFINITY;
+      const rangeSize = Math.max(0, upto - previousUpto);
+      const tierUnits = Number.isFinite(upto) ? Math.min(remaining, rangeSize) : remaining;
+      if (tier.chargeType === 'FLAT') {
+        if (tierUnits > 0) total += tier.unitPrice;
+      } else {
+        total += tierUnits * tier.unitPrice;
+      }
+      remaining -= tierUnits;
+      previousUpto = Number.isFinite(upto) ? upto : previousUpto;
+    }
+    return total;
+  };
+
+  const updateUtilitiesFromMeter = () => {
+    if (!detail || !dormConfig) {
+      alert('ไม่พบการตั้งค่าหอพักหรือบิล');
+      return;
+    }
+    const room = detail.contract?.room;
+    const waterOverride = Math.max(0, Number(room?.waterOverrideAmount ?? 0));
+    const electricOverride = Math.max(0, Number(room?.electricOverrideAmount ?? 0));
+    // Compute electric
+    const eUsage = Math.max(0, usage.electricUnits);
+    let electricAmount = 0;
+    const eUnit = Math.max(0, Number(dormConfig.electricUnitPrice));
+    const eMinAmt = Math.max(0, Number(dormConfig.electricMinAmount ?? 0));
+    const eMinUnits = Math.max(0, Number(dormConfig.electricMinUnits ?? 0));
+    const eMethod = (dormConfig.electricFeeMethod || 'METER_USAGE') as DormConfig['electricFeeMethod'];
+    if (electricOverride > 0) {
+      electricAmount = electricOverride;
+    } else if (eMethod === 'FLAT_MONTHLY') {
+      electricAmount = Math.max(0, Number(dormConfig.electricFlatMonthlyFee ?? 0));
+    } else if (eMethod === 'METER_USAGE_MIN_AMOUNT') {
+      electricAmount = Math.max(eUsage * eUnit, eMinAmt);
+    } else if (eMethod === 'METER_USAGE_MIN_UNITS') {
+      electricAmount = eUsage <= eMinUnits ? eMinAmt : eUsage * eUnit;
+    } else if (eMethod === 'METER_USAGE_PLUS_BASE') {
+      electricAmount = eUsage <= eMinUnits ? eMinAmt : eMinAmt + (eUsage - eMinUnits) * eUnit;
+    } else if (eMethod === 'METER_USAGE_TIERED') {
+      electricAmount = computeTiered(
+        eUsage,
+        Array.isArray(dormConfig.electricTieredRates) ? dormConfig.electricTieredRates : undefined,
+      );
+    } else {
+      electricAmount = eUsage * eUnit;
+    }
+    // Compute water
+    const wUsage = Math.max(0, usage.waterUnits);
+    let waterAmount = 0;
+    const wUnit = Math.max(0, Number(dormConfig.waterUnitPrice));
+    const wMinAmt = Math.max(0, Number(dormConfig.waterMinAmount ?? 0));
+    const wMinUnits = Math.max(0, Number(dormConfig.waterMinUnits ?? 0));
+    const wMethod = (dormConfig.waterFeeMethod || 'METER_USAGE') as DormConfig['waterFeeMethod'];
+    if (waterOverride > 0) {
+      waterAmount = waterOverride;
+    } else if (wMethod === 'FLAT_MONTHLY') {
+      waterAmount = Math.max(0, Number(dormConfig.waterFlatMonthlyFee ?? 0));
+    } else if (wMethod === 'FLAT_PER_PERSON') {
+      const perPerson = Math.max(0, Number(dormConfig.waterFlatPerPersonFee ?? 0));
+      const occupants = Math.max(1, Number(detail.contract?.occupantCount ?? 1));
+      waterAmount = perPerson * occupants;
+    } else if (wMethod === 'METER_USAGE_MIN_AMOUNT') {
+      waterAmount = Math.max(wUsage * wUnit, wMinAmt);
+    } else if (wMethod === 'METER_USAGE_MIN_UNITS') {
+      waterAmount = wUsage <= wMinUnits ? wMinAmt : wUsage * wUnit;
+    } else if (wMethod === 'METER_USAGE_PLUS_BASE') {
+      waterAmount = wUsage <= wMinUnits ? wMinAmt : wMinAmt + (wUsage - wMinUnits) * wUnit;
+    } else if (wMethod === 'METER_USAGE_TIERED') {
+      waterAmount = computeTiered(
+        wUsage,
+        Array.isArray(dormConfig.waterTieredRates) ? dormConfig.waterTieredRates : undefined,
+      );
+    } else {
+      waterAmount = wUsage * wUnit;
+    }
+    electricAmount = round2(electricAmount);
+    waterAmount = round2(waterAmount);
+    const nextTotal = round2(
+      Number(detail.rentAmount) +
+        electricAmount +
+        waterAmount +
+        Number(detail.otherFees || 0) +
+        (detail.items || []).reduce((sum: number, it: any) => sum + Number(it.amount), 0) -
+        Number(detail.discount || 0)
+    );
+    setPendingUtilities({ waterAmount, electricAmount });
+    setDetail({ ...detail, waterAmount, electricAmount, totalAmount: nextTotal });
+    alert('อัพเดทค่าน้ำไฟและคำนวนใหม่เรียบร้อย (ยังไม่บันทึก)');
+  };
+
   if (canEdit) {
     return (
       <>
@@ -325,6 +441,12 @@ import { Button } from "@/components/ui/button";
                           <div className="font-semibold">รวมทั้งหมด</div>
                           <div className="font-semibold">฿{Number(detail.totalAmount).toLocaleString()}</div>
                         </div>
+                      </div>
+                      <div>
+                        <Button onClick={updateUtilitiesFromMeter} className="mt-2 bg-[#f5a987] hover:bg-[#e09b7d] text-white">
+                          อัพเดทค่าน้ำไฟและคำนวนใหม่
+                        </Button>
+                        <div className="text-xs text-slate-500 mt-1">หลังอัพเดท ให้กด “บันทึกเป็นร่าง” เพื่อบันทึกค่าน้ำไฟใหม่</div>
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -438,7 +560,11 @@ import { Button } from "@/components/ui/button";
                     onClick={async () => {
                       if (!detail) return;
                       try {
-                        await api.updateInvoice(detail.id, { status: 'DRAFT' as any });
+                        await api.updateInvoice(detail.id, {
+                          status: 'DRAFT' as any,
+                          ...(pendingUtilities?.waterAmount !== undefined ? { waterAmount: pendingUtilities?.waterAmount } : {}),
+                          ...(pendingUtilities?.electricAmount !== undefined ? { electricAmount: pendingUtilities?.electricAmount } : {}),
+                        });
                         const data = await api.getInvoice(detail.id);
                         setDetail(data);
                         alert('บันทึกเป็น “ร่าง” เรียบร้อย กรุณาส่งบิลใหม่อีกครั้ง');

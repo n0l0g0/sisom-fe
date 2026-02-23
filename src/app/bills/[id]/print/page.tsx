@@ -167,9 +167,10 @@ export function InvoicePrint({
     }
     return d;
   };
+  const now = new Date();
   const currentWaterDateValue = new Date(
-    invoice.year,
-    invoice.month - 1,
+    now.getFullYear(),
+    now.getMonth(),
     22,
   );
   const prevWaterDateValue = getDateMinusOneMonth(currentWaterDateValue);

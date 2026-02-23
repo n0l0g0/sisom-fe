@@ -361,7 +361,7 @@ export function InvoicePrint({
       </div>
       <div className="mt-3">
         <div className="w-full text-center text-[12px] px-3 py-2 bg-[#fff4e6] border border-[#f5a987] rounded">
-          เนื่องด้วยหอพักได้เปลี่ยนระบบใหม่ใช้ Line ในการบริหารจัดการ และจะยกเลิกระบบเดิมของ Application Horganice
+          ประกาศ: หอพักได้ย้ายระบบมาใช้ LINE ในการบริหารจัดการ และจะยกเลิกแอป Horganice กรุณาแอดไลน์หอพักที่ @sisomoffice เพื่อรับบิล แจ้งซ่อม และติดต่อเจ้าหน้าที่
         </div>
       </div>
     </div>

@@ -360,7 +360,7 @@ export function InvoicePrint({
         </div>
       </div>
       <div className="mt-3">
-        <div className="w-full text-center text-[12px] px-3 py-2 bg-[#fff4e6] border border-[#f5a987] rounded">
+        <div className="w-full text-center text-[12px] px-3 py-2 bg-[#fff4e6] border border-[#f5a987] rounded whitespace-nowrap">
           ประกาศ: หอพักได้ย้ายระบบมาใช้ LINE ในการบริหารจัดการ และจะยกเลิกแอป Horganice กรุณาแอดไลน์หอพักที่ @sisomoffice เพื่อรับบิล, แจ้งซ่อม และติดต่อเจ้าหน้าที่
         </div>
       </div>

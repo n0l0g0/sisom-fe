@@ -816,12 +816,14 @@ export const api = {
     return res.json();
   },
   setAutoSendConfig: async (payload: AutoSendConfig): Promise<AutoSendConfig> => {
-    const res = await fetch(`${API_URL}/invoices/auto-send/config`, {
+    const url = `${API_URL}/invoices/auto-send/config`;
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
+      const status = res.status;
       try {
         const body = await res.json();
         const msg =
@@ -829,11 +831,17 @@ export const api = {
             ? body.message
             : Array.isArray(body?.message) && body.message.length > 0
             ? String(body.message[0])
+            : status === 404
+            ? `Not Found: ${url}`
             : 'Failed to update auto-send config';
         throw new Error(msg);
       } catch {
         const txt = await res.text().catch(() => '');
-        throw new Error(txt || 'Failed to update auto-send config');
+        const fallback =
+          status === 404
+            ? `Not Found: ${url}`
+            : txt || 'Failed to update auto-send config';
+        throw new Error(fallback);
       }
     }
     return res.json();

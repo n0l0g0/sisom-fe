@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import { api, Invoice, Room, MaintenanceRequest } from '@/services/api';
+import MonthYearSelector from './MonthYearSelector';
 
 function toNumber(value: unknown): number {
   if (typeof value === 'number') return value;
@@ -208,19 +208,7 @@ export default async function ReportsPage() {
             ภาพรวมผลประกอบการและสถิติหอพักจากข้อมูลจริง
           </p>
         </div>
-        <div className="flex gap-2">
-          <Link
-            href={`/reports/dorm-summary?month=${month}&year=${year}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-6 py-2 rounded-full bg-[#f5a987] text-white font-medium hover:bg-[#e09b7d]"
-          >
-            รายงานแยกหอ
-          </Link>
-          <div className="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 text-sm">
-            ปี {year + 543}
-          </div>
-        </div>
+        <MonthYearSelector defaultMonth={month} defaultYear={year} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

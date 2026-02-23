@@ -233,9 +233,7 @@ function DormSummaryReportInner() {
     );
   }
 
-  const reportMonth = month === 12 ? 1 : month + 1;
-  const reportYear = month === 12 ? year + 1 : year;
-  const monthLabel = formatMonthYearThai(reportYear, reportMonth);
+  const monthLabel = formatMonthYearThai(year, month);
 
   return (
     <div className="bg-white text-black">

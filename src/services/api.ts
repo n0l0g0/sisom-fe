@@ -822,8 +822,19 @@ export const api = {
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
-      const txt = await res.text().catch(() => '');
-      throw new Error(txt || 'Failed to update auto-send config');
+      try {
+        const body = await res.json();
+        const msg =
+          typeof body?.message === 'string'
+            ? body.message
+            : Array.isArray(body?.message) && body.message.length > 0
+            ? String(body.message[0])
+            : 'Failed to update auto-send config';
+        throw new Error(msg);
+      } catch {
+        const txt = await res.text().catch(() => '');
+        throw new Error(txt || 'Failed to update auto-send config');
+      }
     }
     return res.json();
   },

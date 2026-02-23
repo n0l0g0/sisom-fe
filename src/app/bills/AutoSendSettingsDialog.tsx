@@ -58,8 +58,13 @@
        await api.setAutoSendConfig(payload);
        alert('บันทึกการตั้งค่าส่งบิลอัตโนมัติเรียบร้อย');
        setOpen(false);
-     } catch (e) {
-       alert((e as Error).message || 'บันทึกการตั้งค่าไม่สำเร็จ');
+    } catch (e) {
+      const msg = String((e as Error).message || '').toLowerCase();
+      const friendly =
+        msg.includes('not found') || msg.includes('cannot post')
+          ? 'ยังไม่พบ API การตั้งค่าส่งบิลอัตโนมัติบนเซิร์ฟเวอร์ กรุณาอัพเดตฝั่ง Backend เพื่อรองรับเส้นทาง /invoices/auto-send/config'
+          : (e as Error).message || 'บันทึกการตั้งค่าไม่สำเร็จ';
+      alert(friendly);
      } finally {
        setLoading(false);
      }

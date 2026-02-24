@@ -42,7 +42,10 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
     lineProfiles = {};
   }
   
-  const occupiedRooms = rooms.filter(r => r.status !== 'VACANT').length;
+  const occupiedRooms = rooms.filter(r => {
+    const hasActiveContract = !!r.contracts?.[0]?.isActive;
+    return r.status !== 'VACANT' || hasActiveContract;
+  }).length;
   const availableRooms = rooms.filter(r => r.status === 'VACANT').length;
   const derivePrice = (r: Room) => {
     const active = r.contracts?.[0];

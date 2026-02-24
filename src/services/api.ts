@@ -166,6 +166,7 @@ export interface DormExtra {
   logoUrl?: string;
   mapUrl?: string;
   lineLink?: string;
+  monthlyDueDay?: number;
 }
 
 export interface MaintenanceRequest {
@@ -1122,12 +1123,21 @@ export const api = {
     path?: string;
     entityType?: string;
     entityId?: string;
-    details?: any;
+    details?: Record<string, unknown>;
   }>> => {
     const res = await fetch(`${API_URL}/activity-logs?limit=${limit}`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch activity logs');
     const data = await res.json().catch(() => ({}));
-    return (data?.items || []) as Array<any>;
+    return (data?.items || []) as Array<{
+      timestamp: string;
+      userId?: string;
+      username?: string;
+      action: string;
+      path?: string;
+      entityType?: string;
+      entityId?: string;
+      details?: Record<string, unknown>;
+    }>;
   },
   getActivityLogsPaged: async (params: {
     page?: number;
@@ -1136,7 +1146,16 @@ export const api = {
     action?: string;
     start?: string;
     end?: string;
-  }): Promise<{ items: any[]; total: number; page: number; pageSize: number }> => {
+  }): Promise<{ items: Array<{
+    timestamp: string;
+    userId?: string;
+    username?: string;
+    action: string;
+    path?: string;
+    entityType?: string;
+    entityId?: string;
+    details?: Record<string, unknown>;
+  }>; total: number; page: number; pageSize: number }> => {
     const qs = new URLSearchParams();
     if (params.page) qs.set('page', String(params.page));
     if (params.pageSize) qs.set('pageSize', String(params.pageSize));
@@ -1153,7 +1172,7 @@ export const api = {
     path?: string;
     entityType?: string;
     entityId?: string;
-    details?: any;
+    details?: Record<string, unknown>;
     userId?: string;
     username?: string;
   }): Promise<{ ok: boolean }> => {

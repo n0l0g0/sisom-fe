@@ -11,6 +11,7 @@ export default function SaveDormExtra({ initial }: { initial: DormExtra }) {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [mapUrl, setMapUrl] = useState<string>(initial?.mapUrl || '');
   const [lineLink, setLineLink] = useState<string>(initial?.lineLink || '');
+  const [monthlyDueDay, setMonthlyDueDay] = useState<number>(Number.isFinite(initial?.monthlyDueDay as number) ? (initial?.monthlyDueDay as number) : 5);
   const [saving, setSaving] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,6 +35,7 @@ export default function SaveDormExtra({ initial }: { initial: DormExtra }) {
         logoUrl: finalLogoUrl || undefined,
         mapUrl: mapUrl || undefined,
         lineLink: lineLink || undefined,
+        monthlyDueDay: Number.isFinite(monthlyDueDay) && monthlyDueDay > 0 ? monthlyDueDay : undefined,
       };
       await api.updateDormExtra(payload);
       alert('บันทึกข้อมูลเพิ่มเติมของหอพักเรียบร้อยแล้ว');
@@ -85,6 +87,19 @@ export default function SaveDormExtra({ initial }: { initial: DormExtra }) {
             placeholder="https://line.me/R/ti/p/..."
             className="rounded-2xl border-amber-200"
           />
+        </div>
+        <div className="space-y-2">
+          <Label>วันกำหนดชำระประจำเดือน</Label>
+          <Input
+            type="number"
+            min={1}
+            max={31}
+            value={monthlyDueDay}
+            onChange={(e) => setMonthlyDueDay(Math.max(1, Math.min(31, Number(e.target.value) || 1)))}
+            placeholder="เช่น 5"
+            className="rounded-2xl border-amber-200"
+          />
+          <div className="text-xs text-slate-600">กำหนดวันที่ของเดือนเป็นวันครบกำหนดชำระ</div>
         </div>
       </div>
 

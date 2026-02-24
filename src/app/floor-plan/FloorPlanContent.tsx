@@ -1,6 +1,6 @@
  'use client';
  
- import { useMemo, useState } from 'react';
+ import { useEffect, useMemo, useState } from 'react';
  import Link from 'next/link';
  import { useSearchParams } from 'next/navigation';
  import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +8,8 @@
  import RoomDetailDialog from './RoomDetailDialog';
  import CreateRoomDialog from './CreateRoomDialog';
  import RoomsDebugLogger from './RoomsDebugLogger';
- import type { Room, Building } from '@/services/api';
+ import { api } from '@/services/api';
+ import type { Room, Building, Invoice, DormExtra } from '@/services/api';
  
   export default function FloorPlanContent({ rooms, buildings }: { rooms: Room[]; buildings: Building[] }) {
    const searchParams = useSearchParams();
@@ -24,13 +25,77 @@
    const [uiFloor, setUiFloor] = useState<string>('');
    const [uiStatus, setUiStatus] = useState<string>(statusFilter === 'all' ? '' : statusFilter);
    const [uiPrice, setUiPrice] = useState<string>('');
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [extra, setExtra] = useState<DormExtra | null>(null);
  
-   const filteredRooms = useMemo(() => {
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [inv, ex] = await Promise.all([api.getInvoices(), api.getDormExtra()]);
+        if (!cancelled) {
+          setInvoices(inv);
+          setExtra(ex);
+        }
+      } catch {
+        if (!cancelled) {
+          setInvoices([]);
+          setExtra(null);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+ 
+  const monthlyDueDay = Number.isFinite(extra?.monthlyDueDay as number) ? (extra?.monthlyDueDay as number) : undefined;
+ 
+  const flaggedRoomIds = useMemo(() => {
+    const now = new Date();
+    const isSentOrOverdue = (inv: Invoice) => inv.status === 'SENT' || inv.status === 'OVERDUE';
+    const overdueByDay = (inv: Invoice) => {
+      if (inv.status === 'OVERDUE') return true;
+      if (inv.status !== 'SENT') return false;
+      const d = inv.dueDate ? new Date(inv.dueDate) : (() => {
+        const m = Math.max(1, Math.min(12, inv.month));
+        const y = inv.year;
+        const day = monthlyDueDay ?? 5;
+        const date = new Date(y, m - 1, Math.max(1, Math.min(31, day)));
+        return date;
+      })();
+      return now > d;
+    };
+    const setIds = new Set<string>();
+    for (const inv of invoices) {
+      if (!isSentOrOverdue(inv)) continue;
+      const rid = inv.contract?.roomId;
+      if (!rid) continue;
+      if (inv.status === 'SENT') {
+        setIds.add(rid);
+      } else if (overdueByDay(inv)) {
+        setIds.add(rid);
+      }
+    }
+    return setIds;
+  }, [invoices, monthlyDueDay]);
+ 
+  const mergedRooms = useMemo(() => {
+    if (!flaggedRoomIds.size) return rooms;
+    return rooms.map((r) => {
+      if (flaggedRoomIds.has(r.id)) {
+        return { ...r, status: 'OVERDUE' as const };
+      }
+      return r;
+    });
+  }, [rooms, flaggedRoomIds]);
+ 
+  const filteredRooms = useMemo(() => {
      const byBuilding = selectedBuilding
-       ? rooms.filter((r: Room & { buildingId?: string }) => (r as Room & { buildingId?: string }).buildingId === selectedBuilding)
-       : rooms;
+      ? mergedRooms.filter((r: Room & { buildingId?: string }) => (r as Room & { buildingId?: string }).buildingId === selectedBuilding)
+      : mergedRooms;
      return statusFilter === 'all' ? byBuilding : byBuilding.filter((r) => r.status === statusFilter);
-   }, [rooms, selectedBuilding, statusFilter]);
+  }, [mergedRooms, selectedBuilding, statusFilter]);
    const currentBuilding = useMemo(
      () => (selectedBuilding ? buildings.find((b) => b.id === selectedBuilding) : undefined),
      [buildings, selectedBuilding],

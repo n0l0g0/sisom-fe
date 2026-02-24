@@ -216,13 +216,28 @@ function BillsPageContent() {
     const roomId = bill.contract?.room?.id;
     if (!roomId) return '-';
     const s = schedules[roomId];
-    if (!s) {
-      const day = Number(dormExtra?.monthlyDueDay);
-      if (Number.isFinite(day) && day > 0) {
-        const d = new Date(bill.year, bill.month - 1, Math.max(1, Math.min(28, day)));
-        return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+    const fallbackDayNum = Number(dormExtra?.monthlyDueDay);
+    const useFallback = () => {
+      if (Number.isFinite(fallbackDayNum) && fallbackDayNum > 0) {
+        return new Date(
+          bill.year,
+          bill.month - 1,
+          Math.max(1, Math.min(28, fallbackDayNum)),
+        ).toLocaleDateString('th-TH', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        });
+      }
+      const dd = new Date(bill.dueDate);
+      if (!isNaN(dd.getTime()) && dd.getFullYear() === bill.year && dd.getMonth() === bill.month - 1) {
+        return dd.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
       }
       return '-';
+    };
+    if (!s || (s.monthlyDay === undefined && !s.oneTimeDate)) {
+      const day = Number(dormExtra?.monthlyDueDay);
+      return useFallback();
     }
     if (typeof s.monthlyDay === 'number') {
       const day = Math.max(1, Math.min(28, Number(s.monthlyDay)));

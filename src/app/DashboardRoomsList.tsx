@@ -24,17 +24,8 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
   const allBuildingKeys = useMemo(() => groups.map((g) => g.key), [groups]);
 
   const [filter, setFilter] = useState<'all' | 'VACANT' | 'OCCUPIED' | 'OVERDUE'>('all');
-  const [openBuildings, setOpenBuildings] = useState<Set<string>>(
-    () => new Set(groups.map((g) => g.key))
-  );
-  const [openFloors, setOpenFloors] = useState<Map<string, Set<number>>>(() => {
-    return new Map(
-      groups.map((g) => [
-        g.key,
-        new Set(g.floors.map((f) => f.floor)),
-      ])
-    );
-  });
+  const [openBuildings, setOpenBuildings] = useState<Set<string>>(() => new Set());
+  const [openFloors, setOpenFloors] = useState<Map<string, Set<number>>>(() => new Map());
 
   // Default-Open behavior: if no state recorded yet, treat as open for display
 

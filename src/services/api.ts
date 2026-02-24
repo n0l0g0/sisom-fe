@@ -31,6 +31,7 @@ export interface Room {
   meterReadings?: MeterReading[];
   buildingId?: string;
   building?: Building;
+  maintenanceRequests?: MaintenanceRequest[];
 }
 
 export interface RoomContact {

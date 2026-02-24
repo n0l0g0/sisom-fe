@@ -67,9 +67,16 @@
       return now > d;
     };
     const setIds = new Set<string>();
+    const contractToRoom = new Map<string, string>();
+    for (const r of rooms) {
+      const cs = Array.isArray(r.contracts) ? r.contracts : [];
+      for (const c of cs) {
+        contractToRoom.set(c.id, r.id);
+      }
+    }
     for (const inv of invoices) {
       if (!isSentOrOverdue(inv)) continue;
-      const rid = inv.contract?.roomId;
+      const rid = inv.contract?.roomId || contractToRoom.get(inv.contractId);
       if (!rid) continue;
       if (inv.status === 'SENT') {
         setIds.add(rid);
@@ -78,7 +85,7 @@
       }
     }
     return setIds;
-  }, [invoices, monthlyDueDay]);
+  }, [invoices, monthlyDueDay, rooms]);
  
   const mergedRooms = useMemo(() => {
     if (!flaggedRoomIds.size) return rooms;

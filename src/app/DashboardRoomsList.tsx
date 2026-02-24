@@ -22,6 +22,14 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
   const { groups, totalRooms } = props;
 
   const allBuildingKeys = useMemo(() => groups.map((g) => g.key), [groups]);
+  const defaultOpenBuildings = useMemo(() => new Set(groups.map((g) => g.key)), [groups]);
+  const defaultOpenFloors = useMemo(
+    () =>
+      new Map(
+        groups.map((g) => [g.key, new Set(g.floors.map((f) => f.floor))]),
+      ),
+    [groups],
+  );
 
   const [filter, setFilter] = useState<'all' | 'VACANT' | 'OCCUPIED' | 'OVERDUE'>('all');
   const [openBuildings, setOpenBuildings] = useState<Set<string>>(() => new Set());
@@ -111,14 +119,17 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
 
       <div className="space-y-3">
         {groups.map((g) => {
-          const buildingOpen = initialOpen ? true : openBuildings.has(g.key);
+          const buildingOpen =
+            openBuildings.size > 0
+              ? openBuildings.has(g.key)
+              : defaultOpenBuildings.has(g.key);
           return (
             <details
               key={g.key}
               className="rounded-2xl overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200"
               open={buildingOpen}
               ref={(el) => {
-                if (el && openBuildings.size === 0) {
+                if (el && buildingOpen) {
                   el.open = true;
                 }
               }}
@@ -151,7 +162,13 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
               <div className="p-4 space-y-3">
                 {g.floors.map((f) => {
                   const existingSet = openFloors.get(g.key);
-                  const floorOpen = initialOpen ? true : (existingSet ? existingSet.has(f.floor) : false);
+                  const defaultSet = defaultOpenFloors.get(g.key);
+                  const floorOpen =
+                    existingSet
+                      ? existingSet.has(f.floor)
+                      : defaultSet
+                        ? defaultSet.has(f.floor)
+                        : true;
                   const floorRooms = f.rooms.filter((r) => filter === 'all' ? true : r.status === filter);
                   return (
                     <details
@@ -159,7 +176,7 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
                       className="rounded-xl overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 border-l-4 border-orange-200"
                       open={floorOpen}
                       ref={(el) => {
-                        if (el && !existingSet) {
+                        if (el && floorOpen) {
                           el.open = true;
                         }
                       }}

@@ -4,12 +4,17 @@ services:
     build:
       context: .
       args:
-        NEXT_PUBLIC_API_URL: "https://line-sisom.washqueue.com/api"
-        INTERNAL_API_URL: "https://line-sisom.washqueue.com/api"
+        NEXT_PUBLIC_API_URL: "https://cms.washqueue.com/api"
+        INTERNAL_API_URL: "https://cms.washqueue.com/api"
     container_name: sisom-frontend
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=https://line-sisom.washqueue.com/api
-      - INTERNAL_API_URL=https://line-sisom.washqueue.com/api
+      - NEXT_PUBLIC_API_URL=https://cms.washqueue.com/api
+      - INTERNAL_API_URL=https://cms.washqueue.com/api
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000 || exit 1"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3

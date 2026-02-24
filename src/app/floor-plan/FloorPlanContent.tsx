@@ -180,7 +180,13 @@
         const rb = room as Room & { buildingId?: string };
         if (uiBuilding && rb.buildingId !== uiBuilding) return false;
         if (uiFloor && String(room.floor) !== uiFloor) return false;
-        if (uiStatus && room.status !== uiStatus) return false;
+        if (uiStatus) {
+          const match =
+            uiStatus === 'OCCUPIED'
+              ? room.status !== 'VACANT'
+              : room.status === uiStatus;
+          if (!match) return false;
+        }
         if (!priceMatch(room)) return false;
         if (text) {
           const t = [
@@ -318,17 +324,7 @@
         </div>
         <DashboardRoomsList
           totalRooms={uiFilteredRooms.length}
-          groups={sortedGroups.map((g) => ({
-            key: g.buildingId || 'none',
-            buildingId: g.buildingId,
-            buildingName: g.buildingName,
-            buildingCode: g.buildingCode,
-            totalRooms: g.totalRooms,
-            floors: g.floors.map((f) => ({
-              floor: f.floor,
-              rooms: f.rooms,
-            })),
-          }))}
+          groups={sortedGroups.map(g => ({ ...g, key: g.buildingId || 'none' }))}
           defaultOpen
         />
       </div>

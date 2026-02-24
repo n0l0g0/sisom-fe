@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import { api, Invoice, Room } from '@/services/api';
+import { api, Invoice, Room, DormExtra } from '@/services/api';
 import { CreateInvoiceDialog } from './CreateInvoiceDialog';
 import SendInvoiceButton from './SendInvoiceButton';
 import SendAllBar from './SendAllBar';
@@ -89,26 +89,31 @@ function BillsPageContent() {
     const refetch = async () => {
       if (cancelled) return;
       try {
-        const [invoicesRes, roomsRes] = await Promise.all([
+        const [invoicesRes, roomsRes, schedulesRes] = await Promise.all([
           api.getInvoices(),
           api.getRooms(),
+          api.getRoomPaymentSchedules(),
         ]);
         if (cancelled) return;
         setInvoices(invoicesRes);
         setRooms(roomsRes);
+        setSchedules(schedulesRes);
       } catch {}
     };
     const onFocus = () => refetch();
     const onVisibility = () => {
       if (document.visibilityState === 'visible') refetch();
     };
+    const onScheduleUpdated = () => refetch();
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('ROOM_PAYMENT_SCHEDULE_UPDATED', onScheduleUpdated as any);
     timer = setInterval(refetch, 8000);
     return () => {
       cancelled = true;
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('ROOM_PAYMENT_SCHEDULE_UPDATED', onScheduleUpdated as any);
       if (timer) clearInterval(timer);
     };
   }, []);
@@ -190,13 +195,18 @@ function BillsPageContent() {
   }, [page, pageSize, filteredInvoices]);
 
   const [schedules, setSchedules] = useState<Record<string, { monthlyDay?: number; oneTimeDate?: string }>>({});
+  const [dormExtra, setDormExtra] = useState<DormExtra | null>(null);
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
       try {
-        const data = await api.getRoomPaymentSchedules();
+        const [sched, extra] = await Promise.all([
+          api.getRoomPaymentSchedules(),
+          api.getDormExtra().catch(() => ({}) as DormExtra),
+        ]);
         if (cancelled) return;
-        setSchedules(data);
+        setSchedules(sched);
+        setDormExtra(extra);
       } catch {}
     };
     run();
@@ -206,7 +216,14 @@ function BillsPageContent() {
     const roomId = bill.contract?.room?.id;
     if (!roomId) return '-';
     const s = schedules[roomId];
-    if (!s) return '-';
+    if (!s) {
+      const day = Number(dormExtra?.monthlyDueDay);
+      if (Number.isFinite(day) && day > 0) {
+        const d = new Date(bill.year, bill.month - 1, Math.max(1, Math.min(28, day)));
+        return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+      return '-';
+    }
     if (typeof s.monthlyDay === 'number') {
       const day = Math.max(1, Math.min(28, Number(s.monthlyDay)));
       const d = new Date(bill.year, bill.month - 1, day);

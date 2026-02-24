@@ -182,6 +182,9 @@ import { Button } from "@/components/ui/button";
     }
     try {
       await api.setRoomPaymentSchedule(roomId, { date: dateStr, monthly: scheduleMonthly });
+      try {
+        window.dispatchEvent(new Event('ROOM_PAYMENT_SCHEDULE_UPDATED'));
+      } catch {}
       router.refresh();
       alert('บันทึกวันนัดจ่ายเรียบร้อย');
     } catch (e) {

@@ -291,7 +291,7 @@
           </div>
         </div>
         <DashboardRoomsList
-          totalRooms={uiFilteredRooms.length}
+          totalRooms={rooms.length}
           groups={sortedGroups.map((g) => ({
             key: g.buildingId || 'none',
             buildingId: g.buildingId,

@@ -116,6 +116,11 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
               key={g.key}
               className="rounded-2xl overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200"
               open={buildingOpen}
+              ref={(el) => {
+                if (el && openBuildings.size === 0) {
+                  el.open = true;
+                }
+              }}
               onToggle={(e) => {
                 const isOpen = e.currentTarget.open;
                 setOpenBuildings((prev) => {
@@ -151,6 +156,11 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
                       key={f.floor}
                       className="rounded-xl overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 border-l-4 border-orange-200"
                       open={floorOpen}
+                      ref={(el) => {
+                        if (el && !existingSet) {
+                          el.open = true;
+                        }
+                      }}
                       onToggle={(e) => {
                         const isOpen = e.currentTarget.open;
                         setOpenFloors((prev) => {

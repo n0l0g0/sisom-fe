@@ -145,17 +145,14 @@ function BillsPageContent() {
   }, [monthFilteredInvoices, searchTerm, statusFilter]);
 
   const arrearsInvoices = useMemo(
-    () =>
-      monthFilteredInvoices.filter(
-        (i) => i.status !== 'PAID' && i.status !== 'CANCELLED',
-      ),
+    () => monthFilteredInvoices.filter((i) => i.status === 'OVERDUE'),
     [monthFilteredInvoices],
   );
 
   const totalPending = useMemo(
     () =>
       filteredInvoices
-        .filter((i) => i.status === 'SENT' || i.status === 'DRAFT')
+        .filter((i) => i.status === 'SENT')
         .reduce((acc, curr) => acc + Number(curr.totalAmount), 0),
     [filteredInvoices],
   );

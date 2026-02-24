@@ -62,7 +62,7 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
     return { price: p, total, vacant };
   });
   
-  const unpaidInvoices = invoices.filter(i => i.status === 'SENT' || i.status === 'OVERDUE' || i.status === 'DRAFT');
+  const unpaidInvoices = invoices.filter(i => i.status === 'SENT' || i.status === 'OVERDUE');
   const unpaidBillsCount = unpaidInvoices.length;
   const totalUnpaidAmount = unpaidInvoices.reduce((acc, curr) => acc + Number(curr.totalAmount), 0);
 

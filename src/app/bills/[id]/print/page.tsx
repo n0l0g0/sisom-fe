@@ -198,6 +198,7 @@ export function InvoicePrint({
         height: '148mm',
         padding: '10mm',
         boxSizing: 'border-box',
+        overflow: 'hidden',
       }}
     >
       <div className="top-right text-right text-xs">ไม่ใช่ใบเสร็จรับเงิน</div>
@@ -378,7 +379,7 @@ export default function InvoicePrintPage() {
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
         @page {
           size: A5 landscape;
-          margin: 10mm;
+          margin: 0;
         }
         body {
           margin: 0;

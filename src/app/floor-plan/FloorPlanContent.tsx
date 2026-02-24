@@ -119,6 +119,23 @@
  
    const floors = useMemo(() => Object.keys(roomsByFloor).map(Number).sort((a, b) => a - b), [roomsByFloor]);
  
+   const [openFloors, setOpenFloors] = useState<Set<number>>(() => new Set(floors));
+
+   const toggleFloor = (floor: number) => {
+    setOpenFloors(prev => {
+      const next = new Set(prev);
+      if (next.has(floor)) {
+        next.delete(floor);
+      } else {
+        next.add(floor);
+      }
+      return next;
+    });
+   };
+
+   const expandAllFloors = () => setOpenFloors(new Set(floors));
+   const collapseAllFloors = () => setOpenFloors(new Set());
+
    const getStatusColor = (status: string) => {
      switch (status) {
        case 'OCCUPIED': return 'bg-blue-50 text-blue-700 border-blue-200';
@@ -139,6 +156,14 @@
      }
    };
  
+  const sortRooms = (a: Room, b: Room) => {
+    const numA = parseInt(String(a.number).replace(/[^0-9]/g, ''), 10);
+    const numB = parseInt(String(b.number).replace(/[^0-9]/g, ''), 10);
+    if (Number.isNaN(numA)) return 1;
+    if (Number.isNaN(numB)) return -1;
+    return numA - numB;
+  };
+
   const uiFilteredRooms = useMemo(() => {
       const text = q.trim().toLowerCase();
       const priceRange = uiPrice;
@@ -151,7 +176,7 @@
         if (priceRange === '8000+') return v >= 8000;
         return true;
       };
-      return filteredRooms.filter((room) => {
+      const rooms = filteredRooms.filter((room) => {
         const rb = room as Room & { buildingId?: string };
         if (uiBuilding && rb.buildingId !== uiBuilding) return false;
         if (uiFloor && String(room.floor) !== uiFloor) return false;
@@ -167,6 +192,7 @@
         }
         return true;
       });
+      return rooms.sort(sortRooms);
     }, [filteredRooms, q, uiBuilding, uiFloor, uiStatus, uiPrice]);
   
   if (!selectedBuilding) {
@@ -291,7 +317,7 @@
           </div>
         </div>
         <DashboardRoomsList
-          totalRooms={rooms.length}
+          totalRooms={uiFilteredRooms.length}
           groups={sortedGroups.map((g) => ({
             key: g.buildingId || 'none',
             buildingId: g.buildingId,
@@ -303,6 +329,7 @@
               rooms: f.rooms,
             })),
           }))}
+          defaultOpen
         />
       </div>
     );
@@ -345,48 +372,57 @@
            <span className="text-sm text-slate-600">ค้างชำระ</span>
          </div>
          </div>
+         <div className="flex items-center gap-2">
+           <button type="button" className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition text-sm" onClick={expandAllFloors}>ขยายทั้งหมด</button>
+           <button type="button" className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition text-sm" onClick={collapseAllFloors}>ยุบทั้งหมด</button>
+         </div>
        </div>
        
        {floors.map(floor => (
          <Card key={floor} className="shadow-sm border-none bg-white">
-           <CardHeader className="pb-2 border-b border-slate-100">
-             <CardTitle className="text-lg text-slate-700">ชั้น {floor}</CardTitle>
+           <CardHeader className="pb-2 border-b border-slate-100 cursor-pointer" onClick={() => toggleFloor(floor)}>
+             <CardTitle className="text-lg text-slate-700 flex justify-between items-center">
+               <span>ชั้น {floor}</span>
+               <svg className={`w-5 h-5 text-slate-400 transition-transform ${openFloors.has(floor) ? '' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+             </CardTitle>
            </CardHeader>
-           <CardContent className="pt-6">
-             <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-10 gap-4">
-               {roomsByFloor[floor]
-                 .sort((a, b) => {
-                   const aIsBannoi = a.number.includes('บ้านน้อย');
-                   const bIsBannoi = b.number.includes('บ้านน้อย');
-                   if (aIsBannoi !== bIsBannoi) {
-                     return aIsBannoi ? 1 : -1;
-                   }
-                   const numA = parseInt(a.number.replace(/\D/g, '')) || 0;
-                   const numB = parseInt(b.number.replace(/\D/g, '')) || 0;
-                   return numA - numB;
-                 })
-                 .map((room: Room) => (
-                 <RoomDetailDialog key={room.id} room={room}>
-                   <div 
-                     className={`
-                       p-4 rounded-xl border text-center cursor-pointer hover:shadow-md transition-all hover:-translate-y-1 min-w-[100px]
-                       ${getStatusColor(room.status)}
-                     `}
-                   >
-                     <div className="text-xl font-bold mb-1">{room.number}</div>
-                     <div className="text-xs opacity-80">
-                       {getDisplayStatus(room.status)}
-                     </div>
-                     {room.contracts?.[0]?.tenant && (
-                       <div className="mt-2 text-xs truncate font-medium">
-                         {room.contracts[0].tenant.nickname || room.contracts[0].tenant.name}
+           {openFloors.has(floor) && (
+             <CardContent className="pt-6">
+               <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-10 gap-4">
+                 {roomsByFloor[floor]
+                   .sort((a, b) => {
+                     const aIsBannoi = a.number.includes('บ้านน้อย');
+                     const bIsBannoi = b.number.includes('บ้านน้อย');
+                     if (aIsBannoi !== bIsBannoi) {
+                       return aIsBannoi ? 1 : -1;
+                     }
+                     const numA = parseInt(a.number.replace(/\D/g, '')) || 0;
+                     const numB = parseInt(b.number.replace(/\D/g, '')) || 0;
+                     return numA - numB;
+                   })
+                   .map((room: Room) => (
+                   <RoomDetailDialog key={room.id} room={room}>
+                     <div 
+                       className={`
+                         p-4 rounded-xl border text-center cursor-pointer hover:shadow-md transition-all hover:-translate-y-1 min-w-[100px]
+                         ${getStatusColor(room.status)}
+                       `}
+                     >
+                       <div className="text-xl font-bold mb-1">{room.number}</div>
+                       <div className="text-xs opacity-80">
+                         {getDisplayStatus(room.status)}
                        </div>
-                     )}
-                   </div>
-                 </RoomDetailDialog>
-               ))}
-             </div>
-           </CardContent>
+                       {room.contracts?.[0]?.tenant && (
+                         <div className="mt-2 text-xs truncate font-medium">
+                           {room.contracts[0].tenant.nickname || room.contracts[0].tenant.name}
+                         </div>
+                       )}
+                     </div>
+                   </RoomDetailDialog>
+                 ))}
+               </div>
+             </CardContent>
+           )}
          </Card>
        ))}
      </div>

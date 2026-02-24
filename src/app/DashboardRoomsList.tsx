@@ -18,8 +18,12 @@ type BuildingGroup = {
   floors: FloorGroup[];
 };
 
-export default function DashboardRoomsList(props: { groups: BuildingGroup[]; totalRooms: number }) {
-  const { groups, totalRooms } = props;
+export default function DashboardRoomsList(props: {
+  groups: BuildingGroup[];
+  totalRooms: number;
+  defaultOpen?: boolean;
+}) {
+  const { groups, totalRooms, defaultOpen = false } = props;
 
   const allBuildingKeys = useMemo(() => groups.map((g) => g.key), [groups]);
   const defaultOpenBuildings = useMemo(() => new Set(groups.map((g) => g.key)), [groups]);
@@ -32,8 +36,8 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
   );
 
   const [filter, setFilter] = useState<'all' | 'VACANT' | 'OCCUPIED' | 'OVERDUE'>('all');
-  const [openBuildings, setOpenBuildings] = useState<Set<string>>(() => new Set());
-  const [openFloors, setOpenFloors] = useState<Map<string, Set<number>>>(() => new Map());
+  const [openBuildings, setOpenBuildings] = useState<Set<string>>(() => (defaultOpen ? defaultOpenBuildings : new Set()));
+  const [openFloors, setOpenFloors] = useState<Map<string, Set<number>>>(() => (defaultOpen ? defaultOpenFloors : new Map()));
   const [initialOpen, setInitialOpen] = useState(true);
 
   // Default-Open behavior: if no state recorded yet, treat as open for display

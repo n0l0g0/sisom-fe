@@ -1,6 +1,6 @@
  'use client';
  
- import { useMemo } from 'react';
+ import { useMemo, useState } from 'react';
  import Link from 'next/link';
  import { useSearchParams } from 'next/navigation';
  import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,18 +10,24 @@
  import RoomsDebugLogger from './RoomsDebugLogger';
  import type { Room, Building } from '@/services/api';
  
- export default function FloorPlanContent({ rooms, buildings }: { rooms: Room[]; buildings: Building[] }) {
+  export default function FloorPlanContent({ rooms, buildings }: { rooms: Room[]; buildings: Building[] }) {
    const searchParams = useSearchParams();
    const selectedBuilding = searchParams.get('building') || undefined;
-   const statusParam = (searchParams.get('status') || '').toUpperCase();
-   const statusFilter: 'VACANT' | 'OCCUPIED' | 'OVERDUE' | 'MAINTENANCE' | 'all' =
-     statusParam === 'VACANT' || statusParam === 'OCCUPIED' || statusParam === 'OVERDUE' || statusParam === 'MAINTENANCE'
-       ? (statusParam as any)
-       : 'all';
+    const statusParam = (searchParams.get('status') || '').toUpperCase();
+    const allowedStatus = ['VACANT', 'OCCUPIED', 'OVERDUE', 'MAINTENANCE'] as const;
+    type StatusFilter = (typeof allowedStatus)[number] | 'all';
+    const statusFilter: StatusFilter = (allowedStatus as readonly string[]).includes(statusParam)
+      ? (statusParam as StatusFilter)
+      : 'all';
+   const [q, setQ] = useState('');
+   const [uiBuilding, setUiBuilding] = useState<string>(selectedBuilding || '');
+   const [uiFloor, setUiFloor] = useState<string>('');
+   const [uiStatus, setUiStatus] = useState<string>(statusFilter === 'all' ? '' : statusFilter);
+   const [uiPrice, setUiPrice] = useState<string>('');
  
    const filteredRooms = useMemo(() => {
      const byBuilding = selectedBuilding
-       ? rooms.filter((r: Room & { buildingId?: string }) => r.buildingId === selectedBuilding)
+       ? rooms.filter((r: Room & { buildingId?: string }) => (r as Room & { buildingId?: string }).buildingId === selectedBuilding)
        : rooms;
      return statusFilter === 'all' ? byBuilding : byBuilding.filter((r) => r.status === statusFilter);
    }, [rooms, selectedBuilding, statusFilter]);
@@ -61,6 +67,36 @@
      }
    };
  
+  const uiFilteredRooms = useMemo(() => {
+      const text = q.trim().toLowerCase();
+      const priceRange = uiPrice;
+      const priceMatch = (room: Room) => {
+        const v = (room.contracts?.[0]?.currentRent ?? room.pricePerMonth) ?? 0;
+        if (!priceRange) return true;
+        if (priceRange === '0-3000') return v >= 0 && v < 3000;
+        if (priceRange === '3000-5000') return v >= 3000 && v < 5000;
+        if (priceRange === '5000-8000') return v >= 5000 && v < 8000;
+        if (priceRange === '8000+') return v >= 8000;
+        return true;
+      };
+      return filteredRooms.filter((room) => {
+        const rb = room as Room & { buildingId?: string };
+        if (uiBuilding && rb.buildingId !== uiBuilding) return false;
+        if (uiFloor && String(room.floor) !== uiFloor) return false;
+        if (uiStatus && room.status !== uiStatus) return false;
+        if (!priceMatch(room)) return false;
+        if (text) {
+          const t = [
+            String(room.number || ''),
+            String(room.contracts?.[0]?.tenant?.name || ''),
+            String(room.contracts?.[0]?.tenant?.nickname || ''),
+          ].join(' ').toLowerCase();
+          if (!t.includes(text)) return false;
+        }
+        return true;
+      });
+    }, [filteredRooms, q, uiBuilding, uiFloor, uiStatus, uiPrice]);
+  
   if (!selectedBuilding) {
     const buildingLookup = new Map(buildings.map((b) => [b.id, b]));
     const groupsMap = new Map<
@@ -73,8 +109,9 @@
         totalRooms: number;
       }
     >();
-    for (const room of filteredRooms) {
-      const bid: string = (room as any).buildingId || 'none';
+    for (const room of uiFilteredRooms) {
+      const rb = room as Room & { buildingId?: string };
+      const bid: string = rb.buildingId || 'none';
       const b = bid !== 'none' ? buildingLookup.get(bid) : undefined;
       const name = b?.name || 'ไม่ระบุตึก';
       const code = b?.code || undefined;
@@ -124,8 +161,65 @@
             </button>
           </CreateRoomDialog>
         </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-orange-100">
+          <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex-1 min-w-[200px]">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="ค้นหาห้อง หรือชื่อผู้เช่า"
+                  className="w-full pl-4 pr-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                />
+              </div>
+            </div>
+            <select
+              className="px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none bg-white cursor-pointer"
+              value={uiBuilding}
+              onChange={(e) => setUiBuilding(e.target.value)}
+            >
+              <option value="">ทุกตึก</option>
+              {buildings.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}{b.code ? ` (${b.code})` : ''}</option>
+              ))}
+            </select>
+            <select
+              className="px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none bg-white cursor-pointer"
+              value={uiFloor}
+              onChange={(e) => setUiFloor(e.target.value)}
+            >
+              <option value="">ทุกชั้น</option>
+              {Array.from(new Set(rooms.map(r => Number.isFinite(r.floor) ? r.floor : 0))).sort((a,b)=>a-b).map(f => (
+                <option key={f} value={String(f)}>ชั้น {f}</option>
+              ))}
+            </select>
+            <select
+              className="px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none bg-white cursor-pointer"
+              value={uiStatus}
+              onChange={(e) => setUiStatus(e.target.value)}
+            >
+              <option value="">ทุกสถานะ</option>
+              <option value="VACANT">🟢 ว่าง</option>
+              <option value="OCCUPIED">🔵 มีผู้เช่า</option>
+              <option value="OVERDUE">🔴 ค้างชำระ</option>
+              <option value="MAINTENANCE">🟡 แจ้งซ่อม</option>
+            </select>
+            <select
+              className="px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none bg-white cursor-pointer"
+              value={uiPrice}
+              onChange={(e) => setUiPrice(e.target.value)}
+            >
+              <option value="">ทุกราคา</option>
+              <option value="0-3000">฿0 - ฿3,000</option>
+              <option value="3000-5000">฿3,000 - ฿5,000</option>
+              <option value="5000-8000">฿5,000 - ฿8,000</option>
+              <option value="8000+">฿8,000 ขึ้นไป</option>
+            </select>
+          </div>
+        </div>
         <DashboardRoomsList
-          totalRooms={filteredRooms.length}
+          totalRooms={uiFilteredRooms.length}
           groups={sortedGroups.map((g) => ({
             key: g.buildingId || 'none',
             buildingId: g.buildingId,

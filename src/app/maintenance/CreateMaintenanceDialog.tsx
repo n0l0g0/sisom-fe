@@ -7,14 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { api, Room } from '@/services/api';
+import { api, Room, MaintenanceRequest } from '@/services/api';
 import { useRouter } from 'next/navigation';
 
 interface CreateMaintenanceDialogProps {
   rooms: Room[];
+  onCreated?: (req: MaintenanceRequest) => void;
 }
 
-export function CreateMaintenanceDialog({ rooms }: CreateMaintenanceDialogProps) {
+export function CreateMaintenanceDialog({ rooms, onCreated }: CreateMaintenanceDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -67,12 +68,15 @@ export function CreateMaintenanceDialog({ rooms }: CreateMaintenanceDialogProps)
               .filter(Boolean)
               .join('\n')
           : formData.description;
-      await api.createMaintenanceRequest({
+      const created = await api.createMaintenanceRequest({
         ...formData,
         description: desc,
         title: formData.title || (reportType === 'MOVE_OUT' ? 'แจ้งย้ายออก' : 'แจ้งซ่อม'),
       });
       setOpen(false);
+      if (onCreated) {
+        onCreated(created);
+      }
       router.refresh();
       setFormData({
         roomId: '',

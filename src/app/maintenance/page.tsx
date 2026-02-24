@@ -267,7 +267,12 @@ function MaintenancePageContent() {
           <h1 className="text-2xl font-bold text-[#8b5a3c]">แจ้งซ่อม</h1>
           <p className="text-slate-500 text-sm mt-1">จัดการรายการแจ้งซ่อมและติดตามสถานะ</p>
         </div>
-        <CreateMaintenanceDialog rooms={rooms} />
+        <CreateMaintenanceDialog
+          rooms={rooms}
+          onCreated={(req) => {
+            setRequests((prev) => [req, ...prev]);
+          }}
+        />
       </div>
 
       {error && (

@@ -200,44 +200,52 @@ function BillsPageContent() {
     let cancelled = false;
     const run = async () => {
       try {
-        const [sched, extra] = await Promise.all([
-          api.getRoomPaymentSchedules(),
-          api.getDormExtra().catch(() => ({}) as DormExtra),
-        ]);
+        const extra = await api.getDormExtra().catch(() => ({}) as DormExtra);
         if (cancelled) return;
-        setSchedules(sched);
         setDormExtra(extra);
       } catch {}
     };
     run();
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const fetchPerRoomSchedules = async (roomIds: string[]) => {
+      try {
+        const unique = Array.from(new Set(roomIds.filter((id) => !!id)));
+        const pairs = await Promise.all(
+          unique.map(async (id) => {
+            const s = await api.getRoomPaymentSchedule(id).catch(() => null);
+            return [id, s] as const;
+          }),
+        );
+        if (cancelled) return;
+        const next: Record<string, { monthlyDay?: number; oneTimeDate?: string }> = {};
+        for (const [id, s] of pairs) {
+          if (s && (typeof s.monthlyDay === 'number' || typeof s.oneTimeDate === 'string')) {
+            next[id] = { monthlyDay: s.monthlyDay, oneTimeDate: s.oneTimeDate };
+          }
+        }
+        setSchedules(next);
+      } catch {}
+    };
+    const roomIds = invoices.map((inv) => inv.contract?.room?.id).filter((id): id is string => typeof id === 'string');
+    if (roomIds.length > 0) {
+      fetchPerRoomSchedules(roomIds);
+    } else {
+      setSchedules({});
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [invoices]);
+
   const formatScheduleDate = (bill: Invoice) => {
     const roomId = bill.contract?.room?.id;
     if (!roomId) return '-';
     const s = schedules[roomId];
-    const fallbackDayNum = Number(dormExtra?.monthlyDueDay);
-    const useFallback = () => {
-      if (Number.isFinite(fallbackDayNum) && fallbackDayNum > 0) {
-        return new Date(
-          bill.year,
-          bill.month - 1,
-          Math.max(1, Math.min(28, fallbackDayNum)),
-        ).toLocaleDateString('th-TH', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-        });
-      }
-      const dd = new Date(bill.dueDate);
-      if (!isNaN(dd.getTime()) && dd.getFullYear() === bill.year && dd.getMonth() === bill.month - 1) {
-        return dd.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
-      }
-      return '-';
-    };
     if (!s || (s.monthlyDay === undefined && !s.oneTimeDate)) {
-      const day = Number(dormExtra?.monthlyDueDay);
-      return useFallback();
+      return '-';
     }
     if (typeof s.monthlyDay === 'number') {
       const day = Math.max(1, Math.min(28, Number(s.monthlyDay)));

@@ -36,6 +36,8 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
     );
   });
 
+  // Default-Open behavior: if no state recorded yet, treat as open for display
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'OCCUPIED':
@@ -117,7 +119,7 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
 
       <div className="space-y-3">
         {groups.map((g) => {
-          const buildingOpen = openBuildings.has(g.key);
+          const buildingOpen = openBuildings.size === 0 ? true : openBuildings.has(g.key);
           return (
             <details
               key={g.key}
@@ -150,7 +152,8 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
 
               <div className="p-4 space-y-3">
                 {g.floors.map((f) => {
-                  const floorOpen = openFloors.get(g.key)?.has(f.floor) || false;
+                  const existingSet = openFloors.get(g.key);
+                  const floorOpen = existingSet ? existingSet.has(f.floor) : true;
                   const floorRooms = f.rooms.filter((r) => filter === 'all' ? true : r.status === filter);
                   return (
                     <details

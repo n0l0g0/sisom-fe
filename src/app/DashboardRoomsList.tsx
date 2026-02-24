@@ -26,6 +26,7 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
   const [filter, setFilter] = useState<'all' | 'VACANT' | 'OCCUPIED' | 'OVERDUE'>('all');
   const [openBuildings, setOpenBuildings] = useState<Set<string>>(() => new Set());
   const [openFloors, setOpenFloors] = useState<Map<string, Set<number>>>(() => new Map());
+  const [initialOpen, setInitialOpen] = useState(true);
 
   // Default-Open behavior: if no state recorded yet, treat as open for display
 
@@ -110,7 +111,7 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
 
       <div className="space-y-3">
         {groups.map((g) => {
-          const buildingOpen = openBuildings.size === 0 ? true : openBuildings.has(g.key);
+          const buildingOpen = initialOpen ? true : openBuildings.has(g.key);
           return (
             <details
               key={g.key}
@@ -122,6 +123,7 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
                 }
               }}
               onToggle={(e) => {
+                if (initialOpen) setInitialOpen(false);
                 const isOpen = e.currentTarget.open;
                 setOpenBuildings((prev) => {
                   const next = new Set(prev);
@@ -149,7 +151,7 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
               <div className="p-4 space-y-3">
                 {g.floors.map((f) => {
                   const existingSet = openFloors.get(g.key);
-                  const floorOpen = existingSet ? existingSet.has(f.floor) : true;
+                  const floorOpen = initialOpen ? true : (existingSet ? existingSet.has(f.floor) : false);
                   const floorRooms = f.rooms.filter((r) => filter === 'all' ? true : r.status === filter);
                   return (
                     <details
@@ -162,6 +164,7 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
                         }
                       }}
                       onToggle={(e) => {
+                        if (initialOpen) setInitialOpen(false);
                         const isOpen = e.currentTarget.open;
                         setOpenFloors((prev) => {
                           const next = new Map(prev);

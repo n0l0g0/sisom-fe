@@ -151,38 +151,38 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
       </header>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="card-hover bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200 rounded-2xl p-5">
+        <Link href="/floor-plan" className="card-hover bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-3">
             <span className="text-3xl">🏠</span>
             <span className="text-xs text-orange-700 bg-orange-200 px-2 py-1 rounded-full">ทั้งหมด</span>
           </div>
           <p className="text-4xl font-bold text-orange-900 mb-1">{rooms.length}</p>
           <p className="text-orange-700 text-sm">ห้องทั้งหมด</p>
-        </div>
-        <div className="card-hover bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-2xl p-5">
+        </Link>
+        <Link href="/floor-plan?status=VACANT" className="card-hover bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-3">
             <span className="text-3xl">✅</span>
             <span className="text-xs text-green-700 bg-green-200 px-2 py-1 rounded-full">ว่าง</span>
           </div>
           <p className="text-4xl font-bold text-green-600 mb-1">{availableRooms}</p>
           <p className="text-green-700 text-sm">ห้องว่าง</p>
-        </div>
-        <div className="card-hover bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-2xl p-5">
+        </Link>
+        <Link href="/floor-plan?status=OCCUPIED" className="card-hover bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-3">
             <span className="text-3xl">👤</span>
             <span className="text-xs text-blue-700 bg-blue-200 px-2 py-1 rounded-full">มีผู้เช่า</span>
           </div>
           <p className="text-4xl font-bold text-blue-600 mb-1">{occupiedRooms}</p>
           <p className="text-blue-700 text-sm">มีผู้พักอาศัย</p>
-        </div>
-        <div className="card-hover bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200 rounded-2xl p-5">
+        </Link>
+        <Link href="/floor-plan?status=OVERDUE" className="card-hover bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-3">
             <span className="text-3xl">⚠️</span>
             <span className="text-xs text-red-700 bg-red-200 px-2 py-1 rounded-full">ค้างชำระ</span>
           </div>
           <p className="text-4xl font-bold text-red-600 mb-1">{unpaidBillsCount}</p>
           <p className="text-red-700 text-sm">฿{totalUnpaidAmount.toLocaleString()}</p>
-        </div>
+        </Link>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

@@ -4,6 +4,7 @@
  import Link from 'next/link';
  import { useSearchParams } from 'next/navigation';
  import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+ import DashboardRoomsList from '@/app/DashboardRoomsList';
  import RoomDetailDialog from './RoomDetailDialog';
  import CreateRoomDialog from './CreateRoomDialog';
  import RoomsDebugLogger from './RoomsDebugLogger';
@@ -12,14 +13,18 @@
  export default function FloorPlanContent({ rooms, buildings }: { rooms: Room[]; buildings: Building[] }) {
    const searchParams = useSearchParams();
    const selectedBuilding = searchParams.get('building') || undefined;
+   const statusParam = (searchParams.get('status') || '').toUpperCase();
+   const statusFilter: 'VACANT' | 'OCCUPIED' | 'OVERDUE' | 'MAINTENANCE' | 'all' =
+     statusParam === 'VACANT' || statusParam === 'OCCUPIED' || statusParam === 'OVERDUE' || statusParam === 'MAINTENANCE'
+       ? (statusParam as any)
+       : 'all';
  
-   const filteredRooms = useMemo(
-     () =>
-       selectedBuilding
-         ? rooms.filter((r: Room & { buildingId?: string }) => r.buildingId === selectedBuilding)
-         : rooms,
-     [rooms, selectedBuilding],
-   );
+   const filteredRooms = useMemo(() => {
+     const byBuilding = selectedBuilding
+       ? rooms.filter((r: Room & { buildingId?: string }) => r.buildingId === selectedBuilding)
+       : rooms;
+     return statusFilter === 'all' ? byBuilding : byBuilding.filter((r) => r.status === statusFilter);
+   }, [rooms, selectedBuilding, statusFilter]);
    const currentBuilding = useMemo(
      () => (selectedBuilding ? buildings.find((b) => b.id === selectedBuilding) : undefined),
      [buildings, selectedBuilding],
@@ -56,40 +61,86 @@
      }
    };
  
-   if (!selectedBuilding) {
-     return (
-       <div className="space-y-8 fade-in">
-         <div className="flex items-center justify-between mb-6">
-           <h1 className="text-2xl font-bold text-[#8b5a3c]">เลือกตึก</h1>
-           <CreateRoomDialog>
-             <button className="px-4 py-2 rounded-lg text-white font-medium hover:opacity-90 transition flex items-center gap-2 bg-[#f5a987]">
-               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-               </svg>
-               เพิ่มห้อง
-             </button>
-           </CreateRoomDialog>
-         </div>
-         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-           {buildings.map((b) => {
-             const count = rooms.filter((r: Room & { buildingId?: string }) => r.buildingId === b.id).length;
-             return (
-               <Link key={b.id} href={`/floor-plan?building=${encodeURIComponent(b.id)}`}>
-                 <Card className="shadow-sm border-none bg-white hover:shadow-md transition">
-                   <CardHeader className="pb-2 border-b border-slate-100">
-                     <CardTitle className="text-lg text-slate-700">{b.name}</CardTitle>
-                   </CardHeader>
-                   <CardContent className="pt-4">
-                     <div className="text-slate-600">จำนวนห้อง {count}</div>
-                   </CardContent>
-                 </Card>
-               </Link>
-             );
-           })}
-         </div>
-       </div>
-     );
-   }
+  if (!selectedBuilding) {
+    const buildingLookup = new Map(buildings.map((b) => [b.id, b]));
+    const groupsMap = new Map<
+      string,
+      {
+        buildingId?: string;
+        buildingName: string;
+        buildingCode?: string;
+        floors: Map<number, Room[]>;
+        totalRooms: number;
+      }
+    >();
+    for (const room of filteredRooms) {
+      const bid: string = (room as any).buildingId || 'none';
+      const b = bid !== 'none' ? buildingLookup.get(bid) : undefined;
+      const name = b?.name || 'ไม่ระบุตึก';
+      const code = b?.code || undefined;
+      const floor: number = Number.isFinite(room.floor) ? room.floor : 0;
+      const existing = groupsMap.get(bid);
+      if (!existing) {
+        groupsMap.set(bid, {
+          buildingId: bid !== 'none' ? bid : undefined,
+          buildingName: name,
+          buildingCode: code,
+          floors: new Map([[floor, [room]]]),
+          totalRooms: 1,
+        });
+        continue;
+      }
+      existing.totalRooms += 1;
+      const list = existing.floors.get(floor);
+      if (list) list.push(room);
+      else existing.floors.set(floor, [room]);
+    }
+    const sortedGroups = Array.from(groupsMap.entries())
+      .sort(([aKey, a], [bKey, b]) => {
+        if (aKey === 'none' && bKey !== 'none') return 1;
+        if (bKey === 'none' && aKey !== 'none') return -1;
+        const aNum = parseInt((a.buildingCode || '').replace(/\D/g, ''), 10);
+        const bNum = parseInt((b.buildingCode || '').replace(/\D/g, ''), 10);
+        if (Number.isFinite(aNum) && Number.isFinite(bNum) && aNum !== bNum) return aNum - bNum;
+        if (a.buildingCode && b.buildingCode && a.buildingCode !== b.buildingCode) return a.buildingCode.localeCompare(b.buildingCode);
+        return a.buildingName.localeCompare(b.buildingName);
+      })
+      .map(([, g]) => {
+        const floors = Array.from(g.floors.entries())
+          .sort(([a], [b]) => a - b)
+          .map(([floor, rs]) => ({ floor, rooms: rs }));
+        return { ...g, floors };
+      });
+    return (
+      <div className="space-y-8 fade-in">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-[#8b5a3c]">รายการห้องทั้งหมด</h1>
+          <CreateRoomDialog>
+            <button className="px-4 py-2 rounded-lg text-white font-medium hover:opacity-90 transition flex items-center gap-2 bg-[#f5a987]">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+              </svg>
+              เพิ่มห้อง
+            </button>
+          </CreateRoomDialog>
+        </div>
+        <DashboardRoomsList
+          totalRooms={filteredRooms.length}
+          groups={sortedGroups.map((g) => ({
+            key: g.buildingId || 'none',
+            buildingId: g.buildingId,
+            buildingName: g.buildingName,
+            buildingCode: g.buildingCode,
+            totalRooms: g.totalRooms,
+            floors: g.floors.map((f) => ({
+              floor: f.floor,
+              rooms: f.rooms,
+            })),
+          }))}
+        />
+      </div>
+    );
+  }
  
    return (
      <div className="space-y-8 fade-in">

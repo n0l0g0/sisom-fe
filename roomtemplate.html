@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="th" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบจัดการห้องพัก หอพักสีส้ม</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Prompt', sans-serif; }
+    .room-card { transition: all 0.3s ease; }
+    .room-card:hover { transform: translateY(-4px); }
+    .status-available { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .status-occupied { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+    .status-reserved { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    .status-maintenance { background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); }
+    .modal-overlay { backdrop-filter: blur(4px); }
+    .btn-primary { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); }
+    .btn-primary:hover { background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%); }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    .modal-content { animation: fadeIn 0.2s ease-out; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .room-card { animation: slideUp 0.3s ease-out backwards; }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+ </head>
+ <body class="h-full bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
+  <div id="app" class="h-full w-full overflow-auto">
+   <!-- Header -->
+   <header class="bg-gradient-to-r from-orange-500 to-amber-500 shadow-lg sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-4">
+     <div class="flex items-center justify-between flex-wrap gap-4">
+      <div class="flex items-center gap-3">
+       <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md">
+        <span class="text-2xl">🏠</span>
+       </div>
+       <div>
+        <h1 id="building-name" class="text-xl md:text-2xl font-bold text-white">หอพักสีส้ม</h1>
+        <p class="text-orange-100 text-sm">ระบบบริหารจัดการห้องพัก</p>
+       </div>
+      </div><button onclick="openModal('add')" class="btn-primary text-white px-5 py-2.5 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all flex items-center gap-2">
+       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+       </svg> เพิ่มห้องพัก </button>
+     </div>
+    </div>
+   </header><!-- Stats Bar -->
+   <div class="max-w-7xl mx-auto px-4 py-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+     <div class="bg-white rounded-xl p-4 shadow-sm border border-orange-100">
+      <div class="flex items-center gap-3">
+       <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
+        <span class="text-xl">🏢</span>
+       </div>
+       <div>
+        <p class="text-gray-500 text-xs">ห้องทั้งหมด</p>
+        <p id="stat-total" class="text-xl font-bold text-gray-800">0</p>
+       </div>
+      </div>
+     </div>
+     <div class="bg-white rounded-xl p-4 shadow-sm border border-green-100">
+      <div class="flex items-center gap-3">
+       <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+        <span class="text-xl">✅</span>
+       </div>
+       <div>
+        <p class="text-gray-500 text-xs">ห้องว่าง</p>
+        <p id="stat-available" class="text-xl font-bold text-green-600">0</p>
+       </div>
+      </div>
+     </div>
+     <div class="bg-white rounded-xl p-4 shadow-sm border border-red-100">
+      <div class="flex items-center gap-3">
+       <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+        <span class="text-xl">🔑</span>
+       </div>
+       <div>
+        <p class="text-gray-500 text-xs">มีผู้เช่า</p>
+        <p id="stat-occupied" class="text-xl font-bold text-red-600">0</p>
+       </div>
+      </div>
+     </div>
+     <div class="bg-white rounded-xl p-4 shadow-sm border border-amber-100">
+      <div class="flex items-center gap-3">
+       <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+        <span class="text-xl">💰</span>
+       </div>
+       <div>
+        <p class="text-gray-500 text-xs">รายได้/เดือน</p>
+        <p id="stat-income" class="text-xl font-bold text-amber-600">฿0</p>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div><!-- Filters -->
+   <div class="max-w-7xl mx-auto px-4 pb-4">
+    <div class="bg-white rounded-xl p-4 shadow-sm border border-orange-100">
+     <div class="flex flex-wrap gap-3 items-center">
+      <!-- Search -->
+      <div class="flex-1 min-w-[200px]">
+       <div class="relative">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg><input type="text" id="search-input" placeholder="ค้นหาห้อง, ชื่อผู้เช่า..." class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all" oninput="applyFilters()">
+       </div>
+      </div><!-- Building Filter --> <select id="filter-building" class="px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none bg-white cursor-pointer" onchange="applyFilters()"> <option value="">ทุกตึก</option> <option value="A">ตึก A</option> <option value="B">ตึก B</option> <option value="C">ตึก C</option> <option value="D">ตึก D</option> <option value="E">ตึก E</option> <option value="F">ตึก F</option> </select> <!-- Floor Filter --> <select id="filter-floor" class="px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none bg-white cursor-pointer" onchange="applyFilters()"> <option value="">ทุกชั้น</option> <option value="1">ชั้น 1</option> <option value="2">ชั้น 2</option> <option value="3">ชั้น 3</option> </select> <!-- Status Filter --> <select id="filter-status" class="px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none bg-white cursor-pointer" onchange="applyFilters()"> <option value="">ทุกสถานะ</option> <option value="available">🟢 ว่าง</option> <option value="occupied">🔴 มีผู้เช่า</option> <option value="reserved">🟡 จอง</option> <option value="maintenance">⚫ ซ่อมบำรุง</option> </select> <!-- Price Filter --> <select id="filter-price" class="px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none bg-white cursor-pointer" onchange="applyFilters()"> <option value="">ทุกราคา</option> <option value="0-3000">฿0 - ฿3,000</option> <option value="3000-5000">฿3,000 - ฿5,000</option> <option value="5000-8000">฿5,000 - ฿8,000</option> <option value="8000+">฿8,000 ขึ้นไป</option> </select> <!-- Room Type Filter --> <select id="filter-type" class="px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none bg-white cursor-pointer" onchange="applyFilters()"> <option value="">ทุกประเภท</option> <option value="standard">ห้องมาตรฐาน</option> <option value="deluxe">ห้องดีลักซ์</option> <option value="suite">ห้องสวีท</option> <option value="studio">สตูดิโอ</option> </select>
+     </div>
+    </div>
+   </div><!-- Room Grid -->
+   <div class="max-w-7xl mx-auto px-4 pb-8">
+    <div id="rooms-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+     <!-- Rooms will be rendered here -->
+    </div><!-- Empty State -->
+    <div id="empty-state" class="hidden text-center py-16">
+     <div class="w-24 h-24 mx-auto mb-4 bg-orange-100 rounded-full flex items-center justify-center">
+      <span class="text-5xl">🏠</span>
+     </div>
+     <h3 class="text-xl font-semibold text-gray-700 mb-2">ยังไม่มีห้องพัก</h3>
+     <p class="text-gray-500 mb-4">เริ่มต้นเพิ่มห้องพักแรกของคุณ</p><button onclick="openModal('add')" class="btn-primary text-white px-6 py-2.5 rounded-xl font-medium"> + เพิ่มห้องพัก </button>
+    </div><!-- No Results -->
+    <div id="no-results" class="hidden text-center py-16">
+     <div class="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+      <span class="text-5xl">🔍</span>
+     </div>
+     <h3 class="text-xl font-semibold text-gray-700 mb-2">ไม่พบห้องพัก</h3>
+     <p class="text-gray-500">ลองเปลี่ยนตัวกรองหรือคำค้นหา</p>
+    </div>
+   </div><!-- Footer -->
+   <footer class="bg-white border-t border-orange-100 py-4 mt-auto">
+    <p id="footer-text" class="text-center text-gray-500 text-sm">© 2024 หอพักสีส้ม - ระบบบริหารจัดการห้องพัก</p>
+   </footer>
+  </div><!-- Modal -->
+  <div id="modal-overlay" class="fixed inset-0 bg-black/50 z-50 hidden modal-overlay flex items-center justify-center p-4">
+   <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90%] overflow-auto">
+    <div class="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+     <h2 id="modal-title" class="text-xl font-bold text-gray-800">เพิ่มห้องพัก</h2><button onclick="closeModal()" class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors">
+      <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg></button>
+    </div>
+    <form id="room-form" class="p-6 space-y-4" onsubmit="handleSubmit(event)">
+     <input type="hidden" id="room-id">
+     <div class="grid grid-cols-2 gap-4">
+      <div>
+       <label class="block text-sm font-medium text-gray-700 mb-1">ตึก *</label> <select id="room-building" required class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none bg-white"> <option value="">เลือกตึก</option> <option value="A">ตึก A</option> <option value="B">ตึก B</option> <option value="C">ตึก C</option> <option value="D">ตึก D</option> <option value="E">ตึก E</option> <option value="F">ตึก F</option> </select>
+      </div>
+      <div>
+       <label class="block text-sm font-medium text-gray-700 mb-1">ชั้น *</label> <select id="room-floor" required class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none bg-white"> <option value="">เลือกชั้น</option> <option value="1">ชั้น 1</option> <option value="2">ชั้น 2</option> <option value="3">ชั้น 3</option> </select>
+      </div>
+     </div>
+     <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">หมายเลขห้อง *</label> <input type="text" id="room-number" required class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none" placeholder="เช่น 101">
+     </div>
+     <div class="grid grid-cols-2 gap-4">
+      <div>
+       <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทห้อง *</label> <select id="room-type" required class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none bg-white"> <option value="">เลือกประเภท</option> <option value="standard">ห้องมาตรฐาน</option> <option value="deluxe">ห้องดีลักซ์</option> <option value="suite">ห้องสวีท</option> <option value="studio">สตูดิโอ</option> </select>
+      </div>
+      <div>
+       <label class="block text-sm font-medium text-gray-700 mb-1">ราคา/เดือน (บาท) *</label> <input type="number" id="room-price" required min="0" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none" placeholder="3500">
+      </div>
+     </div>
+     <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">สถานะ *</label> <select id="room-status" required class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none bg-white"> <option value="available">🟢 ว่าง</option> <option value="occupied">🔴 มีผู้เช่า</option> <option value="reserved">🟡 จอง</option> <option value="maintenance">⚫ ซ่อมบำรุง</option> </select>
+     </div>
+     <div id="tenant-section" class="space-y-4 hidden">
+      <hr class="border-gray-200">
+      <p class="text-sm font-medium text-gray-700">ข้อมูลผู้เช่า</p>
+      <div>
+       <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อผู้เช่า</label> <input type="text" id="tenant-name" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none" placeholder="ชื่อ-นามสกุล">
+      </div>
+      <div>
+       <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร</label> <input type="tel" id="tenant-phone" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none" placeholder="0xx-xxx-xxxx">
+      </div>
+     </div>
+     <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">หมายเหตุ</label> <textarea id="room-notes" rows="2" class="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none resize-none" placeholder="รายละเอียดเพิ่มเติม..."></textarea>
+     </div>
+     <div class="flex gap-3 pt-2">
+      <button type="button" onclick="closeModal()" class="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors">ยกเลิก</button> <button type="submit" id="submit-btn" class="flex-1 btn-primary text-white px-4 py-2.5 rounded-xl font-medium transition-all">บันทึก</button>
+     </div>
+    </form>
+   </div>
+  </div><!-- Delete Confirmation Modal -->
+  <div id="delete-modal" class="fixed inset-0 bg-black/50 z-50 hidden modal-overlay flex items-center justify-center p-4">
+   <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+    <div class="text-center">
+     <div class="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+      <span class="text-3xl">🗑️</span>
+     </div>
+     <h3 class="text-xl font-bold text-gray-800 mb-2">ลบห้องพัก?</h3>
+     <p class="text-gray-500 mb-6">ต้องการลบห้อง <span id="delete-room-number" class="font-semibold text-gray-700"></span> หรือไม่?</p>
+     <div class="flex gap-3">
+      <button onclick="closeDeleteModal()" class="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors">ยกเลิก</button> <button id="confirm-delete-btn" onclick="confirmDelete()" class="flex-1 bg-red-500 hover:bg-red-600 text-white px-4 py-2.5 rounded-xl font-medium transition-colors">ลบ</button>
+     </div>
+    </div>
+   </div>
+  </div><!-- Toast -->
+  <div id="toast" class="fixed bottom-4 right-4 z-50 hidden">
+   <div class="bg-gray-800 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-3">
+    <span id="toast-icon">✅</span> <span id="toast-message">บันทึกสำเร็จ</span>
+   </div>
+  </div>
+  <script>
+    // State
+    let allRooms = [];
+    let filteredRooms = [];
+    let currentEditRoom = null;
+    let roomToDelete = null;
+
+    // Default Config
+    const defaultConfig = {
+      building_name: 'หอพักสีส้ม',
+      footer_text: '© 2024 หอพักสีส้ม - ระบบบริหารจัดการห้องพัก',
+      primary_color: '#f97316',
+      secondary_color: '#ffffff',
+      text_color: '#1f2937',
+      accent_color: '#ea580c',
+      surface_color: '#fff7ed'
+    };
+
+    // Element SDK
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange: async (config) => {
+          document.getElementById('building-name').textContent = config.building_name || defaultConfig.building_name;
+          document.getElementById('footer-text').textContent = config.footer_text || defaultConfig.footer_text;
+        },
+        mapToCapabilities: (config) => ({
+          recolorables: [
+            {
+              get: () => config.primary_color || defaultConfig.primary_color,
+              set: (v) => { config.primary_color = v; window.elementSdk.setConfig({ primary_color: v }); }
+            },
+            {
+              get: () => config.secondary_color || defaultConfig.secondary_color,
+              set: (v) => { config.secondary_color = v; window.elementSdk.setConfig({ secondary_color: v }); }
+            },
+            {
+              get: () => config.text_color || defaultConfig.text_color,
+              set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); }
+            }
+          ],
+          borderables: [],
+          fontEditable: undefined,
+          fontSizeable: undefined
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ['building_name', config.building_name || defaultConfig.building_name],
+          ['footer_text', config.footer_text || defaultConfig.footer_text]
+        ])
+      });
+    }
+
+    // Data Handler
+    const dataHandler = {
+      onDataChanged(data) {
+        allRooms = data;
+        applyFilters();
+        updateStats();
+      }
+    };
+
+    // Initialize Data SDK
+    async function initDataSdk() {
+      if (window.dataSdk) {
+        const result = await window.dataSdk.init(dataHandler);
+        if (!result.isOk) {
+          showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', '❌');
+        } else {
+          // Seed initial data on first load
+          if (allRooms.length === 0) {
+            await seedInitialData();
+          }
+        }
+      }
+    }
+
+    // Seed initial data with 6 buildings, each with 3 floors, 10 rooms per floor
+    async function seedInitialData() {
+      const buildings = ['A', 'B', 'C', 'D', 'E', 'F'];
+      const roomTypes = ['standard', 'deluxe', 'suite', 'studio'];
+      const prices = { standard: 3500, deluxe: 5500, suite: 7500, studio: 4500 };
+      const statuses = ['available', 'occupied', 'reserved', 'maintenance'];
+      const tenantNames = ['นายสมชาย', 'นางสมหญิง', 'นายประเสริฐ', 'นางมณฑา', 'นายชัยวัฒน์', 'นางมารีย์', 'นายสมศักดิ์', 'นางกาญจน์'];
+
+      const rooms = [];
+      let roomIndex = 0;
+
+      for (const building of buildings) {
+        for (let floor = 1; floor <= 3; floor++) {
+          for (let roomNum = 1; roomNum <= 10; roomNum++) {
+            const roomType = roomTypes[roomIndex % roomTypes.length];
+            const status = statuses[roomIndex % statuses.length];
+            const roomNumber = `${building}${floor}${String(roomNum).padStart(2, '0')}`;
+
+            rooms.push({
+              room_number: roomNumber,
+              building: building,
+              floor: floor,
+              room_type: roomType,
+              price: prices[roomType],
+              status: status,
+              tenant_name: status === 'occupied' ? tenantNames[roomIndex % tenantNames.length] : '',
+              phone: status === 'occupied' ? `08${String(Math.floor(Math.random() * 100000000)).padStart(8, '0')}` : '',
+              notes: roomIndex % 7 === 0 ? 'ห้องที่มีระเบิด' : '',
+              created_at: new Date().toISOString()
+            });
+            roomIndex++;
+          }
+        }
+      }
+
+      // Create all rooms
+      for (const room of rooms) {
+        const result = await window.dataSdk.create(room);
+        if (!result.isOk) {
+          console.error('Failed to seed room:', room.room_number);
+        }
+      }
+    }
+    initDataSdk();
+
+    // Render Functions
+    function renderRooms() {
+      const container = document.getElementById('rooms-container');
+      const emptyState = document.getElementById('empty-state');
+      const noResults = document.getElementById('no-results');
+
+      if (allRooms.length === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        noResults.classList.add('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      if (filteredRooms.length === 0) {
+        container.innerHTML = '';
+        noResults.classList.remove('hidden');
+        return;
+      }
+
+      noResults.classList.add('hidden');
+
+      const existingCards = new Map([...container.children].map(el => [el.dataset.roomId, el]));
+
+      filteredRooms.forEach((room, index) => {
+        const id = room.__backendId;
+        if (existingCards.has(id)) {
+          updateRoomCard(existingCards.get(id), room, index);
+          existingCards.delete(id);
+        } else {
+          container.appendChild(createRoomCard(room, index));
+        }
+      });
+
+      existingCards.forEach(el => el.remove());
+
+      // Reorder cards
+      filteredRooms.forEach(room => {
+        const card = container.querySelector(`[data-room-id="${room.__backendId}"]`);
+        if (card) container.appendChild(card);
+      });
+    }
+
+    function createRoomCard(room, index) {
+      const card = document.createElement('div');
+      card.className = 'room-card bg-white rounded-xl shadow-sm border border-orange-100 overflow-hidden';
+      card.dataset.roomId = room.__backendId;
+      card.style.animationDelay = `${index * 0.05}s`;
+      updateRoomCardContent(card, room);
+      return card;
+    }
+
+    function updateRoomCard(card, room, index) {
+      updateRoomCardContent(card, room);
+    }
+
+    function updateRoomCardContent(card, room) {
+      const statusClass = `status-${room.status}`;
+      const statusText = getStatusText(room.status);
+      const typeText = getTypeText(room.room_type);
+
+      card.innerHTML = `
+        <div class="${statusClass} px-4 py-3 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">${getRoomIcon(room.room_type)}</span>
+            <span class="text-white font-bold text-lg">ห้อง ${room.room_number}</span>
+          </div>
+          <span class="bg-white/20 text-white text-xs px-2 py-1 rounded-full">${statusText}</span>
+        </div>
+        <div class="p-4 space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-gray-500 text-sm">ตึก ${room.building} ชั้น ${room.floor} • ${typeText}</span>
+            <span class="text-orange-600 font-bold">฿${Number(room.price).toLocaleString()}</span>
+          </div>
+          ${room.status === 'occupied' && room.tenant_name ? `
+            <div class="bg-gray-50 rounded-lg p-3">
+              <p class="text-sm text-gray-600">👤 ${room.tenant_name}</p>
+              ${room.phone ? `<p class="text-sm text-gray-500">📱 ${room.phone}</p>` : ''}
+            </div>
+          ` : ''}
+          ${room.notes ? `<p class="text-sm text-gray-500 truncate">📝 ${room.notes}</p>` : ''}
+          <div class="flex gap-2 pt-2">
+            <button onclick="openModal('edit', '${room.__backendId}')" class="flex-1 bg-orange-50 hover:bg-orange-100 text-orange-600 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+              แก้ไข
+            </button>
+            <button onclick="openDeleteModal('${room.__backendId}')" class="bg-red-50 hover:bg-red-100 text-red-600 py-2 px-4 rounded-lg text-sm font-medium transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function updateStats() {
+      const total = allRooms.length;
+      const available = allRooms.filter(r => r.status === 'available').length;
+      const occupied = allRooms.filter(r => r.status === 'occupied').length;
+      const income = allRooms.filter(r => r.status === 'occupied').reduce((sum, r) => sum + Number(r.price || 0), 0);
+
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-available').textContent = available;
+      document.getElementById('stat-occupied').textContent = occupied;
+      document.getElementById('stat-income').textContent = `฿${income.toLocaleString()}`;
+    }
+
+    function applyFilters() {
+      const search = document.getElementById('search-input').value.toLowerCase();
+      const building = document.getElementById('filter-building').value;
+      const floor = document.getElementById('filter-floor').value;
+      const status = document.getElementById('filter-status').value;
+      const priceRange = document.getElementById('filter-price').value;
+      const roomType = document.getElementById('filter-type').value;
+
+      filteredRooms = allRooms.filter(room => {
+        if (search) {
+          const searchMatch = room.room_number.toLowerCase().includes(search) ||
+            (room.tenant_name && room.tenant_name.toLowerCase().includes(search)) ||
+            (room.notes && room.notes.toLowerCase().includes(search));
+          if (!searchMatch) return false;
+        }
+        if (building && room.building !== building) return false;
+        if (floor && room.floor !== Number(floor)) return false;
+        if (status && room.status !== status) return false;
+        if (roomType && room.room_type !== roomType) return false;
+        if (priceRange) {
+          const price = Number(room.price);
+          if (priceRange === '0-3000' && (price < 0 || price > 3000)) return false;
+          if (priceRange === '3000-5000' && (price < 3000 || price > 5000)) return false;
+          if (priceRange === '5000-8000' && (price < 5000 || price > 8000)) return false;
+          if (priceRange === '8000+' && price < 8000) return false;
+        }
+        return true;
+      });
+
+      filteredRooms.sort((a, b) => {
+        if (a.building !== b.building) return a.building.localeCompare(b.building);
+        if (a.floor !== b.floor) return a.floor - b.floor;
+        return a.room_number.localeCompare(b.room_number);
+      });
+
+      renderRooms();
+    }
+
+    // Modal Functions
+    function openModal(mode, roomId = null) {
+      const modal = document.getElementById('modal-overlay');
+      const title = document.getElementById('modal-title');
+      const form = document.getElementById('room-form');
+
+      form.reset();
+      document.getElementById('room-id').value = '';
+      currentEditRoom = null;
+
+      if (mode === 'edit' && roomId) {
+        currentEditRoom = allRooms.find(r => r.__backendId === roomId);
+        if (currentEditRoom) {
+          title.textContent = 'แก้ไขห้องพัก';
+          document.getElementById('room-id').value = roomId;
+          document.getElementById('room-building').value = currentEditRoom.building;
+          document.getElementById('room-floor').value = currentEditRoom.floor;
+          document.getElementById('room-number').value = currentEditRoom.room_number;
+          document.getElementById('room-type').value = currentEditRoom.room_type;
+          document.getElementById('room-price').value = currentEditRoom.price;
+          document.getElementById('room-status').value = currentEditRoom.status;
+          document.getElementById('tenant-name').value = currentEditRoom.tenant_name || '';
+          document.getElementById('tenant-phone').value = currentEditRoom.phone || '';
+          document.getElementById('room-notes').value = currentEditRoom.notes || '';
+        }
+      } else {
+        title.textContent = 'เพิ่มห้องพัก';
+      }
+
+      updateTenantSection();
+      modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('modal-overlay').classList.add('hidden');
+      currentEditRoom = null;
+    }
+
+    function updateTenantSection() {
+      const status = document.getElementById('room-status').value;
+      const tenantSection = document.getElementById('tenant-section');
+      tenantSection.classList.toggle('hidden', status !== 'occupied');
+    }
+
+    document.getElementById('room-status').addEventListener('change', updateTenantSection);
+
+    async function handleSubmit(e) {
+      e.preventDefault();
+
+      if (allRooms.length >= 999 && !currentEditRoom) {
+        showToast('ถึงขีดจำกัด 999 ห้องแล้ว กรุณาลบห้องเก่าก่อน', '⚠️');
+        return;
+      }
+
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'กำลังบันทึก...';
+
+      const roomData = {
+        room_number: document.getElementById('room-number').value.trim(),
+        building: document.getElementById('room-building').value,
+        floor: Number(document.getElementById('room-floor').value),
+        room_type: document.getElementById('room-type').value,
+        price: Number(document.getElementById('room-price').value),
+        status: document.getElementById('room-status').value,
+        tenant_name: document.getElementById('tenant-name').value.trim(),
+        phone: document.getElementById('tenant-phone').value.trim(),
+        notes: document.getElementById('room-notes').value.trim(),
+        created_at: currentEditRoom ? currentEditRoom.created_at : new Date().toISOString()
+      };
+
+      let result;
+      if (currentEditRoom) {
+        result = await window.dataSdk.update({ ...currentEditRoom, ...roomData });
+      } else {
+        result = await window.dataSdk.create(roomData);
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'บันทึก';
+
+      if (result.isOk) {
+        closeModal();
+        showToast(currentEditRoom ? 'แก้ไขห้องพักสำเร็จ' : 'เพิ่มห้องพักสำเร็จ', '✅');
+      } else {
+        showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', '❌');
+      }
+    }
+
+    // Delete Functions
+    function openDeleteModal(roomId) {
+      roomToDelete = allRooms.find(r => r.__backendId === roomId);
+      if (roomToDelete) {
+        document.getElementById('delete-room-number').textContent = roomToDelete.room_number;
+        document.getElementById('delete-modal').classList.remove('hidden');
+      }
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('delete-modal').classList.add('hidden');
+      roomToDelete = null;
+    }
+
+    async function confirmDelete() {
+      if (!roomToDelete) return;
+
+      const btn = document.getElementById('confirm-delete-btn');
+      btn.disabled = true;
+      btn.textContent = 'กำลังลบ...';
+
+      const result = await window.dataSdk.delete(roomToDelete);
+
+      btn.disabled = false;
+      btn.textContent = 'ลบ';
+
+      if (result.isOk) {
+        closeDeleteModal();
+        showToast('ลบห้องพักสำเร็จ', '🗑️');
+      } else {
+        showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', '❌');
+      }
+    }
+
+    // Helper Functions
+    function getStatusText(status) {
+      const statuses = {
+        available: 'ว่าง',
+        occupied: 'มีผู้เช่า',
+        reserved: 'จอง',
+        maintenance: 'ซ่อมบำรุง'
+      };
+      return statuses[status] || status;
+    }
+
+    function getTypeText(type) {
+      const types = {
+        standard: 'มาตรฐาน',
+        deluxe: 'ดีลักซ์',
+        suite: 'สวีท',
+        studio: 'สตูดิโอ'
+      };
+      return types[type] || type;
+    }
+
+    function getRoomIcon(type) {
+      const icons = {
+        standard: '🛏️',
+        deluxe: '🏨',
+        suite: '👑',
+        studio: '🎨'
+      };
+      return icons[type] || '🏠';
+    }
+
+    function showToast(message, icon = '✅') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-message').textContent = message;
+      document.getElementById('toast-icon').textContent = icon;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 3000);
+    }
+
+    // Close modals on backdrop click
+    document.getElementById('modal-overlay').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeModal();
+    });
+    document.getElementById('delete-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeDeleteModal();
+    });
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d2dc40075516596',t:'MTc3MTkyMzU1My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

@@ -576,11 +576,13 @@ function BillsPageContent() {
                         </td>
                         <td className="px-6 py-4 text-center">
                           <div className="flex justify-center gap-2">
-                            {bill.status === 'PAID' ? (
-                              <BillSlipButton invoice={bill} />
-                            ) : bill.status === 'CANCELLED' ? (
+                            {bill.status === 'CANCELLED' ? (
                               <span className="text-xs text-slate-400">ยกเลิกแล้ว</span>
+                            ) : bill.status === 'PAID' ? (
+                              <BillSlipButton invoice={bill} />
                             ) : (
+                              // สำหรับบิลที่ยังไม่ชำระ ให้ใช้ปุ่มเดิมในการจัดการ (แก้ไข/ส่ง)
+                              // หากไฟล์ SendInvoiceButton ถูกลบ ให้คืนค่าว่างชั่วคราว
                               <span className="text-xs text-slate-400">—</span>
                             )}
                           </div>

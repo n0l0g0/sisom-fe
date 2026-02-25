@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { api, Invoice, Room, DormExtra } from '@/services/api';
 import { CreateInvoiceDialog } from './CreateInvoiceDialog';
-import SendInvoiceButton from './SendInvoiceButton';
+import BillSlipButton from './BillSlipButton';
 import SendAllBar from './SendAllBar';
 import PrintAllBar from './PrintAllBar';
 import AutoSendSettingsDialog from './AutoSendSettingsDialog';
@@ -83,44 +83,103 @@ function BillsPageContent() {
     };
   }, []);
 
+  const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0);
   useEffect(() => {
     let cancelled = false;
-    let timer: any;
     const refetch = async () => {
       if (cancelled) return;
       try {
-        const [invoicesRes, roomsRes, schedulesRes] = await Promise.all([
+        const [invoicesRes, roomsRes] = await Promise.all([
           api.getInvoices(),
           api.getRooms(),
-          api.getRoomPaymentSchedules(),
         ]);
         if (cancelled) return;
         setInvoices(invoicesRes);
         setRooms(roomsRes);
-        setSchedules(schedulesRes);
       } catch {}
     };
     const onFocus = () => refetch();
     const onVisibility = () => {
       if (document.visibilityState === 'visible') refetch();
     };
-    const onScheduleUpdated = () => refetch();
+    const onScheduleUpdated = () => {
+      fetchedIdsRef.current.clear();
+      setScheduleRefreshKey((v) => v + 1);
+    };
+    const onInvoiceUpdated = () => refetch();
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('ROOM_PAYMENT_SCHEDULE_UPDATED', onScheduleUpdated as any);
-    timer = setInterval(refetch, 8000);
+    window.addEventListener('INVOICE_UPDATED', onInvoiceUpdated as any);
     return () => {
       cancelled = true;
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('ROOM_PAYMENT_SCHEDULE_UPDATED', onScheduleUpdated as any);
-      if (timer) clearInterval(timer);
+      window.removeEventListener('INVOICE_UPDATED', onInvoiceUpdated as any);
     };
   }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMonthKey, setSelectedMonthKey] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'ALL'|'DRAFT'|'SENT'|'PAID'|'OVERDUE'|'CANCELLED'>('ALL');
+  const [schedules, setSchedules] = useState<Record<string, { monthlyDay?: number; oneTimeDate?: string }>>({});
+  const [dormExtra, setDormExtra] = useState<DormExtra | null>(null);
+  const normalizeSearch = (value: string) =>
+    value
+      .toLowerCase()
+      .replace(/[\s\-_/]+/g, '')
+      .trim();
+  const buildBillSearchText = (bill: Invoice) => {
+    const buildingName = bill.contract?.room?.building?.name || '';
+    const buildingCode = bill.contract?.room?.building?.code || '';
+    const floor = bill.contract?.room?.floor ?? '';
+    const roomNumber = bill.contract?.room?.number || '';
+    const tenantName = bill.contract?.tenant?.name || '';
+    const tenantNickname = bill.contract?.tenant?.nickname || '';
+    const tenantPhone = bill.contract?.tenant?.phone || '';
+    const monthText = new Date(bill.year, bill.month - 1).toLocaleDateString('th-TH', {
+      month: 'long',
+      year: 'numeric',
+    });
+    const statusText =
+      bill.status === 'PAID'
+        ? 'ชำระแล้ว'
+        : bill.status === 'OVERDUE'
+        ? 'ค้างชำระ'
+        : bill.status === 'DRAFT'
+        ? 'ร่าง'
+        : bill.status === 'CANCELLED'
+        ? 'ยกเลิกแล้ว'
+        : 'รอชำระ';
+    const monthlySchedule =
+      schedules[bill.contract?.room?.id || '']?.monthlyDay !== undefined
+        ? `${schedules[bill.contract?.room?.id || '']?.monthlyDay}`
+        : '';
+    const oneTimeSchedule = schedules[bill.contract?.room?.id || '']?.oneTimeDate || '';
+    const parts = [
+      buildingName,
+      buildingCode,
+      floor,
+      `ชั้น${floor}`,
+      roomNumber,
+      `ห้อง${roomNumber}`,
+      tenantName,
+      tenantNickname,
+      tenantPhone,
+      bill.id,
+      bill.status,
+      statusText,
+      monthText,
+      `${bill.month}/${bill.year}`,
+      `${bill.month}`,
+      `${bill.year}`,
+      `${bill.totalAmount}`,
+      monthlySchedule,
+      oneTimeSchedule,
+    ];
+    return normalizeSearch(parts.join(' '));
+  };
 
   const monthFilteredInvoices = useMemo(() => {
     let result = invoices;
@@ -139,15 +198,18 @@ function BillsPageContent() {
       result = result.filter((inv) => inv.status === statusFilter);
     }
     if (searchTerm.trim()) {
-      const lower = searchTerm.toLowerCase();
-      result = result.filter(
-        (inv) =>
-          inv.contract?.room?.number?.toLowerCase().includes(lower) ||
-          inv.contract?.tenant?.name?.toLowerCase().includes(lower),
-      );
+      const tokens = searchTerm
+        .trim()
+        .split(/\s+/)
+        .map((t) => normalizeSearch(t))
+        .filter(Boolean);
+      result = result.filter((inv) => {
+        const text = buildBillSearchText(inv);
+        return tokens.every((t) => text.includes(t));
+      });
     }
     return result;
-  }, [monthFilteredInvoices, searchTerm, statusFilter]);
+  }, [monthFilteredInvoices, searchTerm, statusFilter, schedules]);
 
   const arrearsInvoices = useMemo(
     () => monthFilteredInvoices.filter((i) => i.status === 'OVERDUE'),
@@ -194,8 +256,6 @@ function BillsPageContent() {
     return filteredInvoices.slice(start, start + pageSize);
   }, [page, pageSize, filteredInvoices]);
 
-  const [schedules, setSchedules] = useState<Record<string, { monthlyDay?: number; oneTimeDate?: string }>>({});
-  const [dormExtra, setDormExtra] = useState<DormExtra | null>(null);
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
@@ -208,37 +268,60 @@ function BillsPageContent() {
     run();
   }, []);
 
+  const roomIdsKey = useMemo(() => {
+    const ids = invoices
+      .map((inv) => inv.contract?.room?.id)
+      .filter((id): id is string => typeof id === 'string');
+    const uniqueSorted = Array.from(new Set(ids)).sort();
+    return uniqueSorted.join(',');
+  }, [invoices]);
+  const fetchedIdsRef = useRef<Set<string>>(new Set());
+  const fetchingRef = useRef<boolean>(false);
   useEffect(() => {
     let cancelled = false;
-    const fetchPerRoomSchedules = async (roomIds: string[]) => {
+    const ids = roomIdsKey ? roomIdsKey.split(',').filter(Boolean) : [];
+    const need = ids.filter((id) => !fetchedIdsRef.current.has(id));
+    if (need.length === 0) return;
+    const fetchPerRoomSchedules = async () => {
+      if (fetchingRef.current) return;
+      fetchingRef.current = true;
       try {
-        const unique = Array.from(new Set(roomIds.filter((id) => !!id)));
         const pairs = await Promise.all(
-          unique.map(async (id) => {
+          need.map(async (id) => {
             const s = await api.getRoomPaymentSchedule(id).catch(() => null);
             return [id, s] as const;
           }),
         );
         if (cancelled) return;
-        const next: Record<string, { monthlyDay?: number; oneTimeDate?: string }> = {};
-        for (const [id, s] of pairs) {
-          if (s && (typeof s.monthlyDay === 'number' || typeof s.oneTimeDate === 'string')) {
-            next[id] = { monthlyDay: s.monthlyDay, oneTimeDate: s.oneTimeDate };
+        setSchedules((prev) => {
+          let changed = false;
+          const next = { ...prev };
+          for (const [id, s] of pairs) {
+            fetchedIdsRef.current.add(id);
+            if (s && (typeof s.monthlyDay === 'number' || typeof s.oneTimeDate === 'string')) {
+              const existing = next[id];
+              const incoming = { monthlyDay: s.monthlyDay, oneTimeDate: s.oneTimeDate };
+              const same =
+                existing &&
+                existing.monthlyDay === incoming.monthlyDay &&
+                existing.oneTimeDate === incoming.oneTimeDate;
+              if (!same) {
+                next[id] = incoming;
+                changed = true;
+              }
+            }
           }
-        }
-        setSchedules(next);
-      } catch {}
+          return changed ? next : prev;
+        });
+      } finally {
+        fetchingRef.current = false;
+      }
     };
-    const roomIds = invoices.map((inv) => inv.contract?.room?.id).filter((id): id is string => typeof id === 'string');
-    if (roomIds.length > 0) {
-      fetchPerRoomSchedules(roomIds);
-    } else {
-      setSchedules({});
-    }
+    fetchPerRoomSchedules();
     return () => {
       cancelled = true;
     };
-  }, [invoices]);
+  }, [roomIdsKey, scheduleRefreshKey]);
 
   const formatScheduleDate = (bill: Invoice) => {
     const roomId = bill.contract?.room?.id;
@@ -493,14 +576,12 @@ function BillsPageContent() {
                         </td>
                         <td className="px-6 py-4 text-center">
                           <div className="flex justify-center gap-2">
-                            {bill.status === 'CANCELLED' ? (
-                              <span className="text-xs text-slate-400">
-                                ยกเลิกแล้ว
-                              </span>
+                            {bill.status === 'PAID' ? (
+                              <BillSlipButton invoice={bill} />
+                            ) : bill.status === 'CANCELLED' ? (
+                              <span className="text-xs text-slate-400">ยกเลิกแล้ว</span>
                             ) : (
-                              <>
-                                <SendInvoiceButton invoice={bill} />
-                              </>
+                              <span className="text-xs text-slate-400">—</span>
                             )}
                           </div>
                         </td>

@@ -30,9 +30,26 @@ import { Button } from "@/components/ui/button";
   const [scheduleDate, setScheduleDate] = useState<string>('');
   const [scheduleMonthly, setScheduleMonthly] = useState<boolean>(false);
   const [settlePaidAt, setSettlePaidAt] = useState<string>('');
+  const [invoicePayments, setInvoicePayments] = useState<any[]>([]);
   const formatLocalDateTime = (d: Date) => {
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+  const parseSlipMeta = (raw?: string) => {
+    if (!raw) return null;
+    try {
+      const data = JSON.parse(raw);
+      if (data && typeof data === 'object') return data as Record<string, unknown>;
+      return null;
+    } catch {
+      return null;
+    }
+  };
+  const formatSlipDate = (value?: string) => {
+    if (!value) return '-';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return `${d.toLocaleDateString('th-TH')} ${d.toLocaleTimeString('th-TH')}`;
   };
  
   const canSend = invoice.status !== 'PAID' && invoice.status !== 'CANCELLED';
@@ -60,7 +77,7 @@ import { Button } from "@/components/ui/button";
       const data = await api.getInvoice(invoice.id);
       setDetail(data);
       setSettlePaidAt(formatLocalDateTime(new Date()));
-      setDiscount('');
+      setDiscount(data.discount === null || data.discount === undefined ? '' : String(data.discount));
       try {
         const cfg = await api.getDormConfig();
         setDormConfig(cfg || null);
@@ -103,6 +120,10 @@ import { Button } from "@/components/ui/button";
       setMode('VIEW');
       const data = await api.getInvoice(invoice.id);
       setDetail(data);
+      try {
+        const payments = await api.getPaymentsByInvoice(invoice.id);
+        setInvoicePayments(Array.isArray(payments) ? payments : []);
+      } catch {}
       if (data.contract?.room?.id) {
         const roomId = data.contract.room.id;
         const list = await api.getMeterReadings(roomId, data.month, data.year);
@@ -129,11 +150,7 @@ import { Button } from "@/components/ui/button";
     try {
       await api.addInvoiceItem(detail.id, { description: itemDesc.trim(), amount: amt });
       const data = await api.getInvoice(detail.id);
-      try {
-        await api.updateInvoice(detail.id, { status: 'DRAFT' as any });
-      } catch {}
-      const refreshed = await api.getInvoice(detail.id);
-      setDetail(refreshed);
+      setDetail(data);
       setItemDesc('');
       setItemAmount('');
     } catch {
@@ -145,9 +162,6 @@ import { Button } from "@/components/ui/button";
     if (!detail) return;
     try {
       await api.deleteInvoiceItem(detail.id, id);
-      try {
-        await api.updateInvoice(detail.id, { status: 'DRAFT' as any });
-      } catch {}
       const refreshed = await api.getInvoice(detail.id);
       setDetail(refreshed);
     } catch {
@@ -155,40 +169,37 @@ import { Button } from "@/components/ui/button";
     }
   };
 
-  const saveDiscount = async () => {
+  const saveEdits = async () => {
     if (!detail) return;
-    const d = Math.max(0, Number(discount || 0));
     try {
-      await api.updateInvoice(detail.id, { discount: d });
-      try {
-        await api.updateInvoice(detail.id, { status: 'DRAFT' as any });
-      } catch {}
+      setLoading(true);
+      const updates: { discount?: number; waterAmount?: number; electricAmount?: number } = {
+        discount: Math.max(0, Number(discount || 0)),
+      };
+      if (pendingUtilities?.waterAmount !== undefined) {
+        updates.waterAmount = pendingUtilities.waterAmount;
+      }
+      if (pendingUtilities?.electricAmount !== undefined) {
+        updates.electricAmount = pendingUtilities.electricAmount;
+      }
+      await api.updateInvoice(detail.id, updates);
+      const roomId = detail.contract?.room?.id;
+      const dateStr = (scheduleDate || '').trim();
+      if (roomId && dateStr) {
+        await api.setRoomPaymentSchedule(roomId, { date: dateStr, monthly: scheduleMonthly });
+        try {
+          window.dispatchEvent(new Event('ROOM_PAYMENT_SCHEDULE_UPDATED'));
+        } catch {}
+      }
       const refreshed = await api.getInvoice(detail.id);
       setDetail(refreshed);
+      setPendingUtilities(null);
       router.refresh();
-    } catch {
-      alert('บันทึกส่วนลดไม่สำเร็จ');
-    }
-  };
-
-  const saveSchedule = async () => {
-    if (!detail) return;
-    const roomId = detail.contract?.room?.id;
-    if (!roomId) return;
-    const dateStr = (scheduleDate || '').trim();
-    if (!dateStr) {
-      alert('กรุณาเลือกวันที่นัดจ่าย');
-      return;
-    }
-    try {
-      await api.setRoomPaymentSchedule(roomId, { date: dateStr, monthly: scheduleMonthly });
-      try {
-        window.dispatchEvent(new Event('ROOM_PAYMENT_SCHEDULE_UPDATED'));
-      } catch {}
-      router.refresh();
-      alert('บันทึกวันนัดจ่ายเรียบร้อย');
+      alert('บันทึกเรียบร้อย');
     } catch (e) {
-      alert((e as Error).message || 'บันทึกวันนัดจ่ายไม่สำเร็จ');
+      alert((e as Error).message || 'บันทึกไม่สำเร็จ');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -210,6 +221,9 @@ import { Button } from "@/components/ui/button";
     try {
       setLoading(true);
       await api.settleInvoice(detail.id, 'CASH', settlePaidAt || undefined);
+      try {
+        window.dispatchEvent(new Event('INVOICE_UPDATED'));
+      } catch {}
       setOpen(false);
       router.refresh();
     } catch (e) {
@@ -459,7 +473,7 @@ import { Button } from "@/components/ui/button";
                         <Button onClick={updateUtilitiesFromMeter} className="mt-2 bg-[#f5a987] hover:bg-[#e09b7d] text-white">
                           อัพเดทค่าน้ำไฟและคำนวนใหม่
                         </Button>
-                        <div className="text-xs text-slate-500 mt-1">หลังอัพเดท ให้กด “บันทึกเป็นร่าง” เพื่อบันทึกค่าน้ำไฟใหม่</div>
+                        <div className="text-xs text-slate-500 mt-1">หลังอัพเดท ให้กด “บันทึก” เพื่อบันทึกค่าน้ำไฟใหม่</div>
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -533,9 +547,6 @@ import { Button } from "@/components/ui/button";
                           />
                           นัดวันนี้ของทุกเดือน
                         </label>
-                        <Button onClick={saveSchedule} className="bg-[#f5a987] hover:opacity-90 text-white">
-                          บันทึกวันนัด
-                        </Button>
                       </div>
                       <div className="text-xs text-slate-500">
                         ถ้าไม่ติ๊ก จะนัดครั้งเดียวสำหรับบิลนี้
@@ -550,9 +561,6 @@ import { Button } from "@/components/ui/button";
                           onChange={(e) => setDiscount(e.target.value)}
                           className="flex-1"
                         />
-                        <Button onClick={saveDiscount} className="bg-[#f5a987] hover:bg-[#e09b7d]">
-                          บันทึกส่วนลด
-                        </Button>
                       </div>
                     </div>
                   </div>
@@ -570,25 +578,10 @@ import { Button } from "@/components/ui/button";
                   ยกเลิกบิล
                 </Button>
                   <Button
-                    onClick={async () => {
-                      if (!detail) return;
-                      try {
-                        await api.updateInvoice(detail.id, {
-                          status: 'DRAFT' as any,
-                          ...(pendingUtilities?.waterAmount !== undefined ? { waterAmount: pendingUtilities?.waterAmount } : {}),
-                          ...(pendingUtilities?.electricAmount !== undefined ? { electricAmount: pendingUtilities?.electricAmount } : {}),
-                        });
-                        const data = await api.getInvoice(detail.id);
-                        setDetail(data);
-                        alert('บันทึกเป็น “ร่าง” เรียบร้อย กรุณาส่งบิลใหม่อีกครั้ง');
-                        // ไม่ปิด dialog เพื่อให้ผู้ใช้ตรวจสอบก่อน
-                      } catch {
-                        alert('บันทึกสถานะเป็นร่างไม่สำเร็จ');
-                      }
-                    }}
-                    className="bg-slate-600 hover:bg-slate-700 text-white"
+                    onClick={saveEdits}
+                    className="bg-slate-700 hover:bg-slate-800 text-white"
                   >
-                    บันทึกเป็นร่าง
+                    บันทึก
                   </Button>
                   <Button
                     onClick={handleSettle}
@@ -719,21 +712,56 @@ import { Button } from "@/components/ui/button";
                       </div>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="font-semibold text-slate-700">รายการเพิ่มเติม</div>
+                  <div className="space-y-4">
                     <div className="space-y-2">
-                      {(detail.items || []).length === 0 ? (
-                        <div className="text-sm text-slate-500">ไม่มีรายการเพิ่มเติม</div>
-                      ) : (
-                        <div className="space-y-2">
-                          {detail.items!.map((it: any) => (
-                            <div key={it.id} className="flex items-center justify-between border rounded p-2">
-                              <div className="text-sm text-slate-700">{it.description}</div>
-                              <div className="font-mono text-sm">฿{Number(it.amount).toLocaleString()}</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      <div className="font-semibold text-slate-700">รายการเพิ่มเติม</div>
+                      <div className="space-y-2">
+                        {(detail.items || []).length === 0 ? (
+                          <div className="text-sm text-slate-500">ไม่มีรายการเพิ่มเติม</div>
+                        ) : (
+                          <div className="space-y-2">
+                            {detail.items!.map((it: any) => (
+                              <div key={it.id} className="flex items-center justify-between border rounded p-2">
+                                <div className="text-sm text-slate-700">{it.description}</div>
+                                <div className="font-mono text-sm">฿{Number(it.amount).toLocaleString()}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="font-semibold text-slate-700">ข้อมูลสลิป</div>
+                      {(() => {
+                        const base = (detail.payments || []).filter((p: any) => !!p.paidAt);
+                        const fetched = (invoicePayments || []).filter((p: any) => !!p);
+                        const list = base.length > 0 ? base : fetched;
+                        if (list.length === 0) {
+                          return <div className="text-sm text-slate-500">ไม่พบข้อมูลสลิป</div>;
+                        }
+                        const latest = list.sort((a: any, b: any) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime())[0];
+                        const meta = parseSlipMeta(latest.slipBankRef);
+                        const pick = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
+                        const origin = [pick(meta?.sourceBank), pick(meta?.sourceAccount)].filter(Boolean).join(' / ') || '-';
+                        const dest = [pick(meta?.destBank), pick(meta?.destAccount)].filter(Boolean).join(' / ') || '-';
+                        const when = formatSlipDate(pick(meta?.transactedAt));
+                        const ref = pick(meta?.bankRef) || '-';
+                        return (
+                          <div className="rounded border p-3 space-y-2 text-sm text-slate-700">
+                            <div>เวลาโอน: {when}</div>
+                            <div>ต้นทาง: {origin}</div>
+                            <div>ปลายทาง: {dest}</div>
+                            <div>เลขอ้างอิง: {ref}</div>
+                            {latest.slipImageUrl ? (
+                              <img
+                                src={latest.slipImageUrl}
+                                alt="slip"
+                                className="mt-2 w-full max-w-[360px] rounded border"
+                              />
+                            ) : null}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

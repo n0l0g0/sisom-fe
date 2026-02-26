@@ -447,37 +447,35 @@ function BillsPageContent() {
                   month: 'long',
                   year: 'numeric',
                 });
-                const overdue = monthFilteredInvoices.filter(
-                  (i) => i.status === 'OVERDUE',
-                );
-                if (overdue.length === 0) {
-                  alert('ไม่มีห้องค้างชำระในเดือนนี้');
+                // Collect ALL overdue invoices across months
+                const overdueAll = invoices.filter((i) => i.status === 'OVERDUE');
+                if (overdueAll.length === 0) {
+                  alert('ไม่มีห้องค้างชำระ');
                   return;
                 }
-                // Group by building
+                // Group by building -> room -> months
                 const groups: Record<
                   string,
-                  Array<{
-                    floor: number | string;
-                    room: string;
-                    amount: number;
-                    full?: number;
-                  }>
+                  Record<
+                    string,
+                    Array<{ year: number; month: number; label: string; amount: number }>
+                  >
                 > = {};
+                const roomSet = new Set<string>();
                 let total = 0;
-                for (const inv of overdue) {
-                  const bname =
+                for (const inv of overdueAll) {
+                  const bLabelRaw =
                     inv.contract?.room?.building?.name ||
                     inv.contract?.room?.building?.code ||
                     '-';
-                  const buildingNum =
-                    (bname.match(/\d+/)?.[0] as string) || bname;
-                  const key = buildingNum;
+                  const bNum = (bLabelRaw.match(/\d+/)?.[0] as string) || '';
+                  const key = bNum ? `ตึก ${bNum}` : `ตึก ${bLabelRaw}`;
                   const floor =
                     typeof inv.contract?.room?.floor === 'number'
                       ? inv.contract!.room!.floor
                       : '-';
                   const room = inv.contract?.room?.number || '-';
+                  const roomKey = `${floor}/${room}`;
                   // Outstanding = total - sum(verified payments)
                   const payments = Array.isArray(inv.payments)
                     ? inv.payments
@@ -490,44 +488,53 @@ function BillsPageContent() {
                     Number(inv.totalAmount) - verifiedPaid,
                   );
                   total += outstanding;
-                  const full =
-                    verifiedPaid > 0 ? Number(inv.totalAmount) : undefined;
-                  if (!groups[key]) groups[key] = [];
-                  groups[key].push({
-                    floor,
-                    room,
+                  if (!groups[key]) groups[key] = {};
+                  if (!groups[key][roomKey]) groups[key][roomKey] = [];
+                  roomSet.add(roomKey);
+                  const label = new Date(inv.year, inv.month - 1).toLocaleDateString(
+                    'th-TH',
+                    { month: 'long' },
+                  );
+                  groups[key][roomKey].push({
+                    year: inv.year,
+                    month: inv.month,
+                    label,
                     amount: outstanding,
-                    full,
                   });
                 }
                 // Build text
                 const lines: string[] = [];
                 lines.push(`อัพเดทห้องค้างชำระ (${thaiDate})`);
-                const sortedKeys = Object.keys(groups).sort((a, b) =>
-                  String(a).localeCompare(String(b), undefined, {
-                    numeric: true,
-                  }),
-                );
+                const sortedKeys = Object.keys(groups).sort((a, b) => {
+                  const an = a.match(/\d+/)?.[0];
+                  const bn = b.match(/\d+/)?.[0];
+                  if (an && bn) return Number(an) - Number(bn);
+                  return a.localeCompare(b, undefined, { numeric: true });
+                });
                 for (const k of sortedKeys) {
-                  lines.push(`หอ ${k}`);
-                  const items = groups[k]
-                    .slice()
-                    .sort((a, b) =>
-                      String(a.room).localeCompare(String(b.room), undefined, {
-                        numeric: true,
-                      }),
-                    );
-                  for (const it of items) {
-                    const right =
-                      it.full && it.full !== it.amount
-                        ? `${it.amount.toLocaleString()} ยอดเต็ม ${it.full.toLocaleString()}`
-                        : `${it.amount.toLocaleString()}`;
-                    lines.push(`${it.floor}/${it.room} ${right}`);
+                  const n = k.match(/\d+/)?.[0];
+                  lines.push(n ? `หอ ${n}` : k);
+                  const roomKeys = Object.keys(groups[k]).sort((a, b) =>
+                    a.localeCompare(b, undefined, { numeric: true }),
+                  );
+                  for (const rk of roomKeys) {
+                    lines.push(rk);
+                    const months = groups[k][rk]
+                      .slice()
+                      .sort((a, b) =>
+                        a.year === b.year ? a.month - b.month : a.year - b.year,
+                      )
+                      .reverse();
+                    for (const m of months) {
+                      lines.push(
+                        `เดือน${m.label} ${m.amount.toLocaleString()} บาท`,
+                      );
+                    }
                   }
                   lines.push('');
                 }
-                const count = overdue.length;
-                lines.push(`จำนวน ${count} ห้อง`);
+                const countRooms = roomSet.size;
+                lines.push(`จำนวน ${countRooms} ห้อง`);
                 lines.push(`รวมทั้งสิ้น ${total.toLocaleString()} บาท ครับ`);
                 const text = lines.join('\n').trim();
                 await navigator.clipboard.writeText(text);

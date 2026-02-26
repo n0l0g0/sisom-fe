@@ -487,6 +487,7 @@ function BillsPageContent() {
                     0,
                     Number(inv.totalAmount) - verifiedPaid,
                   );
+                  if (outstanding <= 0) continue;
                   total += outstanding;
                   if (!groups[key]) groups[key] = {};
                   if (!groups[key][roomKey]) groups[key][roomKey] = [];
@@ -518,16 +519,15 @@ function BillsPageContent() {
                     a.localeCompare(b, undefined, { numeric: true }),
                   );
                   for (const rk of roomKeys) {
-                    lines.push(rk);
+                    lines.push(`  ${rk}`);
                     const months = groups[k][rk]
                       .slice()
                       .sort((a, b) =>
                         a.year === b.year ? a.month - b.month : a.year - b.year,
-                      )
-                      .reverse();
+                      );
                     for (const m of months) {
                       lines.push(
-                        `เดือน${m.label} ${m.amount.toLocaleString()} บาท`,
+                        `    เดือน${m.label} ${m.amount.toLocaleString()} บาท`,
                       );
                     }
                   }

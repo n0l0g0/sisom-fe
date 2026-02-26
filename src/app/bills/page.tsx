@@ -12,6 +12,7 @@ import BillSlipButton from './BillSlipButton';
 import SendAllBar from './SendAllBar';
 import PrintAllBar from './PrintAllBar';
 import AutoSendSettingsDialog from './AutoSendSettingsDialog';
+import { Button } from '@/components/ui/button';
 
 export default function BillsPage() {
   return (
@@ -436,6 +437,110 @@ function BillsPageContent() {
           <PrintAllBar invoices={filteredInvoices} />
           {/* Settings button for auto-send */}
           <AutoSendSettingsDialog />
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const today = new Date();
+                const thaiDate = today.toLocaleDateString('th-TH', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                });
+                const overdue = monthFilteredInvoices.filter(
+                  (i) => i.status === 'OVERDUE',
+                );
+                if (overdue.length === 0) {
+                  alert('ไม่มีห้องค้างชำระในเดือนนี้');
+                  return;
+                }
+                // Group by building
+                const groups: Record<
+                  string,
+                  Array<{
+                    floor: number | string;
+                    room: string;
+                    amount: number;
+                    full?: number;
+                  }>
+                > = {};
+                let total = 0;
+                for (const inv of overdue) {
+                  const bname =
+                    inv.contract?.room?.building?.name ||
+                    inv.contract?.room?.building?.code ||
+                    '-';
+                  const buildingNum =
+                    (bname.match(/\d+/)?.[0] as string) || bname;
+                  const key = buildingNum;
+                  const floor =
+                    typeof inv.contract?.room?.floor === 'number'
+                      ? inv.contract!.room!.floor
+                      : '-';
+                  const room = inv.contract?.room?.number || '-';
+                  // Outstanding = total - sum(verified payments)
+                  const payments = Array.isArray(inv.payments)
+                    ? inv.payments
+                    : [];
+                  const verifiedPaid = payments
+                    .filter((p: any) => p.status === 'VERIFIED')
+                    .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+                  const outstanding = Math.max(
+                    0,
+                    Number(inv.totalAmount) - verifiedPaid,
+                  );
+                  total += outstanding;
+                  const full =
+                    verifiedPaid > 0 ? Number(inv.totalAmount) : undefined;
+                  if (!groups[key]) groups[key] = [];
+                  groups[key].push({
+                    floor,
+                    room,
+                    amount: outstanding,
+                    full,
+                  });
+                }
+                // Build text
+                const lines: string[] = [];
+                lines.push(`อัพเดทห้องค้างชำระ (${thaiDate})`);
+                const sortedKeys = Object.keys(groups).sort((a, b) =>
+                  String(a).localeCompare(String(b), undefined, {
+                    numeric: true,
+                  }),
+                );
+                for (const k of sortedKeys) {
+                  lines.push(`หอ ${k}`);
+                  const items = groups[k]
+                    .slice()
+                    .sort((a, b) =>
+                      String(a.room).localeCompare(String(b.room), undefined, {
+                        numeric: true,
+                      }),
+                    );
+                  for (const it of items) {
+                    const right =
+                      it.full && it.full !== it.amount
+                        ? `${it.amount.toLocaleString()} ยอดเต็ม ${it.full.toLocaleString()}`
+                        : `${it.amount.toLocaleString()}`;
+                    lines.push(`${it.floor}/${it.room} ${right}`);
+                  }
+                  lines.push('');
+                }
+                const count = overdue.length;
+                lines.push(`จำนวน ${count} ห้อง`);
+                lines.push(`รวมทั้งสิ้น ${total.toLocaleString()} บาท ครับ`);
+                const text = lines.join('\n').trim();
+                await navigator.clipboard.writeText(text);
+                alert('คัดลอกข้อความสรุปห้องค้างชำระเรียบร้อย');
+              } catch (e) {
+                alert((e as Error).message || 'คัดลอกข้อความไม่สำเร็จ');
+              }
+            }}
+            className="px-3 py-2 rounded-md text-xs font-medium bg-[#8b5a3c] text-white hover:bg-[#7a4f36]"
+            title="คัดลอกสรุปห้องค้างชำระ"
+          >
+            คัดลอกห้องค้างชำระ
+          </button>
           <CreateInvoiceDialog
             rooms={rooms}
             onCreated={async () => {

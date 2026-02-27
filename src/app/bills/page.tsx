@@ -9,6 +9,7 @@ import { Search } from 'lucide-react';
 import { api, Invoice, Room, DormExtra } from '@/services/api';
 import { CreateInvoiceDialog } from './CreateInvoiceDialog';
 import BillSlipButton from './BillSlipButton';
+import SendInvoiceButton from './SendInvoiceButton';
 import SendAllBar from './SendAllBar';
 import PrintAllBar from './PrintAllBar';
 import AutoSendSettingsDialog from './AutoSendSettingsDialog';
@@ -447,95 +448,94 @@ function BillsPageContent() {
                   month: 'long',
                   year: 'numeric',
                 });
-                // Collect ALL overdue invoices across months
-                const overdueAll = invoices.filter((i) => i.status === 'OVERDUE');
-                if (overdueAll.length === 0) {
+
+                const overdueInvoices = invoices
+                  .map((inv) => {
+                    const outstanding = Math.max(
+                      0,
+                      Number(inv.totalAmount) -
+                        (inv.payments
+                          ?.filter((p) => p.status === 'VERIFIED')
+                          .reduce((sum, p) => sum + Number(p.amount), 0) || 0),
+                    );
+                    return { inv, outstanding };
+                  })
+                  .filter(({ inv, outstanding }) => inv.status === 'OVERDUE' && outstanding > 0);
+
+                if (overdueInvoices.length === 0) {
                   alert('ไม่มีห้องค้างชำระ');
                   return;
                 }
-                // Group by building -> room -> months
-                const groups: Record<
+
+                const groupedByBuilding: Record<
                   string,
-                  Record<
-                    string,
-                    Array<{ year: number; month: number; label: string; amount: number }>
-                  >
+                  Record<string, Array<{ year: number; month: number; label: string; amount: number }>>
                 > = {};
-                const roomSet = new Set<string>();
-                let total = 0;
-                for (const inv of overdueAll) {
+
+                for (const item of overdueInvoices) {
                   const bLabelRaw =
-                    inv.contract?.room?.building?.name ||
-                    inv.contract?.room?.building?.code ||
+                    item.inv.contract?.room?.building?.name ||
+                    item.inv.contract?.room?.building?.code ||
                     '-';
-                  const bNum = (bLabelRaw.match(/\d+/)?.[0] as string) || '';
-                  const key = bNum ? `ตึก ${bNum}` : `ตึก ${bLabelRaw}`;
-                  const floor =
-                    typeof inv.contract?.room?.floor === 'number'
-                      ? inv.contract!.room!.floor
-                      : '-';
-                  const room = inv.contract?.room?.number || '-';
-                  const roomKey = `${floor}/${room}`;
-                  // Outstanding = total - sum(verified payments)
-                  const payments = Array.isArray(inv.payments)
-                    ? inv.payments
-                    : [];
-                  const verifiedPaid = payments
-                    .filter((p: any) => p.status === 'VERIFIED')
-                    .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
-                  const outstanding = Math.max(
-                    0,
-                    Number(inv.totalAmount) - verifiedPaid,
-                  );
-                  if (outstanding <= 0) continue;
-                  total += outstanding;
-                  if (!groups[key]) groups[key] = {};
-                  if (!groups[key][roomKey]) groups[key][roomKey] = [];
-                  roomSet.add(roomKey);
-                  const label = new Date(inv.year, inv.month - 1).toLocaleDateString(
-                    'th-TH',
-                    { month: 'long' },
-                  );
-                  groups[key][roomKey].push({
-                    year: inv.year,
-                    month: inv.month,
-                    label,
-                    amount: outstanding,
+                  const buildingLabel = bLabelRaw.match(/\d+/)?.[0] || bLabelRaw;
+                  const roomNumber = item.inv.contract?.room?.number || '-';
+
+                  if (!groupedByBuilding[buildingLabel]) {
+                    groupedByBuilding[buildingLabel] = {};
+                  }
+                  if (!groupedByBuilding[buildingLabel][roomNumber]) {
+                    groupedByBuilding[buildingLabel][roomNumber] = [];
+                  }
+                  groupedByBuilding[buildingLabel][roomNumber].push({
+                    year: item.inv.year,
+                    month: item.inv.month,
+                    label: new Date(item.inv.year, item.inv.month - 1).toLocaleDateString('th-TH', {
+                      month: 'long',
+                    }),
+                    amount: item.outstanding,
                   });
                 }
-                // Build text
+
                 const lines: string[] = [];
                 lines.push(`อัพเดทห้องค้างชำระ (${thaiDate})`);
-                const sortedKeys = Object.keys(groups).sort((a, b) => {
-                  const an = a.match(/\d+/)?.[0];
-                  const bn = b.match(/\d+/)?.[0];
-                  if (an && bn) return Number(an) - Number(bn);
+                lines.push('');
+
+                let totalAmount = 0;
+                const uniqueRooms = new Set<string>();
+
+                const buildingKeys = Object.keys(groupedByBuilding).sort((a, b) => {
+                  const numA = Number(a.match(/\d+/)?.[0]);
+                  const numB = Number(b.match(/\d+/)?.[0]);
+                  if (Number.isFinite(numA) && Number.isFinite(numB)) return numA - numB;
+                  if (Number.isFinite(numA)) return -1;
+                  if (Number.isFinite(numB)) return 1;
                   return a.localeCompare(b, undefined, { numeric: true });
                 });
-                for (const k of sortedKeys) {
-                  const n = k.match(/\d+/)?.[0];
-                  lines.push(n ? `หอ ${n}` : k);
-                  const roomKeys = Object.keys(groups[k]).sort((a, b) =>
+
+                for (const buildingLabel of buildingKeys) {
+                  lines.push(`ตึก ${buildingLabel}`);
+                  const roomGroups = groupedByBuilding[buildingLabel];
+                  const roomKeys = Object.keys(roomGroups).sort((a, b) =>
                     a.localeCompare(b, undefined, { numeric: true }),
                   );
-                  for (const rk of roomKeys) {
-                    lines.push(`  ${rk}`);
-                    const months = groups[k][rk]
-                      .slice()
-                      .sort((a, b) =>
-                        a.year === b.year ? a.month - b.month : a.year - b.year,
-                      );
-                    for (const m of months) {
+                  for (const roomNumber of roomKeys) {
+                    const bills = roomGroups[roomNumber].sort((a, b) =>
+                      a.year === b.year ? a.month - b.month : a.year - b.year,
+                    );
+                    for (const bill of bills) {
                       lines.push(
-                        `    เดือน${m.label} ${m.amount.toLocaleString()} บาท`,
+                        `  ห้อง ${buildingLabel}/${roomNumber} เดือน${bill.label} ${bill.amount.toLocaleString()} บาท`,
                       );
+                      totalAmount += bill.amount;
+                      uniqueRooms.add(`${buildingLabel}/${roomNumber}`);
                     }
                   }
                   lines.push('');
                 }
-                const countRooms = roomSet.size;
-                lines.push(`จำนวน ${countRooms} ห้อง`);
-                lines.push(`รวมทั้งสิ้น ${total.toLocaleString()} บาท ครับ`);
+
+                lines.push(`จำนวน ${uniqueRooms.size} ห้อง`);
+                lines.push(`รวมทั้งสิ้น ${totalAmount.toLocaleString()} บาท ครับ`);
+
                 const text = lines.join('\n').trim();
                 await navigator.clipboard.writeText(text);
                 alert('คัดลอกข้อความสรุปห้องค้างชำระเรียบร้อย');
@@ -693,9 +693,7 @@ function BillsPageContent() {
                             ) : bill.status === 'PAID' ? (
                               <BillSlipButton invoice={bill} />
                             ) : (
-                              // สำหรับบิลที่ยังไม่ชำระ ให้ใช้ปุ่มเดิมในการจัดการ (แก้ไข/ส่ง)
-                              // หากไฟล์ SendInvoiceButton ถูกลบ ให้คืนค่าว่างชั่วคราว
-                              <span className="text-xs text-slate-400">—</span>
+                              <SendInvoiceButton invoice={bill} />
                             )}
                           </div>
                         </td>

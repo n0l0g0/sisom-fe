@@ -121,6 +121,7 @@ function PaymentsClientInner({ room, status }: { room: string; status: string })
               <thead className="text-xs text-gray-700 uppercase bg-slate-50 border-b">
                 <tr>
                   <th className="px-6 py-4 font-semibold text-[#8b5a3c]">วันที่/เวลา</th>
+                  <th className="px-6 py-4 font-semibold text-[#8b5a3c]">ตึก</th>
                   <th className="px-6 py-4 font-semibold text-[#8b5a3c]">ห้อง</th>
                   <th className="px-6 py-4 font-semibold text-[#8b5a3c]">ผู้ชำระ</th>
                   <th className="px-6 py-4 font-semibold text-[#8b5a3c] text-right">จำนวนเงิน</th>
@@ -133,13 +134,13 @@ function PaymentsClientInner({ room, status }: { room: string; status: string })
               <tbody>
                 {loading ? (
                   <tr className="bg-white border-b">
-                    <td className="px-6 py-6 text-slate-500" colSpan={8}>
+                    <td className="px-6 py-6 text-slate-500" colSpan={9}>
                       กำลังโหลด...
                     </td>
                   </tr>
                 ) : filteredPayments.length === 0 ? (
                   <tr className="bg-white border-b">
-                    <td className="px-6 py-6 text-slate-500" colSpan={8}>
+                    <td className="px-6 py-6 text-slate-500" colSpan={9}>
                       ไม่พบข้อมูล
                     </td>
                   </tr>
@@ -149,6 +150,9 @@ function PaymentsClientInner({ room, status }: { room: string; status: string })
                       <td className="px-6 py-4 text-slate-600">
                         <div>{new Date(payment.paidAt).toLocaleDateString('th-TH')}</div>
                         <div className="text-xs text-slate-400">{new Date(payment.paidAt).toLocaleTimeString('th-TH')}</div>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">
+                        {payment.invoice?.contract?.room?.building?.name || payment.invoice?.contract?.room?.building?.code || '-'}
                       </td>
                       <td className="px-6 py-4 font-bold text-[#8b5a3c]">{payment.invoice?.contract?.room?.number}</td>
                       <td className="px-6 py-4 text-slate-600">{payment.invoice?.contract?.tenant?.name}</td>

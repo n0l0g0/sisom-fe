@@ -6,7 +6,7 @@ interface KPIStatProps {
   value: string | number;
   trend?: number;
   trendLabel?: string;
-  accentColor?: "indigo" | "emerald" | "rose" | "blue";
+  accentColor?: "indigo" | "emerald" | "rose" | "blue" | "cyan";
   className?: string;
 }
 
@@ -23,6 +23,7 @@ export function KPIStat({
     emerald: "bg-emerald-500 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400",
     rose: "bg-rose-500 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400",
     blue: "bg-blue-500 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400",
+    cyan: "bg-cyan-500 text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-400",
   };
 
   const trendColor = trend

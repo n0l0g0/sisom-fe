@@ -10,6 +10,7 @@
  import RoomsDebugLogger from './RoomsDebugLogger';
  import { api } from '@/services/api';
  import type { Room, Building, Invoice, DormExtra } from '@/services/api';
+ import { useDebounce } from '@/lib/hooks';
  
 import { Search } from 'lucide-react';
 
@@ -23,6 +24,7 @@ import { Search } from 'lucide-react';
       ? (statusParam as StatusFilter)
       : 'all';
    const [q, setQ] = useState('');
+   const debouncedQ = useDebounce(q, 300);
    const [uiBuilding, setUiBuilding] = useState<string>(selectedBuilding || '');
    const [uiFloor, setUiFloor] = useState<string>('');
    const [uiStatus, setUiStatus] = useState<string>(statusFilter === 'all' ? '' : statusFilter);
@@ -167,7 +169,7 @@ import { Search } from 'lucide-react';
   };
 
   const uiFilteredRooms = useMemo(() => {
-      const text = q.trim().toLowerCase();
+      const text = debouncedQ.trim().toLowerCase();
       const priceRange = uiPrice;
       const priceMatch = (room: Room) => {
         const v = (room.contracts?.[0]?.currentRent ?? room.pricePerMonth) ?? 0;
@@ -201,7 +203,7 @@ import { Search } from 'lucide-react';
         return true;
       });
       return rooms.sort(sortRooms);
-    }, [filteredRooms, q, uiBuilding, uiFloor, uiStatus, uiPrice]);
+    }, [filteredRooms, debouncedQ, uiBuilding, uiFloor, uiStatus, uiPrice]);
   
   if (!selectedBuilding) {
     const buildingLookup = new Map(buildings.map((b) => [b.id, b]));

@@ -11,6 +11,8 @@
  import { api } from '@/services/api';
  import type { Room, Building, Invoice, DormExtra } from '@/services/api';
  
+import { Search } from 'lucide-react';
+
   export default function FloorPlanContent({ rooms, buildings }: { rooms: Room[]; buildings: Building[] }) {
    const searchParams = useSearchParams();
    const selectedBuilding = searchParams.get('building') || undefined;
@@ -236,6 +238,7 @@
       if (list) list.push(room);
       else existing.floors.set(floor, [room]);
     }
+
     const sortedGroups = Array.from(groupsMap.entries())
       .sort(([aKey, a], [bKey, b]) => {
         if (aKey === 'none' && bKey !== 'none') return 1;
@@ -252,12 +255,13 @@
           .map(([floor, rs]) => ({ floor, rooms: rs }));
         return { ...g, floors };
       });
+
     return (
       <div className="space-y-8 fade-in">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-[#8b5a3c]">รายการห้องทั้งหมด</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">รายการห้องทั้งหมด</h1>
           <CreateRoomDialog>
-            <button className="px-4 py-2 rounded-lg text-white font-medium hover:opacity-90 transition flex items-center gap-2 bg-[#f5a987]">
+            <button className="px-4 py-2 rounded-lg text-white font-medium hover:opacity-90 transition flex items-center gap-2 bg-indigo-600 shadow-lg shadow-indigo-500/20">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
               </svg>
@@ -265,63 +269,84 @@
             </button>
           </CreateRoomDialog>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-orange-100">
-          <div className="flex flex-wrap gap-3 items-center">
-            <div className="flex-1 min-w-[200px]">
+
+        {/* Search & Filter Section - Redesigned */}
+        <div className="bg-slate-900/80 backdrop-blur border border-slate-700 rounded-2xl p-4 shadow-lg mb-8">
+          <div className="grid grid-cols-12 gap-3">
+            {/* Search Input */}
+            <div className="col-span-12 md:col-span-6 lg:col-span-4">
               <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
                   placeholder="ค้นหาห้อง หรือชื่อผู้เช่า"
-                  className="w-full pl-4 pr-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all"
+                  className="w-full bg-slate-800 border border-slate-600 text-white placeholder:text-slate-400 rounded-xl px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                 />
               </div>
             </div>
-            <select
-              className="px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none bg-white cursor-pointer"
-              value={uiBuilding}
-              onChange={(e) => setUiBuilding(e.target.value)}
-            >
-              <option value="">ทุกตึก</option>
-              {buildings.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}{b.code ? ` (${b.code})` : ''}</option>
-              ))}
-            </select>
-            <select
-              className="px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none bg-white cursor-pointer"
-              value={uiFloor}
-              onChange={(e) => setUiFloor(e.target.value)}
-            >
-              <option value="">ทุกชั้น</option>
-              {Array.from(new Set(rooms.map(r => Number.isFinite(r.floor) ? r.floor : 0))).sort((a,b)=>a-b).map(f => (
-                <option key={f} value={String(f)}>ชั้น {f}</option>
-              ))}
-            </select>
-            <select
-              className="px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none bg-white cursor-pointer"
-              value={uiStatus}
-              onChange={(e) => setUiStatus(e.target.value)}
-            >
-              <option value="">ทุกสถานะ</option>
-              <option value="VACANT">🟢 ว่าง</option>
-              <option value="OCCUPIED">🔵 มีผู้เช่า</option>
-              <option value="OVERDUE">🔴 ค้างชำระ</option>
-              <option value="MAINTENANCE">🟡 แจ้งซ่อม</option>
-            </select>
-            <select
-              className="px-4 py-2.5 rounded-lg border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none bg-white cursor-pointer"
-              value={uiPrice}
-              onChange={(e) => setUiPrice(e.target.value)}
-            >
-              <option value="">ทุกราคา</option>
-              <option value="0-3000">฿0 - ฿3,000</option>
-              <option value="3000-5000">฿3,000 - ฿5,000</option>
-              <option value="5000-8000">฿5,000 - ฿8,000</option>
-              <option value="8000+">฿8,000 ขึ้นไป</option>
-            </select>
+
+            {/* Building Filter */}
+            <div className="col-span-6 md:col-span-3 lg:col-span-2">
+              <select
+                className="w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer appearance-none"
+                value={uiBuilding}
+                onChange={(e) => setUiBuilding(e.target.value)}
+              >
+                <option value="">ทุกตึก</option>
+                {buildings.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}{b.code ? ` (${b.code})` : ''}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Floor Filter */}
+            <div className="col-span-6 md:col-span-3 lg:col-span-2">
+              <select
+                className="w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer appearance-none"
+                value={uiFloor}
+                onChange={(e) => setUiFloor(e.target.value)}
+              >
+                <option value="">ทุกชั้น</option>
+                {Array.from(new Set(rooms.map(r => Number.isFinite(r.floor) ? r.floor : 0))).sort((a,b)=>a-b).map(f => (
+                  <option key={f} value={String(f)}>ชั้น {f}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status Filter */}
+            <div className="col-span-6 md:col-span-6 lg:col-span-2">
+              <select
+                className="w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer appearance-none"
+                value={uiStatus}
+                onChange={(e) => setUiStatus(e.target.value)}
+              >
+                <option value="">ทุกสถานะ</option>
+                <option value="VACANT">🟢 ว่าง</option>
+                <option value="OCCUPIED">🔵 มีผู้เช่า</option>
+                <option value="OVERDUE">🔴 ค้างชำระ</option>
+                <option value="MAINTENANCE">🟡 แจ้งซ่อม</option>
+              </select>
+            </div>
+
+            {/* Price Filter */}
+            <div className="col-span-6 md:col-span-6 lg:col-span-2">
+              <select
+                className="w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer appearance-none"
+                value={uiPrice}
+                onChange={(e) => setUiPrice(e.target.value)}
+              >
+                <option value="">ทุกราคา</option>
+                <option value="0-3000">฿0 - ฿3,000</option>
+                <option value="3000-5000">฿3,000 - ฿5,000</option>
+                <option value="5000-8000">฿5,000 - ฿8,000</option>
+                <option value="8000+">฿8,000 ขึ้นไป</option>
+              </select>
+            </div>
           </div>
         </div>
+
         <DashboardRoomsList
           totalRooms={uiFilteredRooms.length}
           groups={sortedGroups.map(g => ({ ...g, key: g.buildingId || 'none' }))}

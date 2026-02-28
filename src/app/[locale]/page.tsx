@@ -101,20 +101,20 @@ export default async function Dashboard({ searchParams, params }: { searchParams
   }));
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
+    <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-900 transition-colors duration-300">
       {/* SECTION 1: HEADER */}
       <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">{t('title')}</h1>
-          <p className="mt-1 text-slate-500">{t('subtitle')}</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{t('title')}</h1>
+          <p className="mt-1 text-slate-500 dark:text-slate-400">{t('subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="bg-white text-slate-700">
-            <Calendar className="mr-2 h-4 w-4 text-slate-500" />
+          <Button variant="outline" className="bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700">
+            <Calendar className="mr-2 h-4 w-4 text-slate-500 dark:text-slate-400" />
             {t('this_month')}
           </Button>
-          <Button variant="outline" className="bg-white text-slate-700">
-            <Download className="mr-2 h-4 w-4 text-slate-500" />
+          <Button variant="outline" className="bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700">
+            <Download className="mr-2 h-4 w-4 text-slate-500 dark:text-slate-400" />
             {t('export')}
           </Button>
         </div>

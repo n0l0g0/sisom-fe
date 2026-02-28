@@ -37,10 +37,10 @@ export function ChartCard({ title, subtitle, data, className }: ChartCardProps) 
     : "";
 
   return (
-    <div className={cn("rounded-2xl border border-slate-200 bg-white p-6 shadow-sm", className)}>
+    <div className={cn("rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:shadow-none", className)}>
       <div className="mb-6">
-        <h3 className="text-base font-semibold text-slate-900">{title}</h3>
-        {subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}
+        <h3 className="text-base font-semibold text-slate-900 dark:text-white">{title}</h3>
+        {subtitle && <p className="text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>}
       </div>
 
       <div className="relative w-full overflow-hidden">
@@ -67,8 +67,9 @@ export function ChartCard({ title, subtitle, data, className }: ChartCardProps) 
                 y1={y}
                 x2={width - padding}
                 y2={y}
-                stroke="#f1f5f9"
+                stroke="currentColor"
                 strokeWidth="1"
+                className="text-slate-100 dark:text-slate-700/50"
               />
             );
           })}
@@ -93,13 +94,13 @@ export function ChartCard({ title, subtitle, data, className }: ChartCardProps) 
               cx={p.x}
               cy={p.y}
               r="4"
-              className="fill-indigo-500 stroke-white stroke-[3px] transition-all duration-200 hover:r-6 hover:fill-indigo-600"
+              className="fill-indigo-500 stroke-white stroke-[3px] transition-all duration-200 hover:r-6 hover:fill-indigo-600 dark:stroke-slate-800"
             />
           ))}
         </svg>
 
         {/* X-Axis Labels */}
-        <div className="mt-2 flex justify-between px-2 text-xs font-medium text-slate-400">
+        <div className="mt-2 flex justify-between px-2 text-xs font-medium text-slate-400 dark:text-slate-500">
           {data.map((d, i) => (
             <span key={i}>{d.date}</span>
           ))}

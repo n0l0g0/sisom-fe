@@ -2,6 +2,8 @@
 
 import { Sidebar } from "@/components/Sidebar";
 import { NotificationBell } from "@/components/NotificationBell";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -66,51 +68,59 @@ export default function ClientLayout({
   return (
     <body
       className={`font-sans antialiased ${
-        isPrintPage || isGalleryPage || isMeterPage ? 'bg-white' : 'bg-background'
+        isPrintPage || isGalleryPage || isMeterPage ? 'bg-white dark:bg-slate-950' : 'bg-background'
       }`}
     >
-      {isPrintPage || isGalleryPage ? (
-        <main className="min-h-screen">{children}</main>
-      ) : (
-        <div className="flex h-screen overflow-hidden">
-          {!isLoginPage && (
-            <div className={isMeterPage ? 'hidden md:block' : ''}>
-              <Sidebar
-                isCollapsed={isCollapsed}
-                toggleSidebar={() => setIsCollapsed(!isCollapsed)}
-              />
-            </div>
-          )}
-          {(() => {
-            let mainMarginClass = '';
-            if (!isLoginPage) {
-              if (isMeterPage) {
-                mainMarginClass = isCollapsed ? 'md:ml-20' : 'md:ml-64';
-              } else {
-                mainMarginClass = isCollapsed ? 'ml-20' : 'ml-64';
-              }
-            }
-            return (
-            <main
-              className={`flex-1 overflow-y-auto bg-background transition-all duration-300 ${
-                mainMarginClass
-              }`}
-            >
-              {!isLoginPage && (
-                <div className="sticky top-0 z-30 flex justify-end px-6 py-4 pointer-events-none">
-                  <div className="pointer-events-auto bg-white/80 backdrop-blur rounded-full shadow-sm">
-                    <NotificationBell />
-                  </div>
-                </div>
-              )}
-              <div className="p-6 pt-0">
-                {children}
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        {isPrintPage || isGalleryPage ? (
+          <main className="min-h-screen">{children}</main>
+        ) : (
+          <div className="flex h-screen overflow-hidden">
+            {!isLoginPage && (
+              <div className={isMeterPage ? 'hidden md:block' : ''}>
+                <Sidebar
+                  isCollapsed={isCollapsed}
+                  toggleSidebar={() => setIsCollapsed(!isCollapsed)}
+                />
               </div>
-            </main>
-            );
-          })()}
-        </div>
-      )}
+            )}
+            {(() => {
+              let mainMarginClass = '';
+              if (!isLoginPage) {
+                if (isMeterPage) {
+                  mainMarginClass = isCollapsed ? 'md:ml-20' : 'md:ml-64';
+                } else {
+                  mainMarginClass = isCollapsed ? 'ml-20' : 'ml-64';
+                }
+              }
+              return (
+              <main
+                className={`flex-1 overflow-y-auto bg-background transition-all duration-300 ${
+                  mainMarginClass
+                }`}
+              >
+                {!isLoginPage && (
+                  <div className="sticky top-0 z-30 flex justify-end px-6 py-4 pointer-events-none">
+                    <div className="pointer-events-auto flex items-center gap-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur rounded-full shadow-sm p-1">
+                      <ThemeToggle />
+                      <NotificationBell />
+                    </div>
+                  </div>
+                )}
+                <div className="p-6 pt-0">
+                  {children}
+                </div>
+              </main>
+              );
+            })()}
+          </div>
+        )}
+      </ThemeProvider>
     </body>
   );
 }

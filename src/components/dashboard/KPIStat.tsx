@@ -19,19 +19,19 @@ export function KPIStat({
   className,
 }: KPIStatProps) {
   const colorMap = {
-    indigo: "bg-indigo-500 text-indigo-600",
-    emerald: "bg-emerald-500 text-emerald-600",
-    rose: "bg-rose-500 text-rose-600",
-    blue: "bg-blue-500 text-blue-600",
+    indigo: "bg-indigo-500 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400",
+    emerald: "bg-emerald-500 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400",
+    rose: "bg-rose-500 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400",
+    blue: "bg-blue-500 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400",
   };
 
   const trendColor = trend
     ? trend > 0
-      ? "text-emerald-600 bg-emerald-50"
+      ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400"
       : trend < 0
-      ? "text-rose-600 bg-rose-50"
-      : "text-slate-600 bg-slate-50"
-    : "text-slate-600 bg-slate-50";
+      ? "text-rose-600 bg-rose-50 dark:bg-rose-500/10 dark:text-rose-400"
+      : "text-slate-600 bg-slate-50 dark:bg-slate-800 dark:text-slate-400"
+    : "text-slate-600 bg-slate-50 dark:bg-slate-800 dark:text-slate-400";
 
   const TrendIcon = trend
     ? trend > 0
@@ -44,7 +44,7 @@ export function KPIStat({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-[2px] hover:shadow-md",
+        "relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-[2px] hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:shadow-none",
         className
       )}
     >
@@ -55,9 +55,9 @@ export function KPIStat({
         )}
       />
       <div className="flex flex-col space-y-4">
-        <span className="text-sm font-medium text-slate-500">{label}</span>
+        <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</span>
         <div className="flex items-baseline space-x-2">
-          <span className="text-3xl font-bold tracking-tight text-slate-900">
+          <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
             {value}
           </span>
         </div>
@@ -72,7 +72,7 @@ export function KPIStat({
               <TrendIcon className="h-3 w-3" />
               <span>{Math.abs(trend)}%</span>
             </div>
-            <span className="text-xs text-slate-400">{trendLabel}</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">{trendLabel}</span>
           </div>
         )}
       </div>

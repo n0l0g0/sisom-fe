@@ -6,6 +6,13 @@ interface FinancialSnapshotProps {
   pending: number;
   overdue: number;
   className?: string;
+  labels?: {
+    title: string;
+    total: string;
+    paid: string;
+    pending: string;
+    overdue: string;
+  };
 }
 
 export function FinancialSnapshot({
@@ -14,20 +21,27 @@ export function FinancialSnapshot({
   pending,
   overdue,
   className,
+  labels = {
+    title: "Financial Snapshot",
+    total: "Total Invoices",
+    paid: "Paid",
+    pending: "Pending",
+    overdue: "Overdue",
+  },
 }: FinancialSnapshotProps) {
   const items = [
-    { label: "Paid", value: paid, color: "bg-emerald-500", textColor: "text-emerald-700" },
-    { label: "Pending", value: pending, color: "bg-amber-500", textColor: "text-amber-700" },
-    { label: "Overdue", value: overdue, color: "bg-rose-500", textColor: "text-rose-700" },
+    { label: labels.paid, value: paid, color: "bg-emerald-500", textColor: "text-emerald-700" },
+    { label: labels.pending, value: pending, color: "bg-amber-500", textColor: "text-amber-700" },
+    { label: labels.overdue, value: overdue, color: "bg-rose-500", textColor: "text-rose-700" },
   ];
 
   return (
     <div className={cn("rounded-2xl border border-slate-200 bg-white p-6 shadow-sm", className)}>
-      <h3 className="mb-6 text-base font-semibold text-slate-900">Financial Snapshot</h3>
+      <h3 className="mb-6 text-base font-semibold text-slate-900">{labels.title}</h3>
       
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-slate-500">Total Invoices</span>
+          <span className="text-sm text-slate-500">{labels.total}</span>
           <span className="text-xl font-bold text-slate-900">{totalInvoices}</span>
         </div>
 

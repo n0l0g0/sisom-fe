@@ -15,12 +15,23 @@ export interface ActivityItem {
 interface ActivityTimelineProps {
   items: ActivityItem[];
   className?: string;
+  labels?: {
+    title: string;
+    empty: string;
+  };
 }
 
-export function ActivityTimeline({ items, className }: ActivityTimelineProps) {
+export function ActivityTimeline({ 
+  items, 
+  className,
+  labels = {
+    title: "Recent Activity",
+    empty: "No recent activity",
+  }
+}: ActivityTimelineProps) {
   return (
     <div className={cn("rounded-2xl border border-slate-200 bg-white p-6 shadow-sm", className)}>
-      <h3 className="mb-6 text-base font-semibold text-slate-900">Recent Activity</h3>
+      <h3 className="mb-6 text-base font-semibold text-slate-900">{labels.title}</h3>
       
       <div className="relative space-y-0">
         {/* Vertical line */}

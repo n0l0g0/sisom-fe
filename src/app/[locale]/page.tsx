@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { api, LineProfile } from '@/services/api';
 import { KPIStat } from '@/components/dashboard/KPIStat';
 import { ChartCard } from '@/components/dashboard/ChartCard';
@@ -11,9 +12,12 @@ import { Download, Calendar } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
-export default async function Dashboard({ searchParams }: { searchParams?: Promise<{ path?: string }> }) {
+export default async function Dashboard({ searchParams, params }: { searchParams?: Promise<{ path?: string }>, params: Promise<{locale: string}> }) {
   // Await searchParams before accessing properties
   const sp = await searchParams;
+  const { locale } = await params;
+  const t = await getTranslations({locale, namespace: 'Dashboard'});
+
   if (sp?.path && typeof sp.path === 'string') {
     const p = sp.path.startsWith('/') ? sp.path : '/';
     redirect(p);
@@ -92,7 +96,7 @@ export default async function Dashboard({ searchParams }: { searchParams?: Promi
       avatar: lineProfiles[chat.userId]?.pictureUrl,
       initials: (lineProfiles[chat.userId]?.displayName || 'U').substring(0, 2).toUpperCase()
     },
-    action: chat.type === 'received_image' ? 'sent an image' : 'sent a message',
+    action: chat.type === 'received_image' ? t('sent_image') : t('sent_message'),
     timestamp: chat.timestamp
   }));
 
@@ -101,17 +105,17 @@ export default async function Dashboard({ searchParams }: { searchParams?: Promi
       {/* SECTION 1: HEADER */}
       <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Dashboard</h1>
-          <p className="mt-1 text-slate-500">Overview of your property performance</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">{t('title')}</h1>
+          <p className="mt-1 text-slate-500">{t('subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" className="bg-white text-slate-700">
             <Calendar className="mr-2 h-4 w-4 text-slate-500" />
-            This Month
+            {t('this_month')}
           </Button>
           <Button variant="outline" className="bg-white text-slate-700">
             <Download className="mr-2 h-4 w-4 text-slate-500" />
-            Export
+            {t('export')}
           </Button>
         </div>
       </div>
@@ -119,30 +123,30 @@ export default async function Dashboard({ searchParams }: { searchParams?: Promi
       {/* SECTION 2: KPI STRIP */}
       <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
         <KPIStat
-          label="Total Revenue"
+          label={t('total_revenue')}
           value={`฿${currentRevenue.toLocaleString()}`}
           trend={revenueTrend}
-          trendLabel="vs last month"
+          trendLabel={t('vs_last_month')}
           accentColor="indigo"
         />
         <KPIStat
-          label="Occupancy Rate"
+          label={t('occupancy_rate')}
           value={`${occupancyRate}%`}
           trend={0} // TODO: Calculate occupancy trend
-          trendLabel="stable"
+          trendLabel={t('stable')}
           accentColor="emerald"
         />
         <KPIStat
-          label="Overdue Amount"
+          label={t('overdue_amount')}
           value={`฿${totalOverdueAmount.toLocaleString()}`}
           trend={overdueCount > 0 ? 12 : -5} // Mock trend for demo
-          trendLabel="vs last month"
+          trendLabel={t('vs_last_month')}
           accentColor="rose"
         />
         <KPIStat
-          label="Available Rooms"
+          label={t('available_rooms')}
           value={vacantRooms}
-          trendLabel="Ready to rent"
+          trendLabel={t('ready_to_rent')}
           accentColor="blue"
         />
       </div>
@@ -151,8 +155,8 @@ export default async function Dashboard({ searchParams }: { searchParams?: Promi
       <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <ChartCard
-            title="Revenue Overview"
-            subtitle="Monthly revenue trends (Last 6 months)"
+            title={t('revenue_overview')}
+            subtitle={t('revenue_subtitle')}
             data={revenueData}
             className="h-full"
           />
@@ -164,6 +168,13 @@ export default async function Dashboard({ searchParams }: { searchParams?: Promi
             pending={pendingCount}
             overdue={overdueCount}
             className="h-full"
+            labels={{
+              title: t('financial_snapshot'),
+              total: t('total_invoices'),
+              paid: t('paid'),
+              pending: t('pending'),
+              overdue: t('overdue')
+            }}
           />
         </div>
       </div>
@@ -175,8 +186,21 @@ export default async function Dashboard({ searchParams }: { searchParams?: Promi
           occupied={occupiedRooms}
           vacant={vacantRooms}
           maintenance={maintenanceRooms}
+          labels={{
+            title: t('room_status'),
+            total: t('total_rooms'),
+            occupied: t('occupied'),
+            vacant: t('vacant'),
+            maintenance: t('maintenance')
+          }}
         />
-        <ActivityTimeline items={activityItems} />
+        <ActivityTimeline 
+          items={activityItems} 
+          labels={{
+            title: t('recent_activity'),
+            empty: t('no_activity')
+          }}
+        />
       </div>
     </div>
   );

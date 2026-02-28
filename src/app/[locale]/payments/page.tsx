@@ -1,25 +1,35 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, Payment } from '@/services/api';
-import { Card, CardContent } from '@/components/ui/card';
+import * as XLSX from 'xlsx';
 import { 
   Search, 
   Filter, 
   Download, 
-  X, 
   CheckCircle2, 
-  AlertCircle, 
   Clock, 
   FileText, 
   ChevronLeft, 
   ChevronRight, 
-  ExternalLink,
-  MoreHorizontal,
   CreditCard,
   Banknote
 } from 'lucide-react';
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog";
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function PaymentsPage() {
   return (
@@ -66,7 +76,7 @@ function PaymentsPageContent() {
   const pageSize = 10;
 
   // Fetch Data
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const res = await api.getPayments(
@@ -81,11 +91,11 @@ function PaymentsPageContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [room, status, month, year]);
 
   useEffect(() => {
     fetchData();
-  }, [room, status, month, year]);
+  }, [fetchData]);
 
   // Sync Filters to URL (Debounced for room)
   const updateFilters = (newRoom: string, newStatus: string, newMonth: number, newYear: number) => {
@@ -94,6 +104,8 @@ function PaymentsPageContent() {
     if (newStatus) params.set('status', newStatus);
     if (newMonth) params.set('month', String(newMonth));
     if (newYear) params.set('year', String(newYear));
+    // Reset page on filter change
+    params.set('page', '1');
     router.push(`/payments?${params.toString()}`);
   };
 
@@ -134,12 +146,31 @@ function PaymentsPageContent() {
   };
 
   const handleExport = () => {
-    // Implement export logic or reuse existing button logic if available
-    alert('Export functionality coming soon'); 
+    try {
+      const data = payments.map(p => ({
+        'วันที่': new Date(p.paidAt).toLocaleDateString('th-TH'),
+        'เวลา': new Date(p.paidAt).toLocaleTimeString('th-TH'),
+        'ห้อง': p.invoice?.contract?.room?.number || '-',
+        'ตึก': p.invoice?.contract?.room?.building?.name || '-',
+        'ผู้เช่า': p.invoice?.contract?.tenant?.name || '-',
+        'จำนวนเงิน': Number(p.amount),
+        'ช่องทาง': p.slipImageUrl ? 'โอนเงิน' : 'เงินสด',
+        'สถานะ': p.status === 'VERIFIED' ? 'ตรวจสอบแล้ว' : p.status === 'PENDING' ? 'รอตรวจสอบ' : 'ปฏิเสธ'
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Payments");
+      const fileName = `payments-${year}-${month}-${new Date().getTime()}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("เกิดข้อผิดพลาดในการ Export ข้อมูล");
+    }
   };
 
   return (
-    <div className="space-y-8 fade-in pb-20 md:pb-0">
+    <div className="space-y-8 fade-in pb-24 md:pb-0">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
@@ -147,19 +178,20 @@ function PaymentsPageContent() {
           <p className="text-slate-500 dark:text-slate-400 mt-1">ประวัติการชำระและการตรวจสอบสลิป</p>
         </div>
         <div className="flex items-center gap-3">
-          <button
+          <Button
+            variant="ghost"
             onClick={handleClear}
-            className="px-4 py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-medium text-sm"
+            className="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
           >
             ล้างตัวกรอง
-          </button>
-          <button
-            onClick={() => alert('Exporting...')}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-500 shadow-lg shadow-indigo-900/20 transition-all text-sm"
+          </Button>
+          <Button
+            onClick={handleExport}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-900/20"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-4 h-4 mr-2" />
             Export Excel
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -187,71 +219,83 @@ function PaymentsPageContent() {
         />
       </div>
 
-      {/* Filter Bar */}
-      <div className="bg-white dark:bg-slate-900/80 backdrop-blur border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-lg flex flex-col md:flex-row gap-4 items-end md:items-center">
-        <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="ค้นหาห้อง..."
-            value={room}
-            onChange={(e) => setRoom(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-500 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-          />
-        </div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 w-full md:w-auto">
-          <select
-            value={month}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              setMonth(val);
-              updateFilters(room, status, val, year);
-            }}
-            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-              <option key={m} value={m}>{['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'][m - 1]}</option>
-            ))}
-          </select>
+      {/* Filter Card */}
+      <div className="bg-white dark:bg-slate-900/80 backdrop-blur border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-lg space-y-4">
+        <div className="flex flex-col md:flex-row gap-4 items-end md:items-center">
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              type="text"
+              placeholder="ค้นหาห้อง..."
+              value={room}
+              onChange={(e) => setRoom(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="pl-10 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3 w-full md:w-auto">
+            <select
+              value={month}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setMonth(val);
+                updateFilters(room, status, val, year);
+              }}
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 h-10"
+            >
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                <option key={m} value={m}>{['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'][m - 1]}</option>
+              ))}
+            </select>
 
-          <select
-            value={year}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              setYear(val);
-              updateFilters(room, status, month, val);
-            }}
-            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            <select
+              value={year}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setYear(val);
+                updateFilters(room, status, month, val);
+              }}
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 h-10"
+            >
+              {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((y) => (
+                <option key={y} value={y}>{y + 543}</option>
+              ))}
+            </select>
+          </div>
+          
+          <Button
+            onClick={handleSearch}
+            className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white"
           >
-            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((y) => (
-              <option key={y} value={y}>{y + 543}</option>
-            ))}
-          </select>
-
-          <select
-            value={status}
-            onChange={(e) => {
-              const val = e.target.value;
-              setStatus(val);
-              updateFilters(room, val, month, year);
-            }}
-            className="col-span-2 md:col-span-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="">ทุกสถานะ</option>
-            <option value="PENDING">รอยืนยัน</option>
-            <option value="VERIFIED">ตรวจสอบแล้ว</option>
-            <option value="REJECTED">ปฏิเสธ</option>
-          </select>
+            ค้นหา
+          </Button>
         </div>
-        
-        <button
-          onClick={handleSearch}
-          className="w-full md:w-auto px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-        >
-          ค้นหา
-        </button>
+
+        {/* Quick Tabs */}
+        <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/50">
+          {[
+            { id: '', label: 'ทั้งหมด' },
+            { id: 'VERIFIED', label: 'ตรวจสอบแล้ว' },
+            { id: 'PENDING', label: 'รอตรวจสอบ' },
+            { id: 'REJECTED', label: 'ปฏิเสธ' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setStatus(tab.id);
+                updateFilters(room, tab.id, month, year);
+              }}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                status === tab.id
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/20'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Content */}
@@ -273,16 +317,16 @@ function PaymentsPageContent() {
           {/* Desktop Table */}
           <div className="hidden md:block bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
-                    <th className="px-6 py-4 font-medium">วันที่/เวลา</th>
-                    <th className="px-6 py-4 font-medium">ห้อง</th>
-                    <th className="px-6 py-4 font-medium">ผู้ชำระ</th>
-                    <th className="px-6 py-4 font-medium text-right">จำนวนเงิน</th>
-                    <th className="px-6 py-4 font-medium text-center">ช่องทาง</th>
-                    <th className="px-6 py-4 font-medium text-center">สถานะ</th>
-                    <th className="px-6 py-4 font-medium text-center">จัดการ</th>
+              <table className="w-full text-left border-collapse">
+                <thead className="sticky top-0 z-10">
+                  <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs uppercase tracking-wider">
+                    <th className="px-6 py-4 font-medium whitespace-nowrap">วันที่/เวลา</th>
+                    <th className="px-6 py-4 font-medium whitespace-nowrap">ห้อง</th>
+                    <th className="px-6 py-4 font-medium whitespace-nowrap">ผู้ชำระ</th>
+                    <th className="px-6 py-4 font-medium text-right whitespace-nowrap">จำนวนเงิน</th>
+                    <th className="px-6 py-4 font-medium text-center whitespace-nowrap">ช่องทาง</th>
+                    <th className="px-6 py-4 font-medium text-center whitespace-nowrap">สถานะ</th>
+                    <th className="px-6 py-4 font-medium text-center whitespace-nowrap">จัดการ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800/50">
@@ -290,19 +334,19 @@ function PaymentsPageContent() {
                     <tr 
                       key={payment.id}
                       className={`
-                        transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/80
+                        transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50
                         ${idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/50 dark:bg-slate-900/50'}
                       `}
                     >
                       <td className="px-6 py-4">
                         <div className="text-slate-700 dark:text-slate-300 font-medium">{new Date(payment.paidAt).toLocaleDateString('th-TH')}</div>
-                        <div className="text-xs text-slate-500">{new Date(payment.paidAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">{new Date(payment.paidAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}</div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="font-bold text-indigo-600 dark:text-indigo-400 text-lg">
                           {payment.invoice?.contract?.room?.number || '-'}
                         </div>
-                        <div className="text-xs text-slate-500">
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
                           {payment.invoice?.contract?.room?.building?.name || '-'}
                         </div>
                       </td>
@@ -331,57 +375,89 @@ function PaymentsPageContent() {
           {/* Mobile Cards */}
           <div className="md:hidden space-y-4">
             {pagedPayments.map((payment) => (
-              <div key={payment.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-md relative overflow-hidden">
-                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${getStatusColor(payment.status)}`}></div>
-                
-                <div className="flex justify-between items-start mb-3 pl-2">
+              <div key={payment.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                <div className="flex justify-between items-start mb-3">
                   <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                        {new Date(payment.paidAt).toLocaleDateString('th-TH')}
+                      </span>
+                      <PaymentMethodBadge hasSlip={!!payment.slipImageUrl} />
+                    </div>
                     <div className="flex items-baseline gap-2">
-                      <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                      <h3 className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
                         {payment.invoice?.contract?.room?.number || '-'}
                       </h3>
-                      <span className="text-xs text-slate-500">{new Date(payment.paidAt).toLocaleDateString('th-TH')}</span>
+                      <span className="text-lg font-bold text-slate-900 dark:text-white font-mono">
+                        ฿{Number(payment.amount).toLocaleString()}
+                      </span>
                     </div>
-                    <div className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
+                    <div className="text-slate-600 dark:text-slate-300 text-sm mt-1">
                       {payment.invoice?.contract?.tenant?.name || '-'}
                     </div>
                   </div>
                   <StatusBadge status={payment.status} />
                 </div>
 
-                <div className="flex justify-between items-end pl-2">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <PaymentMethodBadge hasSlip={!!payment.slipImageUrl} />
-                    </div>
-                    <div className="text-xl font-bold text-slate-900 dark:text-white font-mono">฿{Number(payment.amount).toLocaleString()}</div>
-                  </div>
+                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
                   <PaymentActions payment={payment} mobile onSuccess={fetchData} />
                 </div>
               </div>
             ))}
           </div>
 
+          {/* Floating Filter Button (Mobile) */}
+          <button 
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="md:hidden fixed bottom-6 right-6 p-4 bg-indigo-600 text-white rounded-full shadow-xl hover:bg-indigo-700 active:scale-95 transition-all z-50"
+          >
+            <Filter className="w-6 h-6" />
+          </button>
+
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center items-center gap-2 mt-8">
-              <button
+              <Button
+                variant="outline"
+                size="icon"
                 onClick={() => goToPage(page - 1)}
                 disabled={page === 1}
-                className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <div className="text-sm font-medium text-slate-500 dark:text-slate-400 px-4">
-                หน้า <span className="text-slate-900 dark:text-white">{page}</span> จาก {totalPages}
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              
+              <div className="flex gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let p = page;
+                  if (totalPages > 5) {
+                    if (page < 3) p = i + 1;
+                    else if (page > totalPages - 2) p = totalPages - 4 + i;
+                    else p = page - 2 + i;
+                  } else {
+                    p = i + 1;
+                  }
+                  
+                  return (
+                    <Button
+                      key={p}
+                      variant={page === p ? "default" : "outline"}
+                      className={page === p ? "bg-indigo-600 hover:bg-indigo-500 text-white" : ""}
+                      onClick={() => goToPage(p)}
+                    >
+                      {p}
+                    </Button>
+                  );
+                })}
               </div>
-              <button
+
+              <Button
+                variant="outline"
+                size="icon"
                 onClick={() => goToPage(page + 1)}
                 disabled={page >= totalPages}
-                className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
-                <ChevronRight className="w-5 h-5" />
-              </button>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
             </div>
           )}
         </>
@@ -393,14 +469,6 @@ function PaymentsPageContent() {
 // Sub-components
 
 function KPICard({ title, value, color, icon, progress }: { title: string, value: string, color: 'slate' | 'emerald' | 'amber', icon: React.ReactNode, progress?: number }) {
-  const colors = {
-    slate: 'text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400',
-    emerald: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400',
-    amber: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400',
-  };
-  
-  const [textClass, iconBg, iconColor] = colors[color].split(' '); // simplified mapping
-
   return (
     <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden shadow-lg transition-all hover:shadow-xl dark:hover:bg-slate-750 group">
       <CardContent className="p-6">
@@ -448,39 +516,33 @@ function PaymentMethodBadge({ hasSlip }: { hasSlip: boolean }) {
   return <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 flex items-center gap-1 w-fit"><Banknote className="w-3 h-3" /> เงินสด</span>;
 }
 
-function getStatusColor(status: string) {
-  switch (status) {
-    case 'VERIFIED': return 'bg-emerald-500';
-    case 'PENDING': return 'bg-amber-500';
-    case 'REJECTED': return 'bg-rose-500';
-    default: return 'bg-slate-500';
-  }
-}
-
 function PaymentActions({ payment, mobile, onSuccess }: { payment: Payment, mobile?: boolean, onSuccess?: () => void }) {
   const [loading, setLoading] = useState<'verify' | 'reject' | null>(null);
-  const [showVerifyDate, setShowVerifyDate] = useState(false);
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
   const [paidAt, setPaidAt] = useState<string>(() => {
-    const d = new Date();
+    // Default to payment.paidAt or now if invalid
+    const d = payment.paidAt ? new Date(payment.paidAt) : new Date();
+    // Format for datetime-local: YYYY-MM-DDThh:mm
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   });
 
-  const canVerify = payment.status === 'PENDING'; // Allow verify even without slip for cash? Previous logic required slip. Let's stick to previous: canVerify = payment.status === 'PENDING' && !!payment.slipImageUrl;
-  // Actually, previous logic was: const canVerify = payment.status === 'PENDING' && !!payment.slipImageUrl;
-  // But maybe cash payments also need verification? The previous code enforced slip for verification. I will stick to it to not change logic.
   const hasSlip = !!payment.slipImageUrl;
   const isPending = payment.status === 'PENDING';
+  
+  const room = payment.invoice?.contract?.room?.number || '-';
+  const amount = Number(payment.amount).toLocaleString('th-TH');
 
   const doVerify = async () => {
     try {
-      const room = payment.invoice?.contract?.room?.number || '-';
-      const amt = Number(payment.amount).toLocaleString('th-TH');
-      const ok = window.confirm(`ยืนยันตัดยอดชำระเงินห้อง ${room} จำนวน ฿${amt} ?`);
-      if (!ok) return;
       setLoading('verify');
-      await api.confirmSlip({ paymentId: payment.id, status: 'VERIFIED', paidAt });
-      if (onSuccess) onSuccess(); else window.location.reload();
+      // Convert local time string back to ISO string if needed, or send as is if backend handles it.
+      // Assuming backend expects ISO string.
+      const dateObj = new Date(paidAt);
+      await api.confirmSlip({ paymentId: payment.id, status: 'VERIFIED', paidAt: dateObj.toISOString() });
+      setVerifyOpen(false);
+      if (onSuccess) onSuccess();
     } catch (e) {
       alert((e as Error).message || 'ยืนยันการชำระเงินไม่สำเร็จ');
     } finally {
@@ -490,12 +552,10 @@ function PaymentActions({ payment, mobile, onSuccess }: { payment: Payment, mobi
 
   const doReject = async () => {
     try {
-      const room = payment.invoice?.contract?.room?.number || '-';
-      const ok = window.confirm(`ยืนยันปฏิเสธสลิปห้อง ${room} ?`);
-      if (!ok) return;
       setLoading('reject');
       await api.confirmSlip({ paymentId: payment.id, status: 'REJECTED' });
-      if (onSuccess) onSuccess(); else window.location.reload();
+      setRejectOpen(false);
+      if (onSuccess) onSuccess();
     } catch (e) {
       alert((e as Error).message || 'ปฏิเสธสลิปไม่สำเร็จ');
     } finally {
@@ -519,39 +579,76 @@ function PaymentActions({ payment, mobile, onSuccess }: { payment: Payment, mobi
       
       {isPending && hasSlip && (
         <>
-          <div className="relative">
-             {/* Date picker for verify - minimal approach */}
-             <input
-                type="datetime-local"
-                value={paidAt}
-                onChange={(e) => setPaidAt(e.target.value)}
-                className="w-0 h-0 opacity-0 absolute"
-                id={`date-${payment.id}`}
-             />
-             <label 
-               htmlFor={`date-${payment.id}`} 
-               className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer block"
-               title="เปลี่ยนวันที่รับชำระ"
-             >
-               <Clock className="w-4 h-4" />
-             </label>
-          </div>
+          <Dialog open={verifyOpen} onOpenChange={setVerifyOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white h-8 text-xs">
+                ยืนยัน
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>ยืนยันการชำระเงิน</DialogTitle>
+                <DialogDescription>
+                  ตรวจสอบข้อมูลการชำระเงินของห้อง {room}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="amount" className="text-right">
+                    ยอดเงิน
+                  </Label>
+                  <div className="col-span-3 font-mono font-bold text-lg">
+                    ฿{amount}
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="date" className="text-right">
+                    วันที่ชำระ
+                  </Label>
+                  <div className="col-span-3">
+                    <Input
+                      id="date"
+                      type="datetime-local"
+                      value={paidAt}
+                      onChange={(e) => setPaidAt(e.target.value)}
+                      className="col-span-3"
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setVerifyOpen(false)}>ยกเลิก</Button>
+                <Button onClick={doVerify} disabled={loading === 'verify'}>
+                  {loading === 'verify' ? 'กำลังบันทึก...' : 'ยืนยันถูกต้อง'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           
-          <button
-            onClick={doVerify}
-            disabled={!!loading}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-500 shadow-sm shadow-emerald-900/20 transition-all"
-          >
-            {loading === 'verify' ? '...' : 'ยืนยัน'}
-          </button>
-          
-          <button
-            onClick={doReject}
-            disabled={!!loading}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-600 text-white hover:bg-rose-500 shadow-sm shadow-rose-900/20 transition-all"
-          >
-            {loading === 'reject' ? '...' : 'ปฏิเสธ'}
-          </button>
+          <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="destructive" className="h-8 text-xs bg-rose-600 hover:bg-rose-500">
+                ปฏิเสธ
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>ปฏิเสธสลิป</DialogTitle>
+                <DialogDescription>
+                  คุณต้องการปฏิเสธการชำระเงินของห้อง {room} ใช่หรือไม่?
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4 text-sm text-slate-500 dark:text-slate-400">
+                เมื่อปฏิเสธแล้ว รายการนี้จะถูกเปลี่ยนสถานะเป็น "REJECTED" และผู้เช่าจะได้รับแจ้งเตือน
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setRejectOpen(false)}>ยกเลิก</Button>
+                <Button variant="destructive" onClick={doReject} disabled={loading === 'reject'}>
+                  {loading === 'reject' ? 'กำลังดำเนินการ...' : 'ยืนยันการปฏิเสธ'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>

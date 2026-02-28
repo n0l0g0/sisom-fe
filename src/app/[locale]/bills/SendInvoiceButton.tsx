@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
  
- export default function SendInvoiceButton({ invoice }: { invoice: Invoice }) {
+ export default function SendInvoiceButton({ invoice, className }: { invoice: Invoice; className?: string }) {
    const router = useRouter();
    const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -374,7 +374,7 @@ import { Button } from "@/components/ui/button";
       <>
         <button
           onClick={openEdit}
-          className="px-3 py-1 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+          className={className || "px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"}
           title="แก้ไขบิล"
         >
           แก้ไขบิล

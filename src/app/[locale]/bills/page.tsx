@@ -161,11 +161,32 @@ function BillsPageContent() {
       });
     }
     
-    // Sort by Room Number
+    // Sort by Building -> Floor -> Room Number -> Bannoi
     return result.sort((a, b) => {
-      const roomA = a.contract?.room?.number || '';
-      const roomB = b.contract?.room?.number || '';
-      return roomA.localeCompare(roomB, undefined, { numeric: true });
+      const roomA = a.contract?.room;
+      const roomB = b.contract?.room;
+
+      if (!roomA || !roomB) return 0;
+
+      // 1. Sort by Building Name/Code
+      const buildA = (roomA.building?.name || roomA.building?.code || '').toString().toLowerCase();
+      const buildB = (roomB.building?.name || roomB.building?.code || '').toString().toLowerCase();
+      if (buildA !== buildB) {
+        return buildA.localeCompare(buildB, 'th');
+      }
+
+      // 2. Sort by Floor (numeric)
+      const floorA = Number(roomA.floor) || 0;
+      const floorB = Number(roomB.floor) || 0;
+      if (floorA !== floorB) {
+        return floorA - floorB;
+      }
+
+      // 3. Sort by Room Number (numeric aware)
+      // Special handling for "Bannoi" or similar suffixes if needed, 
+      // but usually numeric sort covers "101" vs "102".
+      // If room numbers are "101", "101/1", standard localeCompare with numeric: true handles it well.
+      return (roomA.number || '').localeCompare(roomB.number || '', undefined, { numeric: true });
     });
   }, [invoices, selectedMonthKey, statusFilter, searchTerm]);
 

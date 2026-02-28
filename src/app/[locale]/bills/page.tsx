@@ -24,7 +24,7 @@ export default function BillsPage() {
               <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">จัดการบิลและสถานะการชำระเงิน</p>
             </div>
           </div>
-          <div className="bg-slate-900/50 p-8 rounded-2xl border border-slate-800 flex justify-center">
+          <div className="bg-white dark:bg-slate-900/50 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 flex justify-center">
             <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
           </div>
         </div>
@@ -304,63 +304,63 @@ function BillsPageContent() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-slate-800 border-slate-700 text-white rounded-2xl overflow-hidden shadow-lg hover:bg-slate-750 transition-all group">
+        <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl dark:hover:bg-slate-750 transition-all group">
           <CardContent className="p-6 relative">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <p className="text-slate-400 text-sm font-medium">ยอดรวมทั้งหมด</p>
+                <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">ยอดรวมทั้งหมด</p>
                 <h3 className="text-3xl font-bold mt-1 tracking-tight">฿{kpis.total.toLocaleString()}</h3>
               </div>
-              <div className="p-2 bg-slate-700/50 rounded-lg group-hover:bg-slate-700 transition-colors">
-                <FileText className="w-5 h-5 text-slate-300" />
+              <div className="p-2 bg-slate-100 dark:bg-slate-700/50 rounded-lg group-hover:bg-slate-200 dark:group-hover:bg-slate-700 transition-colors">
+                <FileText className="w-5 h-5 text-slate-600 dark:text-slate-300" />
               </div>
             </div>
-            <div className="w-full bg-slate-700/50 rounded-full h-1.5">
+            <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1.5">
               <div className="bg-slate-400 h-1.5 rounded-full" style={{ width: '100%' }}></div>
             </div>
-            <p className="text-xs text-slate-400 mt-3">{filteredInvoices.length} รายการ</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">{filteredInvoices.length} รายการ</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800 border-slate-700 text-white rounded-2xl overflow-hidden shadow-lg hover:bg-slate-750 transition-all group">
+        <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl dark:hover:bg-slate-750 transition-all group">
           <CardContent className="p-6 relative">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <p className="text-emerald-400 text-sm font-medium">ชำระแล้ว</p>
-                <h3 className="text-3xl font-bold mt-1 tracking-tight text-emerald-100">฿{kpis.paid.toLocaleString()}</h3>
+                <p className="text-emerald-600 dark:text-emerald-400 text-sm font-medium">ชำระแล้ว</p>
+                <h3 className="text-3xl font-bold mt-1 tracking-tight text-emerald-600 dark:text-emerald-100">฿{kpis.paid.toLocaleString()}</h3>
               </div>
-              <div className="p-2 bg-emerald-900/20 rounded-lg group-hover:bg-emerald-900/30 transition-colors">
+              <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/30 transition-colors">
                 <div className="w-5 h-5 rounded-full border-2 border-emerald-500/50"></div>
               </div>
             </div>
-            <div className="w-full bg-slate-700/50 rounded-full h-1.5">
+            <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1.5">
               <div className="bg-emerald-500 h-1.5 rounded-full transition-all duration-1000" style={{ width: `${kpis.paidPct}%` }}></div>
             </div>
-            <p className="text-xs text-emerald-400/70 mt-3">{kpis.paidPct.toFixed(1)}% ของทั้งหมด</p>
+            <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 mt-3">{kpis.paidPct.toFixed(1)}% ของทั้งหมด</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800 border-slate-700 text-white rounded-2xl overflow-hidden shadow-lg hover:bg-slate-750 transition-all group">
+        <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl dark:hover:bg-slate-750 transition-all group">
           <CardContent className="p-6 relative">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <p className="text-rose-400 text-sm font-medium">ค้างชำระ / รอชำระ</p>
-                <h3 className="text-3xl font-bold mt-1 tracking-tight text-rose-100">฿{kpis.unpaid.toLocaleString()}</h3>
+                <p className="text-rose-600 dark:text-rose-400 text-sm font-medium">ค้างชำระ / รอชำระ</p>
+                <h3 className="text-3xl font-bold mt-1 tracking-tight text-rose-600 dark:text-rose-100">฿{kpis.unpaid.toLocaleString()}</h3>
               </div>
-              <div className="p-2 bg-rose-900/20 rounded-lg group-hover:bg-rose-900/30 transition-colors">
+              <div className="p-2 bg-rose-50 dark:bg-rose-900/20 rounded-lg group-hover:bg-rose-100 dark:group-hover:bg-rose-900/30 transition-colors">
                 <div className="w-5 h-5 rounded-full border-2 border-rose-500/50 border-dashed"></div>
               </div>
             </div>
-            <div className="w-full bg-slate-700/50 rounded-full h-1.5">
+            <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1.5">
               <div className="bg-rose-500 h-1.5 rounded-full transition-all duration-1000" style={{ width: `${kpis.unpaidPct}%` }}></div>
             </div>
-            <p className="text-xs text-rose-400/70 mt-3">เกินกำหนด: ฿{kpis.overdue.toLocaleString()}</p>
+            <p className="text-xs text-rose-600/70 dark:text-rose-400/70 mt-3">เกินกำหนด: ฿{kpis.overdue.toLocaleString()}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-slate-900/80 backdrop-blur border border-slate-700 rounded-2xl p-4 shadow-lg flex flex-col md:flex-row gap-4 justify-between items-center">
+      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-lg flex flex-col md:flex-row gap-4 justify-between items-center">
         <div className="relative w-full md:w-96">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
           <input
@@ -368,16 +368,16 @@ function BillsPageContent() {
             placeholder="ค้นหาห้อง, ชื่อผู้เช่า..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-600 text-white placeholder:text-slate-500 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-500 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
           />
         </div>
         
         <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-          <div className="flex items-center gap-2 bg-slate-800 rounded-xl p-1 border border-slate-600">
+          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl p-1 border border-slate-200 dark:border-slate-600">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="bg-transparent text-white text-sm font-medium px-3 py-2 rounded-lg focus:outline-none cursor-pointer hover:bg-slate-700 transition-colors"
+              className="bg-transparent text-slate-700 dark:text-white text-sm font-medium px-3 py-2 rounded-lg focus:outline-none cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
             >
               <option value="ALL">ทุกสถานะ</option>
               <option value="DRAFT">📝 ร่าง</option>
@@ -388,11 +388,11 @@ function BillsPageContent() {
             </select>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-800 rounded-xl p-1 border border-slate-600">
+          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl p-1 border border-slate-200 dark:border-slate-600">
             <select
               value={selectedMonthKey || ''}
               onChange={(e) => setSelectedMonthKey(e.target.value || null)}
-              className="bg-transparent text-white text-sm font-medium px-3 py-2 rounded-lg focus:outline-none cursor-pointer hover:bg-slate-700 transition-colors min-w-[140px]"
+              className="bg-transparent text-slate-700 dark:text-white text-sm font-medium px-3 py-2 rounded-lg focus:outline-none cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors min-w-[140px]"
             >
               {monthKeys.map((key) => {
                 const [y, m] = key.split('-');
@@ -402,11 +402,11 @@ function BillsPageContent() {
             </select>
           </div>
 
-          <div className="h-8 w-px bg-slate-700 mx-1"></div>
+          <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
           <button
             onClick={copyOverdue}
-            className="p-2.5 rounded-xl bg-slate-800 text-rose-400 border border-slate-600 hover:bg-slate-700 hover:text-rose-300 transition-colors"
+            className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-rose-500 dark:text-rose-400 border border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-rose-600 dark:hover:text-rose-300 transition-colors"
             title="คัดลอกรายชื่อห้องค้างชำระ"
           >
             <Copy className="w-5 h-5" />
@@ -420,24 +420,24 @@ function BillsPageContent() {
       {loading ? (
         <div className="text-center py-20">
           <div className="animate-spin h-10 w-10 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-slate-400">กำลังโหลดข้อมูล...</p>
+          <p className="text-slate-500 dark:text-slate-400">กำลังโหลดข้อมูล...</p>
         </div>
       ) : filteredInvoices.length === 0 ? (
-        <div className="text-center py-20 bg-slate-900/50 rounded-3xl border border-slate-800 border-dashed">
-          <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Filter className="w-8 h-8 text-slate-500" />
+        <div className="text-center py-20 bg-white dark:bg-slate-900/50 rounded-3xl border border-slate-200 dark:border-slate-800 border-dashed">
+          <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Filter className="w-8 h-8 text-slate-400 dark:text-slate-500" />
           </div>
-          <h3 className="text-lg font-medium text-white">ไม่พบรายการบิล</h3>
+          <h3 className="text-lg font-medium text-slate-900 dark:text-white">ไม่พบรายการบิล</h3>
           <p className="text-slate-500 mt-1">ลองเปลี่ยนตัวกรองหรือค้นหาด้วยคำอื่น</p>
         </div>
       ) : (
         <>
           {/* Desktop Table */}
-          <div className="hidden md:block bg-slate-900 rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
+          <div className="hidden md:block bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-slate-800 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
+                  <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
                     <th className="px-6 py-4 font-medium">ห้อง</th>
                     <th className="px-6 py-4 font-medium">ผู้เช่า</th>
                     <th className="px-6 py-4 font-medium">ประจำเดือน</th>
@@ -447,36 +447,36 @@ function BillsPageContent() {
                     <th className="px-6 py-4 font-medium text-center">จัดการ</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/50">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800/50">
                   {pagedInvoices.map((bill, idx) => (
                     <tr 
                       key={bill.id} 
                       className={`
-                        transition-colors hover:bg-slate-800/80
-                        ${idx % 2 === 0 ? 'bg-slate-900' : 'bg-slate-900/50'}
+                        transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/80
+                        ${idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/50 dark:bg-slate-900/50'}
                       `}
                     >
                       <td className="px-6 py-4">
-                        <div className="font-bold text-white text-lg">{bill.contract?.room?.number}</div>
+                        <div className="font-bold text-slate-900 dark:text-white text-lg">{bill.contract?.room?.number}</div>
                         <div className="text-xs text-slate-500">
                           {bill.contract?.room?.building?.name || '-'} 
                           {bill.contract?.room?.floor ? ` ชั้น ${bill.contract.room.floor}` : ''}
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-slate-300 font-medium">{bill.contract?.tenant?.name}</div>
+                        <div className="text-slate-700 dark:text-slate-300 font-medium">{bill.contract?.tenant?.name}</div>
                         {bill.contract?.tenant?.nickname && (
                           <div className="text-xs text-slate-500">({bill.contract.tenant.nickname})</div>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-slate-400 text-sm">
+                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
                         {new Date(bill.year, bill.month - 1).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })}
                       </td>
-                      <td className="px-6 py-4 text-slate-400 text-sm">
+                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
                         {formatScheduleDate(bill)}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <div className="font-mono font-bold text-slate-200">฿{Number(bill.totalAmount).toLocaleString()}</div>
+                        <div className="font-mono font-bold text-slate-900 dark:text-slate-200">฿{Number(bill.totalAmount).toLocaleString()}</div>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <StatusBadge status={bill.status} />
@@ -489,7 +489,7 @@ function BillsPageContent() {
                             <>
                               <button
                                 onClick={() => window.open(`/bills/${bill.id}/print`, '_blank')}
-                                className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                                className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                                 title="พิมพ์ใบแจ้งหนี้"
                               >
                                 <Printer className="w-4 h-4" />
@@ -509,16 +509,16 @@ function BillsPageContent() {
           {/* Mobile Cards */}
           <div className="md:hidden space-y-4">
             {pagedInvoices.map((bill) => (
-              <div key={bill.id} className="bg-slate-900 border border-slate-700 rounded-2xl p-5 shadow-md relative overflow-hidden">
+              <div key={bill.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-md relative overflow-hidden">
                 <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${getStatusColor(bill.status)}`}></div>
                 
                 <div className="flex justify-between items-start mb-3 pl-2">
                   <div>
                     <div className="flex items-baseline gap-2">
-                      <h3 className="text-2xl font-bold text-white">{bill.contract?.room?.number}</h3>
+                      <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{bill.contract?.room?.number}</h3>
                       <span className="text-xs text-slate-500">{bill.contract?.room?.building?.name}</span>
                     </div>
-                    <div className="text-slate-400 text-sm mt-0.5">{bill.contract?.tenant?.name}</div>
+                    <div className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">{bill.contract?.tenant?.name}</div>
                   </div>
                   <StatusBadge status={bill.status} />
                 </div>
@@ -526,13 +526,13 @@ function BillsPageContent() {
                 <div className="flex justify-between items-end pl-2">
                   <div>
                     <div className="text-xs text-slate-500 uppercase tracking-wide">ยอดรวม</div>
-                    <div className="text-xl font-bold text-slate-200 font-mono">฿{Number(bill.totalAmount).toLocaleString()}</div>
+                    <div className="text-xl font-bold text-slate-900 dark:text-slate-200 font-mono">฿{Number(bill.totalAmount).toLocaleString()}</div>
                   </div>
                   {bill.status !== 'CANCELLED' && (
                     <div className="flex gap-2">
                       <button
                         onClick={() => window.open(`/bills/${bill.id}/print`, '_blank')}
-                        className="p-2.5 rounded-xl bg-slate-800 text-slate-400 border border-slate-600 hover:text-white hover:bg-slate-700 transition-colors"
+                        className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-600 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                         title="พิมพ์ใบแจ้งหนี้"
                       >
                         <Printer className="w-5 h-5" />
@@ -545,7 +545,7 @@ function BillsPageContent() {
                   )}
                 </div>
                 
-                <div className="mt-4 pt-3 border-t border-slate-800 flex justify-between text-xs text-slate-500 pl-2">
+                <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-between text-xs text-slate-500 pl-2">
                   <span>{new Date(bill.year, bill.month - 1).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })}</span>
                   <span>นัดจ่าย: {formatScheduleDate(bill)}</span>
                 </div>
@@ -559,17 +559,17 @@ function BillsPageContent() {
               <button
                 onClick={() => goToPage(page - 1)}
                 disabled={page === 1}
-                className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <div className="text-sm font-medium text-slate-400 px-4">
-                หน้า <span className="text-white">{page}</span> จาก {totalPages}
+              <div className="text-sm font-medium text-slate-500 dark:text-slate-400 px-4">
+                หน้า <span className="text-slate-900 dark:text-white">{page}</span> จาก {totalPages}
               </div>
               <button
                 onClick={() => goToPage(page + 1)}
                 disabled={page >= totalPages}
-                className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -584,17 +584,17 @@ function BillsPageContent() {
 function StatusBadge({ status }: { status: string }) {
   switch (status) {
     case 'PAID':
-      return <span className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-900/40 text-emerald-300 border border-emerald-700/50">ชำระแล้ว</span>;
+      return <span className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-700/50">ชำระแล้ว</span>;
     case 'OVERDUE':
-      return <span className="px-3 py-1 rounded-full text-xs font-medium bg-rose-900/40 text-rose-300 border border-rose-700/50">ค้างชำระ</span>;
+      return <span className="px-3 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:border-rose-700/50">ค้างชำระ</span>;
     case 'SENT':
-      return <span className="px-3 py-1 rounded-full text-xs font-medium bg-amber-900/40 text-amber-300 border border-amber-700/50">รอชำระ</span>;
+      return <span className="px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700/50">รอชำระ</span>;
     case 'DRAFT':
-      return <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-700 text-slate-300 border border-slate-600">ร่าง</span>;
+      return <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600">ร่าง</span>;
     case 'CANCELLED':
-      return <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-500 border border-slate-700 line-through">ยกเลิก</span>;
+      return <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700 line-through">ยกเลิก</span>;
     default:
-      return <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700">{status}</span>;
+      return <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">{status}</span>;
   }
 }
 

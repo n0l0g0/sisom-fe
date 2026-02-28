@@ -380,10 +380,10 @@ import { Button } from "@/components/ui/button";
           แก้ไขบิล
         </button>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="sm:max-w-[900px] md:max-w-[1024px]">
+          <DialogContent className="sm:max-w-[900px] md:max-w-[1024px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
             <DialogHeader>
-              <DialogTitle>แก้ไขบิล</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-slate-900 dark:text-white">แก้ไขบิล</DialogTitle>
+              <DialogDescription className="text-slate-500 dark:text-slate-400">
                 ปรับปรุงรายการบิล เพิ่มรายการ และส่วนลด รวมถึงยกเลิกบิล
               </DialogDescription>
               {detail && (
@@ -397,13 +397,13 @@ import { Button } from "@/components/ui/button";
                           'noopener,noreferrer',
                         )
                       }
-                      className="bg-slate-800 hover:bg-slate-900 text-white"
+                      className="bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white"
                       title="พิมพ์ใบแจ้งหนี้ (A5)"
                     >
                       พิมพ์ใบแจ้งหนี้ (A5)
                     </Button>
                   ) : (
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
                       พิมพ์ได้เฉพาะบิลสถานะ “ร่าง”
                     </span>
                   )}
@@ -414,83 +414,83 @@ import { Button } from "@/components/ui/button";
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <div className="text-sm text-slate-500">ห้อง</div>
-                    <div className="font-semibold text-slate-800">{detail.contract?.room?.number}</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400">ห้อง</div>
+                    <div className="font-semibold text-slate-900 dark:text-white">{detail.contract?.room?.number}</div>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-sm text-slate-500">ผู้เช่า</div>
-                    <div className="font-semibold text-slate-800">{detail.contract?.tenant?.name}</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400">ผู้เช่า</div>
+                    <div className="font-semibold text-slate-900 dark:text-white">{detail.contract?.tenant?.name}</div>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-sm text-slate-500">เดือน</div>
-                    <div className="font-semibold text-slate-800">{new Date(detail.year, detail.month - 1).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })}</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400">เดือน</div>
+                    <div className="font-semibold text-slate-900 dark:text-white">{new Date(detail.year, detail.month - 1).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })}</div>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-sm text-slate-500">ยอดรวม</div>
-                    <div className="font-semibold text-slate-800">฿{Number(detail.totalAmount).toLocaleString()}</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400">ยอดรวม</div>
+                    <div className="font-semibold text-slate-900 dark:text-white">฿{Number(detail.totalAmount).toLocaleString()}</div>
                   </div>
                 </div>
                 <div className="md:grid md:grid-cols-2 md:gap-6">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <div className="font-semibold text-slate-700">รายละเอียดบิล</div>
-                      <div className="rounded border">
-                        <div className="flex justify-between p-2 text-sm">
+                      <div className="font-semibold text-slate-700 dark:text-slate-300">รายละเอียดบิล</div>
+                      <div className="rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                        <div className="flex justify-between p-2 text-sm text-slate-700 dark:text-slate-300">
                           <div>ค่าเช่าห้อง</div>
                           <div className="font-medium">฿{Number(detail.rentAmount).toLocaleString()}</div>
                         </div>
-                        <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
+                        <div className="flex justify-between px-2 pb-2 text-xs text-slate-500 dark:text-slate-400">
                           <div>เดือน {new Date(detail.year, detail.month - 1).toLocaleDateString('th-TH', { month: 'numeric', year: 'numeric' })}</div>
                         </div>
-                        <div className="flex justify-between p-2 text-sm">
+                        <div className="flex justify-between p-2 text-sm text-slate-700 dark:text-slate-300">
                           <div>ค่าน้ำ (Water rate)</div>
                           <div className="font-medium">฿{Number(detail.waterAmount).toLocaleString()}</div>
                         </div>
-                        <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
+                        <div className="flex justify-between px-2 pb-2 text-xs text-slate-500 dark:text-slate-400">
                           <div>
                             {prevMR && currentMR
                               ? `เดือน ${prevMR.month}/${prevMR.year} (${prevMR.waterReading}) → ${currentMR.month}/${currentMR.year} (${currentMR.waterReading}) = ${usage.waterUnits} ยูนิต`
                               : 'ไม่มีข้อมูลมิเตอร์เดือนก่อน'}
                           </div>
                         </div>
-                        <div className="flex justify-between p-2 text-sm">
+                        <div className="flex justify-between p-2 text-sm text-slate-700 dark:text-slate-300">
                           <div>ค่าไฟฟ้า (Electrical rate)</div>
                           <div className="font-medium">฿{Number(detail.electricAmount).toLocaleString()}</div>
                         </div>
-                        <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
+                        <div className="flex justify-between px-2 pb-2 text-xs text-slate-500 dark:text-slate-400">
                           <div>
                             {prevMR && currentMR
                               ? `เดือน ${prevMR.month}/${prevMR.year} (${prevMR.electricReading}) → ${currentMR.month}/${currentMR.year} (${currentMR.electricReading}) = ${usage.electricUnits} ยูนิต`
                               : 'ไม่มีข้อมูลมิเตอร์เดือนก่อน'}
                           </div>
                         </div>
-                        <div className="flex justify-between p-2 text-sm border-t">
+                        <div className="flex justify-between p-2 text-sm border-t border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white">
                           <div className="font-semibold">รวมทั้งหมด</div>
                           <div className="font-semibold">฿{Number(detail.totalAmount).toLocaleString()}</div>
                         </div>
                       </div>
                       <div>
-                        <Button onClick={updateUtilitiesFromMeter} className="mt-2 bg-[#f5a987] hover:bg-[#e09b7d] text-white">
+                        <Button onClick={updateUtilitiesFromMeter} className="mt-2 bg-indigo-600 hover:bg-indigo-500 text-white">
                           อัพเดทค่าน้ำไฟและคำนวนใหม่
                         </Button>
-                        <div className="text-xs text-slate-500 mt-1">หลังอัพเดท ให้กด “บันทึก” เพื่อบันทึกค่าน้ำไฟใหม่</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">หลังอัพเดท ให้กด “บันทึก” เพื่อบันทึกค่าน้ำไฟใหม่</div>
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <div className="font-semibold text-slate-700">รายการเพิ่มเติม</div>
+                      <div className="font-semibold text-slate-700 dark:text-slate-300">รายการเพิ่มเติม</div>
                       <div className="space-y-2">
                         {(detail.items || []).length === 0 ? (
-                          <div className="text-sm text-slate-500">ไม่มีรายการเพิ่มเติม</div>
+                          <div className="text-sm text-slate-500 dark:text-slate-400">ไม่มีรายการเพิ่มเติม</div>
                         ) : (
                           <div className="space-y-2">
                             {detail.items!.map((it: any) => (
-                              <div key={it.id} className="flex items-center justify-between border rounded p-2">
-                                <div className="text-sm text-slate-700">{it.description}</div>
+                              <div key={it.id} className="flex items-center justify-between border border-slate-200 dark:border-slate-700 rounded p-2 bg-white dark:bg-slate-900">
+                                <div className="text-sm text-slate-700 dark:text-slate-300">{it.description}</div>
                                 <div className="flex items-center gap-3">
-                                  <div className="font-mono text-sm">฿{Number(it.amount).toLocaleString()}</div>
+                                  <div className="font-mono text-sm text-slate-900 dark:text-white">฿{Number(it.amount).toLocaleString()}</div>
                                   <button
                                     onClick={() => removeItem(it.id)}
-                                    className="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-700"
+                                    className="px-2 py-1 rounded bg-rose-600 text-white text-xs hover:bg-rose-700"
                                   >
                                     ลบ
                                   </button>
@@ -505,14 +505,16 @@ import { Button } from "@/components/ui/button";
                           placeholder="รายละเอียด"
                           value={itemDesc}
                           onChange={(e) => setItemDesc(e.target.value)}
+                          className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                         />
                         <Input
                           placeholder="จำนวนเงิน"
                           type="number"
                           value={itemAmount}
                           onChange={(e) => setItemAmount(e.target.value)}
+                          className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                         />
-                        <Button onClick={addItem} className="bg-[#f5a987] hover:bg-[#e09b7d]">
+                        <Button onClick={addItem} className="bg-indigo-600 hover:bg-indigo-500 text-white">
                           เพิ่มรายการ
                         </Button>
                       </div>
@@ -520,26 +522,26 @@ import { Button } from "@/components/ui/button";
                   </div>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <div className="font-semibold text-slate-700">วันที่รับชำระ</div>
+                      <div className="font-semibold text-slate-700 dark:text-slate-300">วันที่รับชำระ</div>
                       <div className="flex items-center gap-3">
                         <Input
                           type="datetime-local"
                           value={settlePaidAt}
                           onChange={(e) => setSettlePaidAt(e.target.value)}
-                          className="w-64"
+                          className="w-64 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                         />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <div className="font-semibold text-slate-700">นัดวันจ่าย</div>
+                      <div className="font-semibold text-slate-700 dark:text-slate-300">นัดวันจ่าย</div>
                       <div className="flex items-center gap-3">
                         <Input
                           type="date"
                           value={scheduleDate}
                           onChange={(e) => setScheduleDate(e.target.value)}
-                          className="w-48"
+                          className="w-48 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                         />
-                        <label className="flex items-center gap-2 text-sm text-slate-700">
+                        <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
                           <input
                             type="checkbox"
                             checked={scheduleMonthly}
@@ -548,18 +550,18 @@ import { Button } from "@/components/ui/button";
                           นัดวันนี้ของทุกเดือน
                         </label>
                       </div>
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
                         ถ้าไม่ติ๊ก จะนัดครั้งเดียวสำหรับบิลนี้
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <div className="font-semibold text-slate-700">ส่วนลด</div>
+                      <div className="font-semibold text-slate-700 dark:text-slate-300">ส่วนลด</div>
                       <div className="flex items-center gap-2">
                         <Input
                           type="number"
                           value={discount}
                           onChange={(e) => setDiscount(e.target.value)}
-                          className="flex-1"
+                          className="flex-1 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                         />
                       </div>
                     </div>
@@ -567,13 +569,13 @@ import { Button } from "@/components/ui/button";
                 </div>
             </div>
             ) : (
-              <div className="text-center text-slate-500 py-8">กำลังโหลด...</div>
+              <div className="text-center text-slate-500 dark:text-slate-400 py-8">กำลังโหลด...</div>
             )}
             <div className="w-full flex justify-end items-center px-1 pb-3">
               <div className="flex gap-2">
                 <Button
                   onClick={cancelInvoice}
-                  className="bg-[#8b5a3c] hover:bg-[#7a4f36] text-white"
+                  className="bg-amber-700 hover:bg-amber-800 text-white"
                 >
                   ยกเลิกบิล
                 </Button>
@@ -585,7 +587,7 @@ import { Button } from "@/components/ui/button";
                   </Button>
                   <Button
                     onClick={handleSettle}
-                    className="bg-green-600 hover:bg-green-700 text-white"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
                   >
                     รับชำระ
                   </Button>
@@ -630,39 +632,39 @@ import { Button } from "@/components/ui/button";
       <>
         <button
           onClick={openView}
-          className="px-3 py-1 rounded-md text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200"
+          className="px-3 py-1 rounded-md text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-800 transition-colors"
           title="ดูข้อมูลบิลที่ชำระแล้ว"
         >
           ดูข้อมูล
         </button>
         <Dialog open={open && mode === 'VIEW'} onOpenChange={setOpen}>
-          <DialogContent className="sm:max-w-[900px] md:max-w-[1024px]">
+          <DialogContent className="sm:max-w-[900px] md:max-w-[1024px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
             <DialogHeader>
-              <DialogTitle>รายละเอียดบิล</DialogTitle>
-              <DialogDescription>ข้อมูลบิลที่ชำระแล้ว</DialogDescription>
+              <DialogTitle className="text-slate-900 dark:text-white">รายละเอียดบิล</DialogTitle>
+              <DialogDescription className="text-slate-500 dark:text-slate-400">ข้อมูลบิลที่ชำระแล้ว</DialogDescription>
             </DialogHeader>
             {detail ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <div className="text-sm text-slate-500">ห้อง</div>
-                    <div className="font-semibold text-slate-800">{detail.contract?.room?.number}</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400">ห้อง</div>
+                    <div className="font-semibold text-slate-900 dark:text-white">{detail.contract?.room?.number}</div>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-sm text-slate-500">ผู้เช่า</div>
-                    <div className="font-semibold text-slate-800">{detail.contract?.tenant?.name}</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400">ผู้เช่า</div>
+                    <div className="font-semibold text-slate-900 dark:text-white">{detail.contract?.tenant?.name}</div>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-sm text-slate-500">เดือน</div>
-                    <div className="font-semibold text-slate-800">{new Date(detail.year, detail.month - 1).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })}</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400">เดือน</div>
+                    <div className="font-semibold text-slate-900 dark:text-white">{new Date(detail.year, detail.month - 1).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })}</div>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-sm text-slate-500">ยอดรวม</div>
-                    <div className="font-semibold text-slate-800">฿{Number(detail.totalAmount).toLocaleString()}</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400">ยอดรวม</div>
+                    <div className="font-semibold text-slate-900 dark:text-white">฿{Number(detail.totalAmount).toLocaleString()}</div>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-sm text-slate-500">รับชำระเมื่อ</div>
-                    <div className="font-semibold text-slate-800">
+                    <div className="text-sm text-slate-500 dark:text-slate-400">รับชำระเมื่อ</div>
+                    <div className="font-semibold text-slate-900 dark:text-white">
                       {(() => {
                         const list = (detail.payments || []).filter((p: any) => !!p.paidAt);
                         if (list.length === 0) return '-';
@@ -675,38 +677,38 @@ import { Button } from "@/components/ui/button";
                 </div>
                 <div className="md:grid md:grid-cols-2 md:gap-6">
                   <div className="space-y-2">
-                    <div className="font-semibold text-slate-700">รายละเอียดบิล</div>
-                    <div className="rounded border">
-                      <div className="flex justify-between p-2 text-sm">
+                    <div className="font-semibold text-slate-700 dark:text-slate-300">รายละเอียดบิล</div>
+                    <div className="rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                      <div className="flex justify-between p-2 text-sm text-slate-700 dark:text-slate-300">
                         <div>ค่าเช่าห้อง</div>
                         <div className="font-medium">฿{Number(detail.rentAmount).toLocaleString()}</div>
                       </div>
-                      <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
+                      <div className="flex justify-between px-2 pb-2 text-xs text-slate-500 dark:text-slate-400">
                         <div>เดือน {new Date(detail.year, detail.month - 1).toLocaleDateString('th-TH', { month: 'numeric', year: 'numeric' })}</div>
                       </div>
-                      <div className="flex justify-between p-2 text-sm">
+                      <div className="flex justify-between p-2 text-sm text-slate-700 dark:text-slate-300">
                         <div>ค่าน้ำ</div>
                         <div className="font-medium">฿{Number(detail.waterAmount).toLocaleString()}</div>
                       </div>
-                      <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
+                      <div className="flex justify-between px-2 pb-2 text-xs text-slate-500 dark:text-slate-400">
                         <div>
                           {prevMR && currentMR
                             ? `เดือน ${prevMR.month}/${prevMR.year} (${prevMR.waterReading}) → ${currentMR.month}/${currentMR.year} (${currentMR.waterReading}) = ${usage.waterUnits} ยูนิต`
                             : 'ไม่มีข้อมูลมิเตอร์เดือนก่อน'}
                         </div>
                       </div>
-                      <div className="flex justify-between p-2 text-sm">
+                      <div className="flex justify-between p-2 text-sm text-slate-700 dark:text-slate-300">
                         <div>ค่าไฟฟ้า</div>
                         <div className="font-medium">฿{Number(detail.electricAmount).toLocaleString()}</div>
                       </div>
-                      <div className="flex justify-between px-2 pb-2 text-xs text-slate-500">
+                      <div className="flex justify-between px-2 pb-2 text-xs text-slate-500 dark:text-slate-400">
                         <div>
                           {prevMR && currentMR
                             ? `เดือน ${prevMR.month}/${prevMR.year} (${prevMR.electricReading}) → ${currentMR.month}/${currentMR.year} (${currentMR.electricReading}) = ${usage.electricUnits} ยูนิต`
                             : 'ไม่มีข้อมูลมิเตอร์เดือนก่อน'}
                         </div>
                       </div>
-                      <div className="flex justify-between p-2 text-sm border-t">
+                      <div className="flex justify-between p-2 text-sm border-t border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white">
                         <div className="font-semibold">รวมทั้งหมด</div>
                         <div className="font-semibold">฿{Number(detail.totalAmount).toLocaleString()}</div>
                       </div>
@@ -714,16 +716,16 @@ import { Button } from "@/components/ui/button";
                   </div>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <div className="font-semibold text-slate-700">รายการเพิ่มเติม</div>
+                      <div className="font-semibold text-slate-700 dark:text-slate-300">รายการเพิ่มเติม</div>
                       <div className="space-y-2">
                         {(detail.items || []).length === 0 ? (
-                          <div className="text-sm text-slate-500">ไม่มีรายการเพิ่มเติม</div>
+                          <div className="text-sm text-slate-500 dark:text-slate-400">ไม่มีรายการเพิ่มเติม</div>
                         ) : (
                           <div className="space-y-2">
                             {detail.items!.map((it: any) => (
-                              <div key={it.id} className="flex items-center justify-between border rounded p-2">
-                                <div className="text-sm text-slate-700">{it.description}</div>
-                                <div className="font-mono text-sm">฿{Number(it.amount).toLocaleString()}</div>
+                              <div key={it.id} className="flex items-center justify-between border border-slate-200 dark:border-slate-700 rounded p-2 bg-white dark:bg-slate-900">
+                                <div className="text-sm text-slate-700 dark:text-slate-300">{it.description}</div>
+                                <div className="font-mono text-sm text-slate-900 dark:text-white">฿{Number(it.amount).toLocaleString()}</div>
                               </div>
                             ))}
                           </div>
@@ -731,13 +733,13 @@ import { Button } from "@/components/ui/button";
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <div className="font-semibold text-slate-700">ข้อมูลสลิป</div>
+                      <div className="font-semibold text-slate-700 dark:text-slate-300">ข้อมูลสลิป</div>
                       {(() => {
                         const base = (detail.payments || []).filter((p: any) => !!p.paidAt);
                         const fetched = (invoicePayments || []).filter((p: any) => !!p);
                         const list = base.length > 0 ? base : fetched;
                         if (list.length === 0) {
-                          return <div className="text-sm text-slate-500">ไม่พบข้อมูลสลิป</div>;
+                          return <div className="text-sm text-slate-500 dark:text-slate-400">ไม่พบข้อมูลสลิป</div>;
                         }
                         const latest = list.sort((a: any, b: any) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime())[0];
                         const meta = parseSlipMeta(latest.slipBankRef);
@@ -747,7 +749,7 @@ import { Button } from "@/components/ui/button";
                         const when = formatSlipDate(pick(meta?.transactedAt));
                         const ref = pick(meta?.bankRef) || '-';
                         return (
-                          <div className="rounded border p-3 space-y-2 text-sm text-slate-700">
+                          <div className="rounded border border-slate-200 dark:border-slate-700 p-3 space-y-2 text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50">
                             <div>เวลาโอน: {when}</div>
                             <div>ต้นทาง: {origin}</div>
                             <div>ปลายทาง: {dest}</div>
@@ -756,7 +758,7 @@ import { Button } from "@/components/ui/button";
                               <img
                                 src={latest.slipImageUrl}
                                 alt="slip"
-                                className="mt-2 w-full max-w-[360px] rounded border"
+                                className="mt-2 w-full max-w-[360px] rounded border border-slate-200 dark:border-slate-700"
                               />
                             ) : null}
                           </div>
@@ -767,7 +769,7 @@ import { Button } from "@/components/ui/button";
                 </div>
               </div>
             ) : (
-              <div className="text-center text-slate-500 py-8">กำลังโหลด...</div>
+              <div className="text-center text-slate-500 dark:text-slate-400 py-8">กำลังโหลด...</div>
             )}
             <DialogFooter>
               <div className="w-full flex justify-start">
@@ -789,7 +791,7 @@ import { Button } from "@/components/ui/button";
     <button
       onClick={doSend}
       disabled={!canSend || loading}
-      className="px-3 py-1 rounded-md text-xs font-medium bg-[#f5a987] text-white hover:bg-[#e09b7d] disabled:opacity-50"
+      className="px-3 py-1 rounded-md text-xs font-medium bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50 transition-colors"
       title="ส่งบิลไปที่ LINE"
     >
       {loading ? 'กำลังส่ง...' : 'ส่งบิล'}

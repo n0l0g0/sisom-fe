@@ -49,7 +49,7 @@ export default function AutoSendSettingsDialog() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="p-2.5 rounded-xl bg-slate-800 text-slate-400 border border-slate-600 hover:bg-slate-700 hover:text-white transition-colors"
+        className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors"
         title="ตั้งค่าการส่งบิลอัตโนมัติ"
       >
         <Settings className="w-5 h-5" />
@@ -60,14 +60,14 @@ export default function AutoSendSettingsDialog() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onClick={() => setOpen(false)} />
-      <div className="relative bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <div className="relative bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
+        <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
           <div>
-            <h3 className="text-xl font-bold text-white">ตั้งค่าการส่งบิลอัตโนมัติ</h3>
-            <p className="text-sm text-slate-400 mt-1">กำหนดวันและเวลาที่ระบบจะส่งบิลให้ผู้เช่า</p>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white">ตั้งค่าการส่งบิลอัตโนมัติ</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">กำหนดวันและเวลาที่ระบบจะส่งบิลให้ผู้เช่า</p>
           </div>
-          <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-white transition-colors">
+          <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
             ✕
           </button>
         </div>
@@ -75,20 +75,20 @@ export default function AutoSendSettingsDialog() {
         {/* Content */}
         <div className="p-6 space-y-6">
           {loading ? (
-            <div className="py-10 text-center text-slate-400">
+            <div className="py-10 text-center text-slate-500 dark:text-slate-400">
               <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-3"></div>
               กำลังโหลดข้อมูล...
             </div>
           ) : (
             <>
               {/* Enable Toggle */}
-              <div className="flex items-center justify-between bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
+              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700/50">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${config.enabled ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-700/50 text-slate-500'}`}>
+                  <div className={`p-2 rounded-lg ${config.enabled ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400' : 'bg-slate-100 dark:bg-slate-700/50 text-slate-500'}`}>
                     <Bell className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-medium text-white">เปิดใช้งานส่งบิลอัตโนมัติ</div>
+                    <div className="font-medium text-slate-900 dark:text-white">เปิดใช้งานส่งบิลอัตโนมัติ</div>
                     <div className="text-xs text-slate-500">ระบบจะส่งบิลสถานะ "ร่าง" ให้อัตโนมัติ</div>
                   </div>
                 </div>
@@ -99,7 +99,7 @@ export default function AutoSendSettingsDialog() {
                     checked={config.enabled}
                     onChange={(e) => setConfig({ ...config, enabled: e.target.checked })}
                   />
-                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                 </label>
               </div>
 
@@ -107,14 +107,14 @@ export default function AutoSendSettingsDialog() {
                 <div className="grid grid-cols-2 gap-6">
                   {/* Day of Month */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-slate-500" />
                       วันของเดือน
                     </label>
                     <select
                       value={config.dayOfMonth}
                       onChange={(e) => setConfig({ ...config, dayOfMonth: Number(e.target.value) })}
-                      className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none"
                     >
                       {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
                         <option key={d} value={d}>วันที่ {d}</option>
@@ -125,7 +125,7 @@ export default function AutoSendSettingsDialog() {
 
                   {/* Time */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
                       <Clock className="w-4 h-4 text-slate-500" />
                       เวลาที่ส่ง
                     </label>
@@ -137,7 +137,7 @@ export default function AutoSendSettingsDialog() {
                           max="23"
                           value={String(config.hour).padStart(2, '0')}
                           onChange={(e) => setConfig({ ...config, hour: Math.max(0, Math.min(23, Number(e.target.value))) })}
-                          className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-2.5 text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-3 py-2.5 text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                         <span className="absolute right-8 top-1/2 -translate-y-1/2 text-slate-500 text-xs pointer-events-none"></span>
                       </div>
@@ -149,7 +149,7 @@ export default function AutoSendSettingsDialog() {
                           max="59"
                           value={String(config.minute).padStart(2, '0')}
                           onChange={(e) => setConfig({ ...config, minute: Math.max(0, Math.min(59, Number(e.target.value))) })}
-                          className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-2.5 text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-3 py-2.5 text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
                     </div>
@@ -159,14 +159,14 @@ export default function AutoSendSettingsDialog() {
 
                 {/* Timezone */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
                     <Globe className="w-4 h-4 text-slate-500" />
                     โซนเวลา
                   </label>
                   <select
                     value={config.timezone}
                     onChange={(e) => setConfig({ ...config, timezone: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none"
                   >
                     <option value="Asia/Bangkok">Asia/Bangkok (UTC+7)</option>
                     <option value="UTC">UTC (Coordinated Universal Time)</option>
@@ -178,10 +178,10 @@ export default function AutoSendSettingsDialog() {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-5 bg-slate-800/50 border-t border-slate-700 flex justify-between items-center">
+        <div className="px-6 py-5 bg-slate-50/50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
           <button
             onClick={() => setOpen(false)}
-            className="px-5 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700 transition-colors font-medium"
+            className="px-5 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-medium"
           >
             ยกเลิก
           </button>

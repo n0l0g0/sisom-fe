@@ -137,7 +137,7 @@ export default function BillsHeaderActions({ selectedMonthKey, invoices }: Bills
         <button
           onClick={handlePrintAll}
           disabled={!selectedMonthKey}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700 text-white font-medium hover:bg-slate-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm text-sm"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-white font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm text-sm"
         >
           <Printer className="w-4 h-4" />
           พิมพ์ทั้งหมด
@@ -146,7 +146,7 @@ export default function BillsHeaderActions({ selectedMonthKey, invoices }: Bills
         <button
           onClick={handleExport}
           disabled={!selectedMonthKey || exporting}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700 text-white font-medium hover:bg-slate-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm text-sm"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-white font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm text-sm"
         >
           {exporting ? (
             <span className="animate-spin">⏳</span>
@@ -159,7 +159,7 @@ export default function BillsHeaderActions({ selectedMonthKey, invoices }: Bills
         <button
           onClick={sendAll}
           disabled={!selectedMonthKey || loading}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700 text-white font-medium hover:bg-slate-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm text-sm"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-white font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm text-sm"
         >
           {loading ? (
             <span className="animate-spin">⏳</span>

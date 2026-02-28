@@ -94,74 +94,74 @@ export function CreateInvoiceDialog({ rooms, onCreated }: CreateInvoiceDialogPro
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button className="px-4 py-2 rounded-lg bg-[#f5a987] text-white hover:opacity-90 transition shadow-sm flex items-center gap-2">
+        <button className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition shadow-sm flex items-center gap-2">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
           </svg>
           สร้างบิลประจำเดือน
         </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>สร้างบิลค่าเช่า</DialogTitle>
-          <DialogDescription>
-            สร้างใบแจ้งหนี้สำหรับห้องเช่า เลือกห้องและเดือนที่ต้องการ
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="room" className="text-right">
-              ห้อง
-            </Label>
-            <Select value={roomId} onValueChange={setRoomId}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="เลือกห้อง" />
-              </SelectTrigger>
-              <SelectContent>
-                {occupiedRooms.map((room) => (
-                  <SelectItem key={room.id} value={room.id}>
-                    {`${room.building?.name || room.building?.code || 'ไม่ทราบตึก'} • ชั้น ${room.floor || '-'} • ห้อง ${room.number}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900 dark:text-white">สร้างบิลค่าเช่า</DialogTitle>
+            <DialogDescription className="text-slate-500 dark:text-slate-400">
+              สร้างใบแจ้งหนี้สำหรับห้องเช่า เลือกห้องและเดือนที่ต้องการ
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="room" className="text-right text-slate-700 dark:text-slate-300">
+                ห้อง
+              </Label>
+              <Select value={roomId} onValueChange={setRoomId}>
+                <SelectTrigger className="col-span-3 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white">
+                  <SelectValue placeholder="เลือกห้อง" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white">
+                  {occupiedRooms.map((room) => (
+                    <SelectItem key={room.id} value={room.id} className="focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer">
+                      {`${room.building?.name || room.building?.code || 'ไม่ทราบตึก'} • ชั้น ${room.floor || '-'} • ห้อง ${room.number}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="month" className="text-right text-slate-700 dark:text-slate-300">
+                เดือน
+              </Label>
+              <Select value={month} onValueChange={setMonth}>
+                <SelectTrigger className="col-span-3 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white">
+                  <SelectValue placeholder="เลือกเดือน" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white">
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                    <SelectItem key={m} value={String(m)} className="focus:bg-slate-100 dark:focus:bg-slate-800 cursor-pointer">
+                      {new Date(0, m - 1).toLocaleDateString('th-TH', { month: 'long' })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="year" className="text-right text-slate-700 dark:text-slate-300">
+                ปี
+              </Label>
+              <Input
+                id="year"
+                type="number"
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+                className="col-span-3 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+              />
+            </div>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="month" className="text-right">
-              เดือน
-            </Label>
-            <Select value={month} onValueChange={setMonth}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="เลือกเดือน" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                  <SelectItem key={m} value={String(m)}>
-                    {new Date(0, m - 1).toLocaleDateString('th-TH', { month: 'long' })}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="year" className="text-right">
-              ปี
-            </Label>
-            <Input
-              id="year"
-              type="number"
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
-              className="col-span-3"
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button type="submit" onClick={handleCreate} disabled={loading || !roomId} className="bg-[#f5a987] hover:bg-[#e09b7b]">
-            {loading ? 'กำลังสร้าง...' : 'สร้างบิล'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
+          <DialogFooter>
+            <Button type="submit" onClick={handleCreate} disabled={loading || !roomId} className="bg-indigo-600 hover:bg-indigo-500 text-white">
+              {loading ? 'กำลังสร้าง...' : 'สร้างบิล'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
     </Dialog>
   );
 }

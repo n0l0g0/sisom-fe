@@ -1,0 +1,59 @@
+{
+  "Sidebar": {
+    "dashboard": "Dashboard",
+    "chats": "Chats",
+    "floor_plan": "Room Plan",
+    "meter": "Meter Reading",
+    "bills": "Bills",
+    "payments": "Payments",
+    "contracts": "Contracts",
+    "reports": "Reports",
+    "maintenance": "Maintenance",
+    "former_tenants": "Former Tenants",
+    "activity_logs": "Activity Logs",
+    "settings": "Settings",
+    "dorm_settings": "Dorm Info",
+    "rent_settings": "Rent Rates",
+    "backup_settings": "Backups",
+    "user_settings": "Users",
+    "logout": "Logout"
+  },
+  "Common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "loading": "Loading...",
+    "confirm": "Confirm"
+  },
+  "Maintenance": {
+    "title": "Maintenance Requests",
+    "subtitle": "Manage and track repair tickets",
+    "create_new": "New Request",
+    "pending": "Pending",
+    "in_progress": "In Progress",
+    "completed": "Completed",
+    "avg_time": "Avg. Time",
+    "filters": "Filters",
+    "search": "Search requests...",
+    "status_all": "All Status",
+    "type_all": "All Requests",
+    "type_move_out": "Move-out Only",
+    "table": {
+      "id": "ID",
+      "room": "Room",
+      "issue": "Issue",
+      "status": "Status",
+      "reporter": "Reporter",
+      "created": "Created",
+      "resolved": "Resolved",
+      "actions": "Actions"
+    },
+    "empty": {
+      "title": "No maintenance requests found",
+      "desc": "Try adjusting your filters or create a new request."
+    }
+  }
+}

@@ -47,6 +47,7 @@ export interface Tenant {
   nickname?: string;
   phone: string;
   idCard?: string;
+  idCardImageUrl?: string;
   address?: string;
   lineUserId?: string;
   status: 'ACTIVE' | 'MOVED_OUT';
@@ -68,6 +69,7 @@ export interface Contract {
   contractImageUrl?: string;
   tenant?: Tenant;
   room?: Room;
+  invoices?: Array<{ status: string; totalAmount: number }>;
 }
 
 export interface MeterReading {
@@ -528,8 +530,9 @@ export const api = {
   },
 
   // Contracts
-  getContracts: async (): Promise<Contract[]> => {
-    const res = await fetch(`${API_URL}/contracts`, { cache: 'no-store' });
+  getContracts: async (isActive?: boolean): Promise<Contract[]> => {
+    const url = isActive !== undefined ? `${API_URL}/contracts?isActive=${isActive}` : `${API_URL}/contracts`;
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch contracts');
     return res.json();
   },
@@ -862,10 +865,12 @@ export const api = {
   },
 
   // Payments
-  getPayments: async (room?: string, status?: string): Promise<Payment[]> => {
+  getPayments: async (room?: string, status?: string, month?: number, year?: number): Promise<Payment[]> => {
     const params = new URLSearchParams();
     if (room) params.set('room', room);
     if (status) params.set('status', status);
+    if (month) params.set('month', month.toString());
+    if (year) params.set('year', year.toString());
     const url = params.toString()
       ? `${API_URL}/payments?${params.toString()}`
       : `${API_URL}/payments`;
@@ -951,7 +956,7 @@ export const api = {
     return res.json();
   },
   
-  mapLineUserRole: async (userId: string, role: 'STAFF' | 'ADMIN' | 'OWNER'): Promise<{ ok: boolean }> => {
+  mapLineUserRole: async (userId: string, role: 'STAFF' | 'ADMIN' | 'OWNER' | 'USER'): Promise<{ ok: boolean }> => {
     const res = await fetch(`${API_URL}/line/roles/map`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -1,0 +1,59 @@
+{
+  "Sidebar": {
+    "dashboard": "แดชบอร์ด",
+    "chats": "แชทรวม",
+    "floor_plan": "ผังหอพัก",
+    "meter": "จดมิเตอร์",
+    "bills": "บิลค่าเช่า",
+    "payments": "ชำระเงิน",
+    "contracts": "สัญญาเช่า",
+    "reports": "รายงานสรุป",
+    "maintenance": "แจ้งซ่อม",
+    "former_tenants": "ผู้เช่าเก่า",
+    "activity_logs": "ประวัติการใช้งาน",
+    "settings": "ตั้งค่าระบบ",
+    "dorm_settings": "ข้อมูลหอพัก",
+    "rent_settings": "ค่าเช่ารายเดือน",
+    "backup_settings": "สำรองข้อมูล",
+    "user_settings": "จัดการผู้ใช้",
+    "logout": "ออกจากระบบ"
+  },
+  "Common": {
+    "save": "บันทึก",
+    "cancel": "ยกเลิก",
+    "delete": "ลบ",
+    "edit": "แก้ไข",
+    "create": "สร้าง",
+    "search": "ค้นหา",
+    "loading": "กำลังโหลด...",
+    "confirm": "ยืนยัน"
+  },
+  "Maintenance": {
+    "title": "รายการแจ้งซ่อม",
+    "subtitle": "จัดการและติดตามสถานะการซ่อม",
+    "create_new": "แจ้งซ่อมใหม่",
+    "pending": "รอดำเนินการ",
+    "in_progress": "กำลังดำเนินการ",
+    "completed": "เสร็จสิ้น",
+    "avg_time": "เวลาเฉลี่ย",
+    "filters": "ตัวกรอง",
+    "search": "ค้นหารายการ...",
+    "status_all": "ทุกสถานะ",
+    "type_all": "ทั้งหมด",
+    "type_move_out": "แจ้งย้ายออก",
+    "table": {
+      "id": "รหัส",
+      "room": "ห้อง",
+      "issue": "เรื่องที่แจ้ง",
+      "status": "สถานะ",
+      "reporter": "ผู้แจ้ง",
+      "created": "วันที่แจ้ง",
+      "resolved": "วันที่เสร็จ",
+      "actions": "จัดการ"
+    },
+    "empty": {
+      "title": "ไม่พบรายการแจ้งซ่อม",
+      "desc": "ลองปรับตัวกรองหรือสร้างรายการใหม่"
+    }
+  }
+}

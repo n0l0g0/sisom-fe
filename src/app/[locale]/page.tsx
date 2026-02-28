@@ -156,7 +156,17 @@ export default async function Dashboard({ searchParams }: { searchParams?: { pat
         <div className="col-span-3">
           <RecentActivity items={activityItems} />
         </div>
-        {/* Placeholder for Occupancy Chart or other widget */}
+        <div className="col-span-4 grid gap-4 grid-cols-1 md:grid-cols-3">
+          {priceStats.map(s => (
+            <KPICard
+              key={s.price}
+              title={`฿${s.price.toLocaleString()}`}
+              value={`${s.vacant} / ${s.total}`}
+              description="vacant / total"
+              icon={<Home className="h-4 w-4" />}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

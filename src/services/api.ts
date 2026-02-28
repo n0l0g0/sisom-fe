@@ -276,7 +276,7 @@ export interface CreateUserDto {
   name?: string;
   phone?: string;
   lineUserId?: string;
-  role?: 'OWNER' | 'ADMIN';
+  role?: 'OWNER' | 'ADMIN' | 'STAFF' | 'USER';
   permissions?: string[];
 }
 

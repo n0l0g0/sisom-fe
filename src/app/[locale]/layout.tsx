@@ -1,7 +1,7 @@
 import {NextIntlClientProvider} from 'next-intl';
-import {getMessages, unstable_setRequestLocale} from 'next-intl/server';
+import {getMessages, setRequestLocale} from 'next-intl/server';
 import ClientLayout from '@/components/ClientLayout';
-import "../../globals.css";
+import "../globals.css";
 
 export default async function LocaleLayout({
   children,
@@ -12,7 +12,7 @@ export default async function LocaleLayout({
 }) {
   const {locale} = await params;
   // Enable static rendering
-  unstable_setRequestLocale(locale);
+  setRequestLocale(locale);
   
   // Providing all messages to the client
   // side is the easiest way to get started

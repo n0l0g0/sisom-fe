@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Room } from '@/services/api';
-import RoomDetailDialog from './floor-plan/RoomDetailDialog';
+import RoomDetailDialog from '@/app/[locale]/floor-plan/RoomDetailDialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChevronDown, ChevronRight, Building, Layers } from 'lucide-react';

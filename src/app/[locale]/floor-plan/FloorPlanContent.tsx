@@ -4,7 +4,7 @@
  import Link from 'next/link';
  import { useSearchParams } from 'next/navigation';
  import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
- import DashboardRoomsList from '@/app/DashboardRoomsList';
+ import DashboardRoomsList from '@/components/DashboardRoomsList';
  import RoomDetailDialog from './RoomDetailDialog';
  import CreateRoomDialog from './CreateRoomDialog';
  import RoomsDebugLogger from './RoomsDebugLogger';

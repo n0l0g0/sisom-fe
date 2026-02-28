@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { api, Invoice } from '@/services/api';
 import { useRouter } from 'next/navigation';
 import SendAllProgressDialog, { RoomProgress } from './SendAllProgressDialog';
-import { Download, Send, FileText } from 'lucide-react';
+import { Download, Send, FileText, Printer } from 'lucide-react';
 
 interface BillsHeaderActionsProps {
   selectedMonthKey: string | null;
@@ -20,6 +20,33 @@ export default function BillsHeaderActions({ selectedMonthKey, invoices }: Bills
   const [completed, setCompleted] = useState(0);
   const [failed, setFailed] = useState(0);
   const [roomStatuses, setRoomStatuses] = useState<RoomProgress[]>([]);
+
+  const handlePrintAll = () => {
+    if (!selectedMonthKey) return;
+    const [y, m] = selectedMonthKey.split('-');
+    const year = Number(y);
+    const month = Number(m);
+
+    // Filter invoices for the selected month
+    // Exclude cancelled invoices? Usually yes.
+    const targets = invoices
+      .filter((inv) => inv.year === year && inv.month === month && inv.status !== 'CANCELLED')
+      .map((inv) => inv.id);
+
+    if (targets.length === 0) {
+      alert('ไม่พบบิลในเดือนที่เลือก');
+      return;
+    }
+
+    // Open print page with multiple IDs
+    // Assuming /bills/print-all takes query param `ids` or similar
+    // Or we can construct a URL to print all these.
+    // Let's check how PrintAllBar did it.
+    // It used `/bills/print-all?ids=...`
+    
+    const url = `/bills/print-all?ids=${targets.join(',')}`;
+    window.open(url, '_blank');
+  };
 
   const sendAll = async () => {
     if (!selectedMonthKey || loading) return;
@@ -107,6 +134,15 @@ export default function BillsHeaderActions({ selectedMonthKey, invoices }: Bills
   return (
     <>
       <div className="flex items-center gap-2">
+        <button
+          onClick={handlePrintAll}
+          disabled={!selectedMonthKey}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700 text-white font-medium hover:bg-slate-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm text-sm"
+        >
+          <Printer className="w-4 h-4" />
+          พิมพ์ทั้งหมด
+        </button>
+
         <button
           onClick={handleExport}
           disabled={!selectedMonthKey || exporting}

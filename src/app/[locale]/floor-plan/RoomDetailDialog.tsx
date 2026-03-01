@@ -408,6 +408,10 @@ export default function RoomDetailDialog({ room, children }: Props) {
     const name = newContactName.trim();
     const phone = newContactPhone.trim();
     if (!phone) return;
+    if (phone.length !== 10) {
+      alert('เบอร์โทรศัพท์ต้องมี 10 หลัก');
+      return;
+    }
     try {
       setSavingContact(true);
       const contacts = await api.createRoomContact(room.id, { name, phone });
@@ -453,6 +457,10 @@ export default function RoomDetailDialog({ room, children }: Props) {
   const handleCreateTenant = async () => {
     if (activeContract) return;
     if (!tenantName || !tenantPhone || !tenantStartDate || !tenantRent || !tenantDeposit) return;
+    if (tenantPhone.length !== 10) {
+      alert('เบอร์โทรศัพท์ต้องมี 10 หลัก');
+      return;
+    }
     try {
       setCreatingTenant(true);
       const tenant = await api.createTenant({
@@ -864,7 +872,13 @@ export default function RoomDetailDialog({ room, children }: Props) {
                             </div>
                             <div className="space-y-2">
                               <Label>เบอร์โทรศัพท์</Label>
-                              <Input value={tenantPhone} onChange={e => setTenantPhone(e.target.value)} />
+                              <Input 
+                                value={tenantPhone} 
+                                onChange={e => {
+                                  const val = e.target.value.replace(/\D/g, '');
+                                  if (val.length <= 10) setTenantPhone(val);
+                                }}
+                              />
                             </div>
                             <div className="space-y-2">
                               <Label>เลขบัตรประชาชน</Label>
@@ -1500,7 +1514,10 @@ export default function RoomDetailDialog({ room, children }: Props) {
                       id="contactPhone"
                       placeholder="เช่น 0812345678"
                       value={newContactPhone}
-                      onChange={(e) => setNewContactPhone(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        if (val.length <= 10) setNewContactPhone(val);
+                      }}
                     />
                   </div>
                   <Button

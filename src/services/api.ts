@@ -288,6 +288,12 @@ export interface LoginResponse {
   user: User;
 }
 
+const getToken = () => {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(/(^| )sisom_token=([^;]+)/);
+  return match ? match[2] : null;
+};
+
 // API Functions
 export const api = {
   // Auth
@@ -1194,15 +1200,21 @@ export const api = {
 
   // Profile
   getProfile: async (): Promise<User> => {
-    const res = await fetch(`${API_URL}/users/me`, { cache: 'no-store' });
+    const token = getToken();
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(`${API_URL}/users/me`, { cache: 'no-store', headers });
     if (!res.ok) throw new Error('Failed to fetch profile');
     return res.json();
   },
 
   updateProfile: async (data: Partial<User> & { password?: string }): Promise<User> => {
+    const token = getToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
     const res = await fetch(`${API_URL}/users/me`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error('Failed to update profile');

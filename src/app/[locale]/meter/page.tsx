@@ -3,6 +3,7 @@ import { api, Room, API_URL, User, Building, Contract } from "@/services/api";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
+import { Search, Filter, CheckCircle, Zap, Droplets, Save } from "lucide-react";
 
 const THAI_MONTHS = [
   'มกราคม',
@@ -152,18 +153,26 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
 
   const tableRows = useMemo(() => {
     const items: React.ReactNode[] = [
-      <tr className="bg-slate-900/50 text-slate-400" key="header">
-        <th className="px-4 py-3 hidden sm:table-cell font-medium" rowSpan={2}>ตึก</th>
-        <th className="px-4 py-3 hidden sm:table-cell font-medium" rowSpan={2}>ชั้น</th>
-        <th className="px-4 py-3 font-medium text-left" rowSpan={2}>ห้อง</th>
-        <th className="px-4 py-3 text-center font-medium text-rose-400" colSpan={3}>มิเตอร์ไฟฟ้า</th>
-        <th className="px-4 py-3 text-center font-medium text-cyan-400" colSpan={3}>มิเตอร์น้ำ</th>
+      <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400" key="header">
+        <th className="px-4 py-3 hidden sm:table-cell font-semibold text-xs uppercase" rowSpan={2}>ตึก</th>
+        <th className="px-4 py-3 hidden sm:table-cell font-semibold text-xs uppercase" rowSpan={2}>ชั้น</th>
+        <th className="px-4 py-3 font-semibold text-xs uppercase text-left" rowSpan={2}>ห้อง</th>
+        <th className="px-4 py-3 text-center font-semibold text-rose-600 dark:text-rose-400 border-b border-slate-200 dark:border-slate-700" colSpan={3}>
+          <div className="flex items-center justify-center gap-2">
+            <Zap className="w-4 h-4" /> มิเตอร์ไฟฟ้า
+          </div>
+        </th>
+        <th className="px-4 py-3 text-center font-semibold text-cyan-600 dark:text-cyan-400 border-b border-slate-200 dark:border-slate-700" colSpan={3}>
+          <div className="flex items-center justify-center gap-2">
+            <Droplets className="w-4 h-4" /> มิเตอร์น้ำ
+          </div>
+        </th>
       </tr>,
-      <tr className="bg-slate-900/50 text-slate-400 text-xs uppercase tracking-wider" key="subheader">
-        <th className="px-4 py-2 font-medium">ก่อนหน้า</th>
+      <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider" key="subheader">
+        <th className="px-4 py-2 font-medium border-l border-slate-200 dark:border-slate-700">ก่อนหน้า</th>
         <th className="px-4 py-2 font-medium">ปัจจุบัน</th>
         <th className="px-4 py-2 font-medium">ใช้ไป</th>
-        <th className="px-4 py-2 font-medium">ก่อนหน้า</th>
+        <th className="px-4 py-2 font-medium border-l border-slate-200 dark:border-slate-700">ก่อนหน้า</th>
         <th className="px-4 py-2 font-medium">ปัจจุบัน</th>
         <th className="px-4 py-2 font-medium">ใช้ไป</th>
       </tr>
@@ -174,8 +183,8 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
       const buildingName = r.building?.name || r.building?.code || '-';
       if (isNewBuilding) {
         items.push(
-          <tr key={`building-${r.buildingId}`} className="bg-slate-800 sticky top-0 z-20 shadow-md">
-            <td colSpan={8} className="px-4 py-3 font-bold text-white text-lg">
+          <tr key={`building-${r.buildingId}`} className="bg-slate-100 dark:bg-slate-800 sticky top-0 z-20 shadow-sm">
+            <td colSpan={9} className="px-4 py-3 font-bold text-slate-800 dark:text-white text-sm">
               {buildingName}
             </td>
           </tr>,
@@ -184,25 +193,25 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
       items.push(
         <tr
           key={r.id}
-          className={`border-t border-slate-700/50 ${
-            idx % 2 === 0 ? 'bg-slate-800' : 'bg-slate-800/50'
-          } hover:bg-slate-700/30 transition-colors`}
+          className={`border-t border-slate-200 dark:border-slate-800 ${
+            idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/50 dark:bg-slate-900/50'
+          } hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors`}
         >
-          <td className="px-4 py-3 hidden sm:table-cell text-slate-400">{r.building?.name || r.building?.code || '-'}</td>
-          <td className="px-4 py-3 hidden sm:table-cell text-slate-400">{Number(r.floor) || '-'}</td>
-          <td className="px-4 py-3 bg-slate-800 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] min-w-[140px]">
-            <div className="font-medium text-white text-lg">{r.number}</div>
-            <div className="text-xs text-slate-400 truncate max-w-[120px]">
+          <td className="px-4 py-3 hidden sm:table-cell text-slate-600 dark:text-slate-400 text-sm">{r.building?.name || r.building?.code || '-'}</td>
+          <td className="px-4 py-3 hidden sm:table-cell text-slate-600 dark:text-slate-400 text-sm">{Number(r.floor) || '-'}</td>
+          <td className="px-4 py-3 bg-white dark:bg-slate-900 sticky left-0 z-10 min-w-[140px]">
+            <div className="font-bold text-slate-900 dark:text-white text-base">{r.number}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[120px]">
               {activeTenantName(r.id)}
             </div>
-            <div className="text-[10px] text-slate-500 sm:hidden mt-0.5">
+            <div className="text-[10px] text-slate-400 dark:text-slate-500 sm:hidden mt-0.5">
               {(r.building?.name || r.building?.code || '-')}{' '}• ชั้น {Number(r.floor) || '-'}
             </div>
           </td>
-          <td className="px-4 py-2 border-l border-slate-700/50 text-center">
-            <div className="text-slate-500 font-mono">{prevValues[r.id]?.electric ?? '-'}</div>
+          <td className="px-4 py-2 border-l border-slate-100 dark:border-slate-800 text-center bg-slate-50/30 dark:bg-slate-800/30">
+            <div className="text-slate-500 dark:text-slate-400 font-mono text-sm">{prevValues[r.id]?.electric ?? '-'}</div>
           </td>
-          <td className="px-4 py-2 border-l border-slate-700/50">
+          <td className="px-4 py-2">
             <input
               type="tel"
               inputMode="numeric"
@@ -215,17 +224,17 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
                   [r.id]: { water: prev[r.id]?.water ?? '', electric: e.target.value.replace(/\D/g, '') },
                 }))
               }
-              className="w-24 mx-auto block text-center rounded-lg px-2 py-1 h-9 font-mono bg-rose-950/30 border border-rose-900/50 text-rose-200 focus:ring-1 focus:ring-rose-500 focus:border-rose-500 outline-none placeholder:text-rose-900/50"
+              className="w-24 mx-auto block text-center rounded-lg px-2 py-1.5 h-10 font-mono text-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none placeholder:text-rose-300/50 dark:placeholder:text-rose-700/30 transition-all shadow-sm focus:shadow-md"
               placeholder="0"
             />
           </td>
-          <td className="px-4 py-2 text-center">
-            <div className="text-rose-400 font-bold font-mono">{usedAmount(r.id, 'electric')}</div>
+          <td className="px-4 py-2 text-center bg-rose-50/10 dark:bg-rose-900/10 border-r border-slate-100 dark:border-slate-800">
+            <div className="text-rose-600 dark:text-rose-400 font-bold font-mono text-sm">{usedAmount(r.id, 'electric')}</div>
           </td>
-          <td className="px-4 py-2 border-l border-slate-700/50 text-center">
-            <div className="text-slate-500 font-mono">{prevValues[r.id]?.water ?? '-'}</div>
+          <td className="px-4 py-2 text-center bg-slate-50/30 dark:bg-slate-800/30">
+            <div className="text-slate-500 dark:text-slate-400 font-mono text-sm">{prevValues[r.id]?.water ?? '-'}</div>
           </td>
-          <td className="px-4 py-2 border-l border-slate-700/50">
+          <td className="px-4 py-2">
             <input
               type="tel"
               inputMode="numeric"
@@ -237,12 +246,12 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
                   [r.id]: { water: e.target.value.replace(/\D/g, ''), electric: prev[r.id]?.electric ?? '' },
                 }))
               }
-              className="w-24 mx-auto block text-center rounded-lg px-2 py-1 h-9 font-mono bg-cyan-950/30 border border-cyan-900/50 text-cyan-200 focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 outline-none placeholder:text-cyan-900/50"
+              className="w-24 mx-auto block text-center rounded-lg px-2 py-1.5 h-10 font-mono text-lg bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none placeholder:text-cyan-300/50 dark:placeholder:text-cyan-700/30 transition-all shadow-sm focus:shadow-md"
               placeholder="0"
             />
           </td>
-          <td className="px-4 py-2 text-center">
-            <div className="text-cyan-400 font-bold font-mono">{usedAmount(r.id, 'water')}</div>
+          <td className="px-4 py-2 text-center bg-cyan-50/10 dark:bg-cyan-900/10">
+            <div className="text-cyan-600 dark:text-cyan-400 font-bold font-mono text-sm">{usedAmount(r.id, 'water')}</div>
           </td>
         </tr>
       );
@@ -313,107 +322,130 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
   };
 
   if (loading) {
-    return <div className="p-6 text-center text-slate-400">กำลังโหลด...</div>;
+    return <div className="p-6 text-center text-slate-500 dark:text-slate-400">กำลังโหลด...</div>;
   }
   if (!isStaff) {
-    return <div className="p-6">
-      <div className="text-lg font-semibold text-rose-500">สำหรับเจ้าหน้าที่เท่านั้น</div>
-      <div className="text-slate-400 mt-2">ระบบตรวจพบว่า LINE account นี้ไม่มีสิทธิ์บันทึกมิเตอร์</div>
+    return <div className="p-6 text-center">
+      <div className="text-lg font-semibold text-rose-600 dark:text-rose-500">สำหรับเจ้าหน้าที่เท่านั้น</div>
+      <div className="text-slate-500 dark:text-slate-400 mt-2">ระบบตรวจพบว่า LINE account นี้ไม่มีสิทธิ์บันทึกมิเตอร์</div>
     </div>;
   }
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-4 pb-24 bg-[#0f172a] min-h-screen">
-      <div className="text-2xl font-bold text-white mb-6">จดมิเตอร์</div>
-      
-      {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900/50 p-4 rounded-2xl border border-slate-700">
+    <div className="space-y-8 fade-in pb-32 md:pb-24">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <div className="text-sm text-slate-400 mb-2">เดือน</div>
-          <select
-            value={month}
-            onChange={(e) => {
-              const value = Number(e.target.value || '1');
-              if (!Number.isFinite(value) || value < 1 || value > 12) return;
-              setMonth(value);
-            }}
-            className="w-full h-12 bg-slate-800 border border-slate-600 rounded-xl px-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-          >
-            {THAI_MONTHS.map((label, idx) => {
-              const value = idx + 1;
-              return (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              );
-            })}
-          </select>
-        </div>
-        <div>
-          <div className="text-sm text-slate-400 mb-2">ปี</div>
-          <input
-            type="number"
-            min={2000}
-            max={3000}
-            value={year}
-            onChange={(e) => setYear(parseInt(e.target.value || `${new Date().getFullYear()}`))}
-            className="w-full h-12 bg-slate-800 border border-slate-600 rounded-xl px-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-          />
-        </div>
-        <div>
-          <div className="text-sm text-slate-400 mb-2">ตึก</div>
-          <select
-            value={selectedBuilding}
-            onChange={(e) => setSelectedBuilding(e.target.value)}
-            className="w-full h-12 bg-slate-800 border border-slate-600 rounded-xl px-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-          >
-            <option value="">
-              ทุกตึก ({rooms.length} ห้อง)
-            </option>
-            {buildings.map((b) => {
-              const count = rooms.filter((r) => r.buildingId === b.id).length;
-              const name = b.name || b.code || 'ตึก';
-              return (
-                <option key={b.id} value={b.id}>
-                  {name} ({count} ห้อง)
-                </option>
-              );
-            })}
-          </select>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">จดมิเตอร์</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">บันทึกค่ามิเตอร์น้ำ-ไฟประจำเดือน</p>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="md:col-span-2">
-          <div className="text-sm text-slate-400 mb-2">ค้นหา</div>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="เลขห้อง / ชื่อลูกค้า / ชื่อตึก"
-            className="w-full h-12 bg-slate-800 border border-slate-600 rounded-xl px-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-          />
+      
+      {/* Filters */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 block">เดือน</label>
+            <div className="relative">
+              <select
+                value={month}
+                onChange={(e) => {
+                  const value = Number(e.target.value || '1');
+                  if (!Number.isFinite(value) || value < 1 || value > 12) return;
+                  setMonth(value);
+                }}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none text-sm"
+              >
+                {THAI_MONTHS.map((label, idx) => {
+                  const value = idx + 1;
+                  return (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  );
+                })}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+              </div>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 block">ปี</label>
+            <input
+              type="number"
+              min={2000}
+              max={3000}
+              value={year}
+              onChange={(e) => setYear(parseInt(e.target.value || `${new Date().getFullYear()}`))}
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 block">ตึก</label>
+            <div className="relative">
+              <select
+                value={selectedBuilding}
+                onChange={(e) => setSelectedBuilding(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none text-sm"
+              >
+                <option value="">
+                  ทุกตึก ({rooms.length} ห้อง)
+                </option>
+                {buildings.map((b) => {
+                  const count = rooms.filter((r) => r.buildingId === b.id).length;
+                  const name = b.name || b.code || 'ตึก';
+                  return (
+                    <option key={b.id} value={b.id}>
+                      {name} ({count} ห้อง)
+                    </option>
+                  );
+                })}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+              </div>
+            </div>
+          </div>
         </div>
-        <label className="flex items-center gap-3 mt-8 md:mt-0 p-3 bg-slate-800/50 rounded-xl border border-slate-700 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={onlyIncomplete}
-            onChange={(e) => setOnlyIncomplete(e.target.checked)}
-            className="w-5 h-5 rounded border-slate-500 text-indigo-600 focus:ring-indigo-500 bg-slate-700"
-          />
-          <span className="text-sm text-slate-300">เฉพาะที่ยังไม่กรอก</span>
-        </label>
+
+        <div className="flex flex-col md:flex-row gap-4 items-end md:items-center pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="w-full md:flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="เลขห้อง / ชื่อลูกค้า / ชื่อตึก"
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 pl-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+            />
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={onlyIncomplete}
+                onChange={(e) => setOnlyIncomplete(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-10 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+            </div>
+            <span className="text-sm font-medium text-slate-600 dark:text-slate-300">เฉพาะที่ยังไม่กรอก</span>
+          </label>
+        </div>
       </div>
 
       {/* Desktop Table View */}
-      <div className="relative overflow-x-auto rounded-xl border border-slate-700 hidden md:block bg-slate-800">
-        <table className="w-full text-sm text-left text-slate-300">
-          <thead>
-            {tableRows.slice(0, 2)}
-          </thead>
-          <tbody>
-            {tableRows.slice(2)}
-          </tbody>
-        </table>
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden hidden md:block">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead>
+              {tableRows.slice(0, 2)}
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+              {tableRows.slice(2)}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Mobile Card View */}
@@ -425,30 +457,30 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
           const items = [];
           if (isNewBuilding) {
             items.push(
-              <div key={`building-sm-${r.buildingId}`} className="bg-slate-800/80 backdrop-blur sticky top-0 z-10 rounded-xl px-4 py-3 font-bold text-white text-lg border border-slate-700 shadow-md mb-2">
+              <div key={`building-sm-${r.buildingId}`} className="bg-slate-100 dark:bg-slate-800 sticky top-[70px] z-10 rounded-xl px-4 py-2 font-bold text-slate-800 dark:text-white text-sm border border-slate-200 dark:border-slate-700 shadow-sm mb-2 mt-4">
                 {buildingName}
               </div>
             );
           }
           items.push(
-            <div key={r.id} className="bg-slate-900 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-4 relative overflow-hidden">
+            <div key={r.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm space-y-4 relative overflow-hidden">
               {/* Card Header */}
               <div className="flex justify-between items-start">
                 <div>
-                  <div className="text-2xl font-bold text-white">ห้อง {r.number}</div>
-                  <div className="text-sm text-slate-400 mt-1">{activeTenantName(r.id)}</div>
+                  <div className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">ห้อง {r.number}</div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">{activeTenantName(r.id)}</div>
                 </div>
-                <div className="text-xs font-mono text-slate-500 bg-slate-800 px-2 py-1 rounded">
+                <div className="text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
                   ชั้น {Number(r.floor) || '-'}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 {/* Electric Input Section */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-rose-300 flex justify-between">
-                    <span>ไฟฟ้า</span>
-                    <span className="text-xs opacity-70">ก่อน: {prevValues[r.id]?.electric ?? '-'}</span>
+                <div className="space-y-2 p-3 bg-rose-50/50 dark:bg-rose-900/10 rounded-xl border border-rose-100 dark:border-rose-900/30">
+                  <label className="text-xs font-bold text-rose-600 dark:text-rose-400 flex justify-between uppercase tracking-wide">
+                    <span className="flex items-center gap-1"><Zap className="w-3 h-3" /> ไฟฟ้า</span>
+                    <span className="opacity-70 font-mono">ก่อน: {prevValues[r.id]?.electric ?? '-'}</span>
                   </label>
                   <input
                     type="tel"
@@ -469,19 +501,19 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
                       }
                     }}
                     id={`electric-${r.id}`}
-                    className="w-full h-14 text-xl text-center rounded-xl bg-rose-900/20 border border-rose-900/50 text-rose-100 placeholder:text-rose-900/30 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all"
+                    className="w-full h-12 text-xl text-center rounded-lg bg-white dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-200 placeholder:text-rose-200 dark:placeholder:text-rose-800 focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none transition-all font-mono shadow-sm"
                     placeholder="0"
                   />
-                  <div className="text-xs text-center text-slate-500">
-                    ใช้ไป <span className="text-rose-300 font-bold">{usedAmount(r.id, 'electric')}</span>
+                  <div className="text-xs text-center text-slate-500 dark:text-slate-400">
+                    ใช้ไป <span className="text-rose-600 dark:text-rose-400 font-bold font-mono text-sm">{usedAmount(r.id, 'electric')}</span>
                   </div>
                 </div>
 
                 {/* Water Input Section */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-cyan-300 flex justify-between">
-                    <span>น้ำประปา</span>
-                    <span className="text-xs opacity-70">ก่อน: {prevValues[r.id]?.water ?? '-'}</span>
+                <div className="space-y-2 p-3 bg-cyan-50/50 dark:bg-cyan-900/10 rounded-xl border border-cyan-100 dark:border-cyan-900/30">
+                  <label className="text-xs font-bold text-cyan-600 dark:text-cyan-400 flex justify-between uppercase tracking-wide">
+                    <span className="flex items-center gap-1"><Droplets className="w-3 h-3" /> น้ำประปา</span>
+                    <span className="opacity-70 font-mono">ก่อน: {prevValues[r.id]?.water ?? '-'}</span>
                   </label>
                   <input
                     type="tel"
@@ -507,11 +539,11 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
                       }
                     }}
                     id={`water-${r.id}`}
-                    className="w-full h-14 text-xl text-center rounded-xl bg-cyan-900/20 border border-cyan-900/50 text-cyan-100 placeholder:text-cyan-900/30 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all"
+                    className="w-full h-12 text-xl text-center rounded-lg bg-white dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 text-cyan-700 dark:text-cyan-200 placeholder:text-cyan-200 dark:placeholder:text-cyan-800 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all font-mono shadow-sm"
                     placeholder="0"
                   />
-                  <div className="text-xs text-center text-slate-500">
-                    ใช้ไป <span className="text-cyan-300 font-bold">{usedAmount(r.id, 'water')}</span>
+                  <div className="text-xs text-center text-slate-500 dark:text-slate-400">
+                    ใช้ไป <span className="text-cyan-600 dark:text-cyan-400 font-bold font-mono text-sm">{usedAmount(r.id, 'water')}</span>
                   </div>
                 </div>
               </div>
@@ -521,41 +553,42 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
         })}
       </div>
 
-      <div className="fixed bottom-6 left-4 right-4 z-50">
-        <div className="max-w-6xl mx-auto">
-          <button
-            disabled={submitting}
-            onClick={submitAll}
-            className="w-full h-14 rounded-2xl bg-indigo-600 text-white font-bold text-lg shadow-xl shadow-indigo-900/50 active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
-          >
-            {submitting ? (
-              <>
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>กำลังบันทึก...</span>
-              </>
-            ) : (
+      <div className="fixed bottom-6 left-4 right-4 z-40 md:left-auto md:right-8 md:w-96">
+        <button
+          disabled={submitting}
+          onClick={submitAll}
+          className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-lg shadow-xl shadow-indigo-600/30 active:scale-[0.98] transition-all disabled:opacity-70 disabled:scale-100 flex items-center justify-center gap-3 backdrop-blur-sm"
+        >
+          {submitting ? (
+            <>
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>กำลังบันทึก...</span>
+            </>
+          ) : (
+            <>
+              <Save className="w-5 h-5" />
               <span>บันทึกทั้งหมด ({progressTotal > 0 ? `${progressRooms}/${progressTotal}` : 'พร้อม'})</span>
-            )}
-          </button>
-        </div>
+            </>
+          )}
+        </button>
       </div>
       
       {/* Progress Bar (Visible only when submitting) */}
       {submitting && (
-        <div className="fixed top-0 left-0 right-0 h-1 bg-slate-800 z-[60]">
+        <div className="fixed top-0 left-0 right-0 h-1 bg-slate-100 dark:bg-slate-800 z-[60]">
           <div 
-            className="h-full bg-indigo-500 transition-all duration-300"
+            className="h-full bg-indigo-600 transition-all duration-300"
             style={{ width: `${Math.min(100, Math.max(0, progressPct))}%` }}
           />
         </div>
       )}
       
       {message && (
-        <div className="fixed bottom-24 left-4 right-4 z-50">
-          <div className="bg-slate-800 text-white px-4 py-3 rounded-xl shadow-lg border border-slate-700 text-center animate-in fade-in slide-in-from-bottom-4">
+        <div className="fixed bottom-24 left-4 right-4 z-50 md:left-auto md:right-8 md:w-96">
+          <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-3 rounded-xl shadow-lg border border-slate-700 dark:border-slate-200 text-center animate-in fade-in slide-in-from-bottom-4 font-medium">
             {message}
           </div>
         </div>
@@ -652,17 +685,17 @@ function MeterPageInner() {
 
   if (!uid && !allowByLogin) {
     return (
-      <div className="max-w-xl mx-auto p-6 space-y-4">
-        <div className="text-xl font-bold text-[#8b5a3c]">บันทึกมิเตอร์ผ่าน LINE</div>
-        <div className="text-slate-600">กำลังตรวจสอบสิทธิจาก LINE...</div>
-        <div className="text-slate-500 text-sm">
-          หากไม่สามารถตรวจจับ LINE ได้ ให้พิมพ์คำสั่ง <span className="font-mono">whoami</span> ในห้องแชท
+      <div className="max-w-xl mx-auto p-6 space-y-4 mt-10">
+        <div className="text-xl font-bold text-slate-900 dark:text-white">บันทึกมิเตอร์ผ่าน LINE</div>
+        <div className="text-slate-600 dark:text-slate-400">กำลังตรวจสอบสิทธิจาก LINE...</div>
+        <div className="text-slate-500 dark:text-slate-500 text-sm bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+          หากไม่สามารถตรวจจับ LINE ได้ ให้พิมพ์คำสั่ง <span className="font-mono bg-slate-200 dark:bg-slate-700 px-1 rounded">whoami</span> ในห้องแชท
           แล้วคัดลอก LINE userId มาวางด้านล่าง
         </div>
         <div className="space-y-2">
-          <div className="text-sm text-slate-600">LINE userId</div>
+          <div className="text-sm font-medium text-slate-700 dark:text-slate-300">LINE userId</div>
           <input
-            className="w-full border rounded-md px-3 py-2 text-sm"
+            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white"
             placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
             value={uidManual}
             onChange={(e) => {
@@ -673,8 +706,8 @@ function MeterPageInner() {
               }
             }}
           />
-          <div className="text-xs text-slate-500">
-            ตัวอย่าง: Uxxxxx
+          <div className="text-xs text-slate-400">
+            ตัวอย่าง: Uxxxxx...
           </div>
         </div>
       </div>
@@ -685,7 +718,7 @@ function MeterPageInner() {
 
 export default function MeterPage() {
   return (
-    <Suspense fallback={<div className="p-6">กำลังโหลด...</div>}>
+    <Suspense fallback={<div className="p-6 text-slate-500 dark:text-slate-400 text-center">กำลังโหลด...</div>}>
       <MeterPageInner />
     </Suspense>
   );

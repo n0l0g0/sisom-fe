@@ -7,6 +7,7 @@ import { ChartCard } from '@/components/dashboard/ChartCard';
 import { FinancialSnapshot } from '@/components/dashboard/FinancialSnapshot';
 import { RoomStatusOverview } from '@/components/dashboard/RoomStatusOverview';
 import { ActivityTimeline } from '@/components/dashboard/ActivityTimeline';
+import { RoomTypeIntelligence } from '@/components/dashboard/RoomTypeIntelligence';
 import { Button } from '@/components/ui/button';
 import { Download, Calendar } from 'lucide-react';
 
@@ -150,6 +151,9 @@ export default async function Dashboard({ searchParams, params }: { searchParams
           accentColor="blue"
         />
       </div>
+
+      {/* ROOM TYPE INTELLIGENCE */}
+      <RoomTypeIntelligence rooms={rooms} />
 
       {/* SECTION 3: MAIN ANALYTICS */}
       <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">

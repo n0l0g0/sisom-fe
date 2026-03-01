@@ -2,8 +2,7 @@ import { api, Invoice, Room, MaintenanceRequest } from '@/services/api';
 import ReportsHeaderControls from './ReportsHeaderControls';
 import { KPIStat } from '@/components/dashboard/KPIStat';
 import { ChartCard } from '@/components/dashboard/ChartCard';
-import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, DollarSign, Wallet, Activity, Users } from 'lucide-react';
+import { DollarSign, Wallet, Activity } from 'lucide-react';
 
 function toNumber(value: unknown): number {
   if (typeof value === 'number') return value;
@@ -34,10 +33,14 @@ function getThaiMonthShort(index: number) {
   return labels[index] ?? '';
 }
 
-export default async function ReportsPage() {
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: { month?: string; year?: string };
+}) {
   const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
+  const month = searchParams.month ? Number(searchParams.month) : now.getMonth() + 1;
+  const year = searchParams.year ? Number(searchParams.year) : now.getFullYear();
   const previousYear = year - 1;
 
   let invoices: Invoice[] = [];
@@ -217,12 +220,12 @@ export default async function ReportsPage() {
   const highestExpense = expenseParts[0]; // Already sorted
 
   return (
-    <div className="dark space-y-8 fade-in min-h-screen bg-[#0f172a] p-8">
+    <div className="space-y-8 fade-in pb-20 md:pb-0">
       {/* PAGE HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">รายงานสรุป</h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">รายงานสรุป</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
             ภาพรวมรายได้และค่าใช้จ่ายของหอพัก
           </p>
         </div>
@@ -236,8 +239,8 @@ export default async function ReportsPage() {
           value={`฿${formatCurrency(revenueYear)}`}
           trend={revenueChangePercent ?? 0}
           trendLabel="เทียบปีก่อน"
-          accentColor="emerald"
-          className="bg-slate-800 border-slate-700 hover:bg-slate-750 dark:bg-slate-800 dark:border-slate-700"
+          accentColor="indigo"
+          className=""
         />
         <KPIStat
           label="ค่าใช้จ่ายรวม"
@@ -245,15 +248,15 @@ export default async function ReportsPage() {
           trend={expenseChangePercent ?? 0}
           trendLabel="เทียบปีก่อน"
           accentColor="rose"
-          className="bg-slate-800 border-slate-700 hover:bg-slate-750 dark:bg-slate-800 dark:border-slate-700"
+          className=""
         />
         <KPIStat
           label="กำไรสุทธิ"
           value={`฿${formatCurrency(profit)}`}
           trend={profitChangePercent ?? 0}
           trendLabel="เทียบปีก่อน"
-          accentColor="indigo"
-          className="bg-slate-800 border-slate-700 hover:bg-slate-750 dark:bg-slate-800 dark:border-slate-700"
+          accentColor="emerald"
+          className=""
         />
         <KPIStat
           label="อัตราการเข้าพัก"
@@ -261,47 +264,49 @@ export default async function ReportsPage() {
           trend={0} // Placeholder
           trendLabel="คงที่"
           accentColor="cyan"
-          className="bg-slate-800 border-slate-700 hover:bg-slate-750 dark:bg-slate-800 dark:border-slate-700"
+          className=""
         />
       </div>
 
       {/* ANALYTICS GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
-        {/* Left: Revenue Chart */}
-        <div className="lg:col-span-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Left: Revenue Chart (2 cols) */}
+        <div className="lg:col-span-2 h-full">
           <ChartCard
             title="รายรับรายเดือน"
             subtitle={`ข้อมูลปี ${year + 543}`}
             data={monthlyRevenue}
-            className="h-full bg-slate-800 border-slate-700 dark:bg-slate-800 dark:border-slate-700"
+            className="h-full"
           />
         </div>
 
-        {/* Right: Expense Breakdown */}
-        <div className="lg:col-span-4">
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 h-full shadow-sm">
-            <h3 className="text-base font-semibold text-white mb-6">สัดส่วนค่าใช้จ่าย</h3>
+        {/* Right: Expense Breakdown (1 col) */}
+        <div className="lg:col-span-1 h-full">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800 h-full">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-6">สัดส่วนค่าใช้จ่าย</h3>
             
             <div className="space-y-6">
               {expensePartsWithPercent.map((part) => (
                 <div key={part.key}>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-slate-300">{part.label}</span>
-                    <span className="text-sm font-bold text-white">฿{formatCurrency(part.amount)}</span>
+                    <span className="text-sm text-slate-700 dark:text-slate-300">{part.label}</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-white">฿{formatCurrency(part.amount)}</span>
                   </div>
-                  <div className="w-full bg-slate-700 rounded-full h-2.5">
-                    <div 
-                      className={`h-2.5 rounded-full ${part.color}`} 
-                      style={{ width: `${part.percent}%` }}
-                    ></div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                        <div 
+                        className={`h-2 rounded-full ${part.color}`} 
+                        style={{ width: `${part.percent}%` }}
+                        ></div>
+                    </div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 w-8 text-right">{part.percent}%</span>
                   </div>
-                  <div className="text-xs text-slate-500 mt-1 text-right">{part.percent}%</div>
                 </div>
               ))}
             </div>
             
             {expensePartsWithPercent.length === 0 && (
-              <div className="text-center text-slate-500 py-8">ไม่มีข้อมูลค่าใช้จ่าย</div>
+              <div className="text-center text-slate-500 dark:text-slate-400 py-8">ไม่มีข้อมูลค่าใช้จ่าย</div>
             )}
           </div>
         </div>
@@ -310,38 +315,38 @@ export default async function ReportsPage() {
       {/* INSIGHTS SECTION */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Card 1 */}
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center justify-between">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 flex items-center justify-between">
           <div>
-            <p className="text-xs text-slate-400 mb-1">ห้องที่สร้างรายได้สูงสุด</p>
-            <p className="text-xl font-bold text-white">ห้อง {highestRevenueRoom.number}</p>
-            <p className="text-xs text-emerald-400 mt-1">฿{formatCurrency(highestRevenueRoom.amount)}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">ห้องที่สร้างรายได้สูงสุด</p>
+            <p className="text-lg font-semibold text-slate-900 dark:text-white">ห้อง {highestRevenueRoom.number}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">฿{formatCurrency(highestRevenueRoom.amount)}</p>
           </div>
-          <div className="p-3 bg-slate-700 rounded-lg">
-            <DollarSign className="w-5 h-5 text-emerald-400" />
+          <div className="p-2 bg-indigo-100 dark:bg-indigo-900/40 rounded-xl">
+            <DollarSign className="w-5 h-5 text-indigo-600 dark:text-indigo-300" />
           </div>
         </div>
 
         {/* Card 2 */}
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center justify-between">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 flex items-center justify-between">
           <div>
-            <p className="text-xs text-slate-400 mb-1">ห้องที่ค้างชำระมากที่สุด</p>
-            <p className="text-xl font-bold text-white">ห้อง {highestOverdueRoom.number}</p>
-            <p className="text-xs text-rose-400 mt-1">฿{formatCurrency(highestOverdueRoom.amount)}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">ห้องที่ค้างชำระมากที่สุด</p>
+            <p className="text-lg font-semibold text-slate-900 dark:text-white">ห้อง {highestOverdueRoom.number}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">฿{formatCurrency(highestOverdueRoom.amount)}</p>
           </div>
-          <div className="p-3 bg-slate-700 rounded-lg">
-            <Wallet className="w-5 h-5 text-rose-400" />
+          <div className="p-2 bg-rose-100 dark:bg-rose-900/40 rounded-xl">
+            <Wallet className="w-5 h-5 text-rose-600 dark:text-rose-300" />
           </div>
         </div>
 
         {/* Card 3 */}
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center justify-between">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 flex items-center justify-between">
           <div>
-            <p className="text-xs text-slate-400 mb-1">ค่าใช้จ่ายสูงสุดเดือนนี้</p>
-            <p className="text-xl font-bold text-white">{highestExpense?.label || '-'}</p>
-            <p className="text-xs text-amber-400 mt-1">฿{formatCurrency(highestExpense?.amount || 0)}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">ค่าใช้จ่ายสูงสุดเดือนนี้</p>
+            <p className="text-lg font-semibold text-slate-900 dark:text-white">{highestExpense?.label || '-'}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">฿{formatCurrency(highestExpense?.amount || 0)}</p>
           </div>
-          <div className="p-3 bg-slate-700 rounded-lg">
-            <Activity className="w-5 h-5 text-amber-400" />
+          <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-xl">
+            <Activity className="w-5 h-5 text-amber-600 dark:text-amber-300" />
           </div>
         </div>
       </div>

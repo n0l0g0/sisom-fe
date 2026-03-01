@@ -6,7 +6,7 @@ interface KPIStatProps {
   value: string | number;
   trend?: number;
   trendLabel?: string;
-  accentColor?: "indigo" | "emerald" | "rose" | "blue" | "cyan";
+  accentColor?: "indigo" | "emerald" | "rose" | "blue" | "cyan" | "amber";
   className?: string;
 }
 
@@ -14,25 +14,26 @@ export function KPIStat({
   label,
   value,
   trend,
-  trendLabel = "vs last month",
+  trendLabel, // Added back to satisfy prop types if used elsewhere, though not used in component currently
   accentColor = "indigo",
   className,
 }: KPIStatProps) {
-  const colorMap = {
-    indigo: "bg-indigo-500 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400",
-    emerald: "bg-emerald-500 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400",
-    rose: "bg-rose-500 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400",
-    blue: "bg-blue-500 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400",
-    cyan: "bg-cyan-500 text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-400",
+  const progressColorMap = {
+    indigo: "bg-indigo-500 dark:bg-indigo-400",
+    emerald: "bg-emerald-500 dark:bg-emerald-400",
+    rose: "bg-rose-500 dark:bg-rose-400",
+    blue: "bg-blue-500 dark:bg-blue-400",
+    cyan: "bg-cyan-500 dark:bg-cyan-400",
+    amber: "bg-amber-500 dark:bg-amber-400",
   };
 
   const trendColor = trend
     ? trend > 0
-      ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400"
+      ? "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-400"
       : trend < 0
-      ? "text-rose-600 bg-rose-50 dark:bg-rose-500/10 dark:text-rose-400"
-      : "text-slate-600 bg-slate-50 dark:bg-slate-800 dark:text-slate-400"
-    : "text-slate-600 bg-slate-50 dark:bg-slate-800 dark:text-slate-400";
+      ? "text-rose-600 bg-rose-100 dark:bg-rose-900/40 dark:text-rose-400"
+      : "text-slate-600 bg-slate-100 dark:bg-slate-700 dark:text-slate-400"
+    : "text-slate-600 bg-slate-100 dark:bg-slate-700 dark:text-slate-400";
 
   const TrendIcon = trend
     ? trend > 0
@@ -42,40 +43,46 @@ export function KPIStat({
       : Minus
     : Minus;
 
+  const progressWidth = "75%";
+
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-[2px] hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:shadow-none",
+        "rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-800",
         className
       )}
     >
-      <div
-        className={cn(
-          "absolute left-0 top-0 h-1 w-full opacity-80",
-          colorMap[accentColor].split(" ")[0]
-        )}
-      />
-      <div className="flex flex-col space-y-4">
-        <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</span>
+      <div className="flex flex-col space-y-2">
+        <div className="flex justify-between items-start">
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</span>
+            {trend !== undefined && (
+            <div className="flex items-center space-x-1">
+                <div
+                className={cn(
+                    "flex items-center space-x-0.5 rounded-full px-1.5 py-0.5 text-xs font-medium",
+                    trendColor
+                )}
+                >
+                <TrendIcon className="h-3 w-3" />
+                <span>{Math.abs(trend)}%</span>
+                </div>
+            </div>
+            )}
+        </div>
+        
         <div className="flex items-baseline space-x-2">
-          <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
             {value}
           </span>
         </div>
-        {trend !== undefined && (
-          <div className="flex items-center space-x-2">
-            <div
-              className={cn(
-                "flex items-center space-x-1 rounded-full px-2 py-0.5 text-xs font-medium",
-                trendColor
-              )}
-            >
-              <TrendIcon className="h-3 w-3" />
-              <span>{Math.abs(trend)}%</span>
-            </div>
-            <span className="text-xs text-slate-400 dark:text-slate-500">{trendLabel}</span>
-          </div>
-        )}
+
+        {/* Progress Bar */}
+        <div className="h-2 w-full rounded-full bg-slate-200 dark:bg-slate-700 mt-2 overflow-hidden">
+            <div 
+                className={cn("h-full rounded-full transition-all duration-1000", progressColorMap[accentColor])} 
+                style={{ width: progressWidth }}
+            />
+        </div>
       </div>
     </div>
   );

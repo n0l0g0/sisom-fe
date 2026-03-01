@@ -16,6 +16,7 @@
     "rent_settings": "ค่าเช่ารายเดือน",
     "backup_settings": "สำรองข้อมูล",
     "user_settings": "จัดการผู้ใช้",
+    "profile_settings": "ข้อมูลส่วนตัว",
     "logout": "ออกจากระบบ"
   },
   "Common": {

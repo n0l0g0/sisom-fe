@@ -94,14 +94,14 @@ export default function CreateRoomDialog({ children, buildingId }: { children: R
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-2xl bg-white">
+      <DialogContent className="max-w-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
         <DialogTitle className="sr-only">สร้างห้องหรือตึก</DialogTitle>
         <Tabs defaultValue="single">
-          <TabsList className="w-full justify-start bg-transparent border-b rounded-none h-auto p-0 mb-6 gap-6">
-            <TabsTrigger value="single" className="data-[state=active]:border-b-2 data-[state=active]:border-[#f5a987] data-[state=active]:text-[#f5a987] rounded-none px-0 py-2 text-slate-600">
+          <TabsList className="w-full justify-start bg-transparent border-b dark:border-slate-800 rounded-none h-auto p-0 mb-6 gap-6">
+            <TabsTrigger value="single" className="data-[state=active]:border-b-2 data-[state=active]:border-[#f5a987] data-[state=active]:text-[#f5a987] rounded-none px-0 py-2 text-slate-600 dark:text-slate-400 dark:data-[state=active]:text-[#f5a987]">
               เพิ่มห้องเดี่ยว
             </TabsTrigger>
-            <TabsTrigger value="building" className="data-[state=active]:border-b-2 data-[state=active]:border-[#f5a987] data-[state=active]:text-[#f5a987] rounded-none px-0 py-2 text-slate-600">
+            <TabsTrigger value="building" className="data-[state=active]:border-b-2 data-[state=active]:border-[#f5a987] data-[state=active]:text-[#f5a987] rounded-none px-0 py-2 text-slate-600 dark:text-slate-400 dark:data-[state=active]:text-[#f5a987]">
               เพิ่มตึกและหลายห้อง
             </TabsTrigger>
           </TabsList>
@@ -109,11 +109,11 @@ export default function CreateRoomDialog({ children, buildingId }: { children: R
           <TabsContent value="single" className="mt-0 space-y-4">
             {!buildingId ? (
               <div>
-                <label className="text-sm text-slate-600">ตึก</label>
+                <label className="text-sm text-slate-600 dark:text-slate-400">ตึก</label>
                 <select
                   value={selectedBuildingId}
                   onChange={(e) => setSelectedBuildingId(e.target.value)}
-                  className="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f5a987] border-slate-200 bg-white"
+                  className="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f5a987] border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 dark:text-white"
                 >
                   <option value="">เลือกตึก</option>
                   {buildings.map((b) => (
@@ -126,12 +126,12 @@ export default function CreateRoomDialog({ children, buildingId }: { children: R
               </div>
             ) : null}
             <div>
-              <label className="text-sm text-slate-600">เลขห้อง</label>
-              <Input type="text" value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} />
+              <label className="text-sm text-slate-600 dark:text-slate-400">เลขห้อง</label>
+              <Input type="text" value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} className="dark:bg-slate-950 dark:border-slate-700" />
             </div>
             <div>
-              <label className="text-sm text-slate-600">ชั้น</label>
-              <Input type="number" value={roomFloor} onChange={(e) => setRoomFloor(Number(e.target.value))} />
+              <label className="text-sm text-slate-600 dark:text-slate-400">ชั้น</label>
+              <Input type="number" value={roomFloor} onChange={(e) => setRoomFloor(Number(e.target.value))} className="dark:bg-slate-950 dark:border-slate-700" />
             </div>
            
             <div className="flex justify-end">
@@ -148,19 +148,19 @@ export default function CreateRoomDialog({ children, buildingId }: { children: R
           <TabsContent value="building" className="mt-0 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm text-slate-600">ชื่อตึก</label>
-                <Input type="text" value={buildingName} onChange={(e) => setBuildingName(e.target.value)} />
+                <label className="text-sm text-slate-600 dark:text-slate-400">ชื่อตึก</label>
+                <Input type="text" value={buildingName} onChange={(e) => setBuildingName(e.target.value)} className="dark:bg-slate-950 dark:border-slate-700" />
               </div>
               <div>
-                <label className="text-sm text-slate-600">รหัสตึก (ไม่บังคับ)</label>
-                <Input type="text" value={buildingCode} onChange={(e) => setBuildingCode(e.target.value)} />
+                <label className="text-sm text-slate-600 dark:text-slate-400">รหัสตึก (ไม่บังคับ)</label>
+                <Input type="text" value={buildingCode} onChange={(e) => setBuildingCode(e.target.value)} className="dark:bg-slate-950 dark:border-slate-700" />
               </div>
               <div>
-                <label className="text-sm text-slate-600">จำนวนตัวเลขเลขห้อง</label>
+                <label className="text-sm text-slate-600 dark:text-slate-400">จำนวนตัวเลขเลขห้อง</label>
                 <select
                   value={roomDigits}
                   onChange={(e) => setRoomDigits(Number(e.target.value) === 4 ? 4 : 3)}
-                  className="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f5a987] border-slate-200 bg-white"
+                  className="mt-1 w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f5a987] border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 dark:text-white"
                 >
                   <option value={3}>3 ตัว (เช่น 101)</option>
                   <option value={4}>4 ตัว (เช่น 1101)</option>
@@ -168,19 +168,19 @@ export default function CreateRoomDialog({ children, buildingId }: { children: R
               </div>
               {roomDigits === 4 ? (
                 <div>
-                  <label className="text-sm text-slate-600">เลขตึก (ใช้กับ 4 ตัว)</label>
-                  <Input type="text" value={buildingDigit} onChange={(e) => setBuildingDigit(e.target.value)} />
+                  <label className="text-sm text-slate-600 dark:text-slate-400">เลขตึก (ใช้กับ 4 ตัว)</label>
+                  <Input type="text" value={buildingDigit} onChange={(e) => setBuildingDigit(e.target.value)} className="dark:bg-slate-950 dark:border-slate-700" />
                 </div>
               ) : null}
               <div className="col-span-2">
-                <label className="text-sm text-slate-600">Prefix นำหน้าเลขห้อง (ไม่บังคับ)</label>
-                <Input type="text" value={roomPrefix} onChange={(e) => setRoomPrefix(e.target.value)} placeholder="เช่น A, B, 1-" />
+                <label className="text-sm text-slate-600 dark:text-slate-400">Prefix นำหน้าเลขห้อง (ไม่บังคับ)</label>
+                <Input type="text" value={roomPrefix} onChange={(e) => setRoomPrefix(e.target.value)} placeholder="เช่น A, B, 1-" className="dark:bg-slate-950 dark:border-slate-700" />
               </div>
               <div className="col-span-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm text-slate-600">กำหนดจำนวนห้องแต่ละชั้น</label>
+                  <label className="text-sm text-slate-600 dark:text-slate-400">กำหนดจำนวนห้องแต่ละชั้น</label>
                   <button
-                    className="text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    className="text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800"
                     onClick={() => setManualFloors((prev) => [...prev, { floor: (prev[prev.length - 1]?.floor ?? 0) + 1, rooms: roomsPerFloorDefault }])}
                   >
                     เพิ่มชั้น
@@ -189,7 +189,7 @@ export default function CreateRoomDialog({ children, buildingId }: { children: R
                 <div className="mt-2 space-y-2">
                   {manualFloors.map((f, idx) => (
                     <div key={idx} className="flex gap-2 items-center">
-                      <span className="text-xs text-slate-500 w-16">ชั้น</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 w-16">ชั้น</span>
                       <Input
                         type="number"
                         value={f.floor}
@@ -197,8 +197,9 @@ export default function CreateRoomDialog({ children, buildingId }: { children: R
                           const v = Number(e.target.value);
                           setManualFloors((prev) => prev.map((pf, i) => (i === idx ? { ...pf, floor: v } : pf)));
                         }}
+                        className="dark:bg-slate-950 dark:border-slate-700"
                       />
-                      <span className="text-xs text-slate-500 w-20">จำนวนห้อง</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 w-20">จำนวนห้อง</span>
                       <Input
                         type="number"
                         value={f.rooms}
@@ -206,9 +207,10 @@ export default function CreateRoomDialog({ children, buildingId }: { children: R
                           const v = Number(e.target.value);
                           setManualFloors((prev) => prev.map((pf, i) => (i === idx ? { ...pf, rooms: v } : pf)));
                         }}
+                        className="dark:bg-slate-950 dark:border-slate-700"
                       />
                       <button
-                        className="text-xs px-2 py-1 rounded bg-red-50 text-red-700 border border-red-200"
+                        className="text-xs px-2 py-1 rounded bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800"
                         onClick={() => setManualFloors((prev) => prev.filter((_, i) => i !== idx))}
                       >
                         ลบ

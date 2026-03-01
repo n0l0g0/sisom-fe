@@ -54,7 +54,7 @@ export function ActivityTimeline({
                   {item.user.name}
                 </p>
                 <span className="flex-shrink-0 text-xs text-slate-400 whitespace-nowrap dark:text-slate-500">
-                  {new Date(item.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                  {new Date(item.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Bangkok' })}
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5 dark:text-slate-400">{item.action}</p>

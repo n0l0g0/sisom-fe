@@ -121,70 +121,70 @@ export function RentSettingsTable({ rooms }: { rooms: Room[] }) {
     <div className="space-y-4">
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
           <Input
             placeholder="ค้นหาห้อง หรือ ชื่อตึก..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 bg-white"
+            className="pl-9 bg-white dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200"
           />
         </div>
-        <div className="text-sm text-slate-500">
+        <div className="text-sm text-slate-500 dark:text-slate-400">
           ทั้งหมด {filteredRooms.length} ห้อง
         </div>
       </div>
 
-      <Card className="border-none shadow-none bg-white/50 backdrop-blur-sm">
+      <Card className="border-none shadow-none bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
         <CardContent className="p-0 pb-24">
-          <div className="relative overflow-x-auto rounded-xl border border-slate-200">
-            <div className="px-4 py-3 text-xs text-slate-600 bg-slate-50 border-b">
+          <div className="relative overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+            <div className="px-4 py-3 text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 border-b dark:border-slate-800">
               หมายเหตุ: ช่องค่าน้ำ/ค่าไฟในตารางนี้เป็น “ราคาต่อหน่วยแบบ Override ต่อห้อง”
               หากปล่อยว่างหรือใส่ 0 ระบบจะใช้ “ราคาต่อหน่วยค่าเริ่มต้น” จากหน้า ตั้งค่าหอพัก เพื่อคูณกับจำนวนหน่วยมิเตอร์
               กรณีเลือกแบบเหมาจ่ายรายเดือน (Flat Monthly) ค่า Override จะหมายถึง “จำนวนเงินเหมาจ่ายต่อเดือน”
             </div>
             <table className="w-full text-sm text-left">
-              <thead className="text-xs text-gray-700 uppercase bg-slate-50 border-b">
+              <thead className="text-xs text-gray-700 dark:text-slate-300 uppercase bg-slate-50 dark:bg-slate-900 border-b dark:border-slate-800">
                 <tr>
-                  <th className="px-6 py-4 font-semibold text-[#8b5a3c] whitespace-nowrap" style={{ width: buildingColMinWidth }}>หอ</th>
-                  <th className="px-6 py-4 font-semibold text-[#8b5a3c]">ชั้น</th>
-                  <th className="px-6 py-4 font-semibold text-[#8b5a3c]">ห้อง</th>
-                  <th className="px-6 py-4 font-semibold text-[#8b5a3c] text-center">สถานะ</th>
-                  <th className="px-6 py-4 font-semibold text-[#8b5a3c] text-right">ค่าเช่าปัจจุบัน</th>
-                  <th className="px-6 py-4 font-semibold text-[#8b5a3c] text-right">ปรับค่าเช่า</th>
-                  <th className="px-6 py-4 font-semibold text-[#8b5a3c] text-right">ค่าน้ำต่อหน่วย (Override)</th>
-                  <th className="px-6 py-4 font-semibold text-[#8b5a3c] text-right">ค่าไฟต่อหน่วย (Override)</th>
+                  <th className="px-6 py-4 font-semibold text-[#8b5a3c] dark:text-[#f5a987] whitespace-nowrap" style={{ width: buildingColMinWidth }}>หอ</th>
+                  <th className="px-6 py-4 font-semibold text-[#8b5a3c] dark:text-[#f5a987]">ชั้น</th>
+                  <th className="px-6 py-4 font-semibold text-[#8b5a3c] dark:text-[#f5a987]">ห้อง</th>
+                  <th className="px-6 py-4 font-semibold text-[#8b5a3c] dark:text-[#f5a987] text-center">สถานะ</th>
+                  <th className="px-6 py-4 font-semibold text-[#8b5a3c] dark:text-[#f5a987] text-right">ค่าเช่าปัจจุบัน</th>
+                  <th className="px-6 py-4 font-semibold text-[#8b5a3c] dark:text-[#f5a987] text-right">ปรับค่าเช่า</th>
+                  <th className="px-6 py-4 font-semibold text-[#8b5a3c] dark:text-[#f5a987] text-right">ค่าน้ำต่อหน่วย (Override)</th>
+                  <th className="px-6 py-4 font-semibold text-[#8b5a3c] dark:text-[#f5a987] text-right">ค่าไฟต่อหน่วย (Override)</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedRooms.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-slate-500">
+                    <td colSpan={8} className="px-6 py-8 text-center text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-950">
                       ไม่พบข้อมูล
                     </td>
                   </tr>
                 ) : (
                   paginatedRooms.map((room) => (
-                    <tr key={room.id} className="bg-white border-b hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4 text-slate-700 whitespace-nowrap" style={{ width: buildingColMinWidth }}>{room.building?.name || room.building?.code || '-'}</td>
-                      <td className="px-6 py-4 text-slate-700">{Number(room.floor) || '-'}</td>
-                      <td className="px-6 py-4 font-bold text-[#8b5a3c]">{room.number}</td>
+                    <tr key={room.id} className="bg-white dark:bg-slate-950 border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
+                      <td className="px-6 py-4 text-slate-700 dark:text-slate-300 whitespace-nowrap" style={{ width: buildingColMinWidth }}>{room.building?.name || room.building?.code || '-'}</td>
+                      <td className="px-6 py-4 text-slate-700 dark:text-slate-300">{Number(room.floor) || '-'}</td>
+                      <td className="px-6 py-4 font-bold text-[#8b5a3c] dark:text-[#f5a987]">{room.number}</td>
                       <td className="px-6 py-4 text-center">
                         {room.status === 'OCCUPIED' ? (
-                          <Badge className="bg-green-100 text-green-700 border-none">มีผู้เช่า</Badge>
+                          <Badge className="bg-green-100 text-green-700 border-none dark:bg-green-900/30 dark:text-green-400">มีผู้เช่า</Badge>
                         ) : room.status === 'VACANT' ? (
-                          <Badge variant="outline" className="text-slate-600 border-slate-200">ว่าง</Badge>
+                          <Badge variant="outline" className="text-slate-600 border-slate-200 dark:text-slate-400 dark:border-slate-700">ว่าง</Badge>
                         ) : (
-                          <Badge variant="outline" className="text-yellow-700 border-yellow-200">ซ่อมบำรุง</Badge>
+                          <Badge variant="outline" className="text-yellow-700 border-yellow-200 dark:text-yellow-400 dark:border-yellow-800">ซ่อมบำรุง</Badge>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-right font-mono text-slate-700">฿{Number(room.pricePerMonth).toLocaleString()}</td>
+                      <td className="px-6 py-4 text-right font-mono text-slate-700 dark:text-slate-300">฿{Number(room.pricePerMonth).toLocaleString()}</td>
                       <td className="px-6 py-4">
                         <Input 
                           id={`price-${room.id}`} 
                           type="number" 
                           value={values[room.id]?.price ?? ''} 
                           onChange={(e) => setValues((prev) => ({ ...prev, [room.id]: { ...(prev[room.id] || { price: '' }), price: e.target.value } }))}
-                          className="text-right font-mono border-slate-200 focus:ring-[#f5a987] focus:border-[#f5a987]" 
+                          className="text-right font-mono border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-slate-200 focus:ring-[#f5a987] focus:border-[#f5a987]" 
                         />
                       </td>
                       <td className="px-6 py-4">
@@ -194,7 +194,7 @@ export function RentSettingsTable({ rooms }: { rooms: Room[] }) {
                           value={values[room.id]?.water ?? ''}
                           onChange={(e) => setValues((prev) => ({ ...prev, [room.id]: { ...(prev[room.id] || { price: '' }), water: e.target.value } }))}
                           placeholder="ราคาต่อหน่วย เช่น 4"
-                          className="text-right font-mono border-slate-200 focus:ring-[#f5a987] focus:border-[#f5a987]"
+                          className="text-right font-mono border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-slate-200 focus:ring-[#f5a987] focus:border-[#f5a987]"
                         />
                       </td>
                       <td className="px-6 py-4">
@@ -204,7 +204,7 @@ export function RentSettingsTable({ rooms }: { rooms: Room[] }) {
                           value={values[room.id]?.electric ?? ''}
                           onChange={(e) => setValues((prev) => ({ ...prev, [room.id]: { ...(prev[room.id] || { price: '' }), electric: e.target.value } }))}
                           placeholder="ราคาต่อหน่วย เช่น 4"
-                          className="text-right font-mono border-slate-200 focus:ring-[#f5a987] focus:border-[#f5a987]"
+                          className="text-right font-mono border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-slate-200 focus:ring-[#f5a987] focus:border-[#f5a987]"
                         />
                       </td>
                     </tr>
@@ -214,8 +214,8 @@ export function RentSettingsTable({ rooms }: { rooms: Room[] }) {
             </table>
           </div>
 
-          <div className="flex items-center justify-between px-4 py-4 border-t border-slate-100 bg-white rounded-b-xl">
-            <div className="text-sm text-slate-500">
+          <div className="flex items-center justify-between px-4 py-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-b-xl">
+            <div className="text-sm text-slate-500 dark:text-slate-400">
               แสดง {filteredRooms.length === 0 ? 0 : (page - 1) * pageSize + 1} ถึง {Math.min(page * pageSize, filteredRooms.length)} จาก {filteredRooms.length} รายการ
             </div>
             <div className="flex items-center gap-2">
@@ -224,6 +224,7 @@ export function RentSettingsTable({ rooms }: { rooms: Room[] }) {
                 size="icon"
                 onClick={() => setPage(1)}
                 disabled={page === 1}
+                className="dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 <ChevronsLeft className="h-4 w-4" />
               </Button>
@@ -232,10 +233,11 @@ export function RentSettingsTable({ rooms }: { rooms: Room[] }) {
                 size="icon"
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
+                className="dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-sm font-medium min-w-[3rem] text-center">
+              <span className="text-sm font-medium min-w-[3rem] text-center dark:text-slate-300">
                 หน้า {page} / {totalPages}
               </span>
               <Button
@@ -243,6 +245,7 @@ export function RentSettingsTable({ rooms }: { rooms: Room[] }) {
                 size="icon"
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
+                className="dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -251,6 +254,7 @@ export function RentSettingsTable({ rooms }: { rooms: Room[] }) {
                 size="icon"
                 onClick={() => setPage(totalPages)}
                 disabled={page === totalPages}
+                className="dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 <ChevronsRight className="h-4 w-4" />
               </Button>

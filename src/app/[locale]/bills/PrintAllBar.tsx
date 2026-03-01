@@ -13,10 +13,12 @@ export default function PrintAllBar({ invoices }: { invoices: Invoice[] }) {
       return;
     }
 
-    const ids = activeInvoices.map((i) => i.id).join(',');
+    const ids = activeInvoices.map((i) => i.id);
+    const key = `print_ids_${Date.now()}`;
+    localStorage.setItem(key, JSON.stringify(ids));
 
     window.open(
-      `/bills/print-all?ids=${ids}`,
+      `/bills/print-all?key=${key}`,
       '_blank'
     );
   };

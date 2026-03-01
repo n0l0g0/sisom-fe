@@ -655,9 +655,32 @@ export const api = {
   getInvoices: async (params?: { roomId?: string, ids?: string }): Promise<Invoice[]> => {
     let url = `${API_URL}/invoices?`;
     if (params?.roomId) url += `roomId=${params.roomId}&`;
-    if (params?.ids) url += `ids=${params.ids}&`;
-    const res = await fetch(url, { cache: 'no-store' });
+    if (params?.ids) {
+      const idsArray = params.ids.split(',');
+      if (idsArray.length > 50) {
+        // Use POST for many IDs
+        return api.fetchInvoicesByIds(idsArray);
+      }
+      url += `ids=${params.ids}&`;
+    }
+    const token = getToken();
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(url, { cache: 'no-store', headers });
     if (!res.ok) throw new Error('Failed to fetch invoices');
+    return res.json();
+  },
+
+  fetchInvoicesByIds: async (ids: string[]): Promise<Invoice[]> => {
+    const token = getToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(`${API_URL}/invoices/fetch-by-ids`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ ids }),
+    });
+    if (!res.ok) throw new Error('Failed to fetch invoices by IDs');
     return res.json();
   },
 

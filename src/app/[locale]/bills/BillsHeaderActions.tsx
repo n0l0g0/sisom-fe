@@ -38,13 +38,11 @@ export default function BillsHeaderActions({ selectedMonthKey, invoices }: Bills
       return;
     }
 
-    // Open print page with multiple IDs
-    // Assuming /bills/print-all takes query param `ids` or similar
-    // Or we can construct a URL to print all these.
-    // Let's check how PrintAllBar did it.
-    // It used `/bills/print-all?ids=...`
+    // Use localStorage to pass IDs to avoid URL length limits
+    const key = `print_ids_${Date.now()}`;
+    localStorage.setItem(key, JSON.stringify(targets));
     
-    const url = `/bills/print-all?ids=${targets.join(',')}`;
+    const url = `/bills/print-all?key=${key}`;
     window.open(url, '_blank');
   };
 

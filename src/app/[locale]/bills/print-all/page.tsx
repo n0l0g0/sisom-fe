@@ -7,19 +7,45 @@ import { InvoicePrint } from '../[id]/print/page';
 
 function PrintAllPage() {
   const searchParams = useSearchParams();
-  const ids = searchParams.get('ids');
+  const idsParam = searchParams.get('ids');
+  const keyParam = searchParams.get('key');
   const auto = searchParams.get('auto');
+  const [ids, setIds] = useState<string | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [allLoaded, setAllLoaded] = useState(false);
 
   useEffect(() => {
+    if (keyParam) {
+      const stored = localStorage.getItem(keyParam);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            setIds(parsed.join(','));
+          } else if (typeof parsed === 'string') {
+            setIds(parsed);
+          }
+        } catch {
+          // ignore
+        }
+        // Optional: clean up
+        // localStorage.removeItem(keyParam);
+      }
+    } else if (idsParam) {
+      setIds(idsParam);
+    } else {
+      setLoading(false);
+      setError('ไม่พบข้อมูลบิลที่ต้องการพิมพ์');
+    }
+  }, [keyParam, idsParam]);
+
+  useEffect(() => {
     let cancelled = false;
     const run = async () => {
       if (!ids) {
-        setError('ไม่พบ ID ของบิล');
-        setLoading(false);
+        // If loading is true but ids is null, wait (except if we already set error)
         return;
       }
       try {

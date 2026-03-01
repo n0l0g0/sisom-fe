@@ -124,6 +124,7 @@ const SETTINGS_ITEMS = [
   { id: 'settings_rent', href: '/settings/rent', labelKey: 'Sidebar.rent_settings' },
   { id: 'settings_backups', href: '/settings/backups', labelKey: 'Sidebar.backup_settings' },
   { id: 'settings_users', href: '/settings/users', labelKey: 'Sidebar.user_settings' },
+  { id: 'settings_profile', href: '/settings/profile', labelKey: 'Sidebar.profile_settings' },
 ];
 
 interface SidebarProps {
@@ -162,6 +163,8 @@ export function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
 
   const hasPermission = (id: string) => {
     if (!currentUser) return false;
+    // Always allow profile settings for logged-in users
+    if (id === 'settings_profile') return true;
     if (currentUser.role === 'OWNER') return true;
     return currentUser.permissions?.includes(id);
   };

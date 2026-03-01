@@ -31,6 +31,9 @@ export function RoomTypeIntelligence({ rooms }: { rooms: Room[] }) {
     const price = room.pricePerMonth;
     if (!price) return;
 
+    // Filter only focused prices
+    if (![2100, 2500, 3000].includes(price)) return;
+
     if (!statsMap.has(price)) {
       statsMap.set(price, {
         price,

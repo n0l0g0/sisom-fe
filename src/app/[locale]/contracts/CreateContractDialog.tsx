@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { api, Room } from '@/services/api';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Plus } from 'lucide-react';
 
 interface CreateContractDialogProps {
   rooms: Room[];
@@ -38,7 +39,6 @@ export function CreateContractDialog({ rooms }: CreateContractDialogProps) {
   const [tenantPhone, setTenantPhone] = useState('');
   const [tenantIdCard, setTenantIdCard] = useState('');
   const [tenantAddress, setTenantAddress] = useState('');
-  // const [lineUserId, setLineUserId] = useState('');
   const [contractImageFile, setContractImageFile] = useState<File | null>(null);
 
   useEffect(() => {
@@ -86,7 +86,6 @@ export function CreateContractDialog({ rooms }: CreateContractDialogProps) {
         phone: tenantPhone,
         idCard: tenantIdCard,
         address: tenantAddress,
-        // lineUserId: lineUserId || undefined,
       });
 
       // 2. Upload Image (if any)
@@ -110,6 +109,7 @@ export function CreateContractDialog({ rooms }: CreateContractDialogProps) {
       setOpen(false);
       resetForm();
       router.refresh();
+      // Use toast instead of alert in future, but alert is fine for now
       alert('สร้างสัญญาเช่าสำเร็จ');
     } catch (error) {
       console.error('Failed to create contract:', error);
@@ -140,17 +140,15 @@ export function CreateContractDialog({ rooms }: CreateContractDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button className="px-4 py-2 rounded-lg bg-[#f5a987] text-white hover:opacity-90 transition shadow-sm flex items-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-          </svg>
+        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-4 py-2 shadow transition-all">
+          <Plus className="w-5 h-5 mr-2" />
           ทำสัญญาใหม่
-        </button>
+        </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
         <DialogHeader>
-          <DialogTitle>ทำสัญญาเช่าใหม่</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-slate-900 dark:text-white">ทำสัญญาเช่าใหม่</DialogTitle>
+          <DialogDescription className="text-slate-500 dark:text-slate-400">
             กรอกข้อมูลผู้เช่าและรายละเอียดสัญญา
           </DialogDescription>
         </DialogHeader>
@@ -158,40 +156,40 @@ export function CreateContractDialog({ rooms }: CreateContractDialogProps) {
         <div className="grid gap-6 py-4">
           {/* Tenant Information */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-[#8b5a3c] border-b pb-2">ข้อมูลผู้เช่า</h3>
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-2">ข้อมูลผู้เช่า</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">ชื่อ-นามสกุล <span className="text-red-500">*</span></Label>
-                <Input id="name" value={tenantName} onChange={e => setTenantName(e.target.value)} placeholder="สมชาย ใจดี" />
+                <Label htmlFor="name" className="text-slate-700 dark:text-slate-300">ชื่อ-นามสกุล <span className="text-rose-500">*</span></Label>
+                <Input id="name" value={tenantName} onChange={e => setTenantName(e.target.value)} placeholder="สมชาย ใจดี" className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">เบอร์โทรศัพท์ <span className="text-red-500">*</span></Label>
-                <Input id="phone" value={tenantPhone} onChange={e => setTenantPhone(e.target.value)} placeholder="081-xxxxxxx" />
+                <Label htmlFor="phone" className="text-slate-700 dark:text-slate-300">เบอร์โทรศัพท์ <span className="text-rose-500">*</span></Label>
+                <Input id="phone" value={tenantPhone} onChange={e => setTenantPhone(e.target.value)} placeholder="081-xxxxxxx" className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="idCard">เลขบัตรประชาชน</Label>
-                <Input id="idCard" value={tenantIdCard} onChange={e => setTenantIdCard(e.target.value)} placeholder="1-xxxx-xxxxx-xx-x" />
+                <Label htmlFor="idCard" className="text-slate-700 dark:text-slate-300">เลขบัตรประชาชน</Label>
+                <Input id="idCard" value={tenantIdCard} onChange={e => setTenantIdCard(e.target.value)} placeholder="1-xxxx-xxxxx-xx-x" className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="address">ที่อยู่ตามทะเบียนบ้าน</Label>
-                <Input id="address" value={tenantAddress} onChange={e => setTenantAddress(e.target.value)} />
+                <Label htmlFor="address" className="text-slate-700 dark:text-slate-300">ที่อยู่ตามทะเบียนบ้าน</Label>
+                <Input id="address" value={tenantAddress} onChange={e => setTenantAddress(e.target.value)} className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" />
               </div>
             </div>
           </div>
 
           {/* Contract Information */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-[#8b5a3c] border-b pb-2">รายละเอียดสัญญา</h3>
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-2">รายละเอียดสัญญา</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="room">ห้องพัก <span className="text-red-500">*</span></Label>
+                <Label htmlFor="room" className="text-slate-700 dark:text-slate-300">ห้องพัก <span className="text-rose-500">*</span></Label>
                 <Select value={roomId} onValueChange={handleRoomChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                     <SelectValue placeholder="เลือกห้องว่าง" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                     {vacantRooms.map((room) => (
-                      <SelectItem key={room.id} value={room.id}>
+                      <SelectItem key={room.id} value={room.id} className="focus:bg-slate-100 dark:focus:bg-slate-700">
                         {room.number} (ชั้น {room.floor}){room.pricePerMonth !== undefined ? ` - ฿${room.pricePerMonth.toLocaleString()}` : ''}
                       </SelectItem>
                     ))}
@@ -199,31 +197,32 @@ export function CreateContractDialog({ rooms }: CreateContractDialogProps) {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="startDate">วันเริ่มสัญญา <span className="text-red-500">*</span></Label>
-                <Input id="startDate" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                <Label htmlFor="startDate" className="text-slate-700 dark:text-slate-300">วันเริ่มสัญญา <span className="text-rose-500">*</span></Label>
+                <Input id="startDate" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="rent">ค่าเช่า (บาท/เดือน) <span className="text-red-500">*</span></Label>
-                <Input id="rent" type="number" value={rent} onChange={e => setRent(e.target.value)} />
+                <Label htmlFor="rent" className="text-slate-700 dark:text-slate-300">ค่าเช่า (บาท/เดือน) <span className="text-rose-500">*</span></Label>
+                <Input id="rent" type="number" value={rent} onChange={e => setRent(e.target.value)} className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="deposit">เงินประกัน (บาท) <span className="text-red-500">*</span></Label>
-                <Input id="deposit" type="number" value={deposit} onChange={e => setDeposit(e.target.value)} />
-                <div className="text-xs text-slate-500">
+                <Label htmlFor="deposit" className="text-slate-700 dark:text-slate-300">เงินประกัน (บาท) <span className="text-rose-500">*</span></Label>
+                <Input id="deposit" type="number" value={deposit} onChange={e => setDeposit(e.target.value)} className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" />
+                <div className="text-xs text-slate-500 dark:text-slate-400">
                   กติกาเงินประกัน: ค่าเช่า 3000 → เงินประกัน 3000 บาท, อื่นๆ → เงินประกัน 1000 บาท
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="occupantCount">จำนวนผู้เช่า (คน)</Label>
-                <Input id="occupantCount" type="number" min={1} value={occupantCount} onChange={e => setOccupantCount(e.target.value)} />
+                <Label htmlFor="occupantCount" className="text-slate-700 dark:text-slate-300">จำนวนผู้เช่า (คน)</Label>
+                <Input id="occupantCount" type="number" min={1} value={occupantCount} onChange={e => setOccupantCount(e.target.value)} className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contractImage">รูปสัญญาเช่า</Label>
+                <Label htmlFor="contractImage" className="text-slate-700 dark:text-slate-300">รูปสัญญาเช่า</Label>
                 <Input 
                   id="contractImage" 
                   type="file" 
                   accept="image/*" 
                   onChange={e => setContractImageFile(e.target.files?.[0] ?? null)} 
+                  className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-pointer"
                 />
               </div>
             </div>
@@ -235,7 +234,7 @@ export function CreateContractDialog({ rooms }: CreateContractDialogProps) {
             type="submit" 
             onClick={handleCreate} 
             disabled={loading || !tenantName || !tenantPhone || !roomId || !startDate || !rent || !deposit} 
-            className="bg-[#f5a987] hover:bg-[#e09b7b] w-full"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white w-full"
           >
             {loading ? 'กำลังบันทึก...' : 'บันทึกสัญญาเช่า'}
           </Button>

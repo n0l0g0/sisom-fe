@@ -171,8 +171,13 @@ export default function RoomDetailDialog({ room, children }: Props) {
   const depositUsed = settled
     .filter((s) => s.method === 'DEPOSIT')
     .reduce((sum, s) => sum + s.amount, 0);
-  const depositBaseRefund = Math.max(0, depositInitial - depositUsed);
+  
+  // Calculate total outstanding utilities from unpaid invoices
+  const outstandingUtilities = outstandingInvoices.reduce((sum, inv) => {
+    return sum + Number(inv.waterAmount || 0) + Number(inv.electricAmount || 0) + Number(inv.otherFees || 0);
+  }, 0);
 
+  // Current meter reading calculation (Utilities since last bill)
   const waterPrev = lastMeterReading ? Number(lastMeterReading.waterReading ?? 0) : 0;
   const electricPrev = lastMeterReading ? Number(lastMeterReading.electricReading ?? 0) : 0;
   const waterNow = Number(moveOutWaterCurrent || 0);
@@ -183,20 +188,32 @@ export default function RoomDetailDialog({ room, children }: Props) {
   const electricUnitPrice = dormConfig ? Number(dormConfig.electricUnitPrice ?? 0) : 0;
   const waterCharge = waterUsage * waterUnitPrice;
   const electricCharge = electricUsage * electricUnitPrice;
+  
+  // Additional charges
   const otherCharge = Math.max(0, Number(moveOutOtherAmount || 0));
   const discountAmount = Math.max(0, Number(moveOutDiscount || 0));
+
+  // Total deductions: Outstanding Utilities + Current Utilities + Other Charges - Discount
+  const totalDeductions = outstandingUtilities + waterCharge + electricCharge + otherCharge - discountAmount;
+
+  // Final calculation
+  // Refund = Deposit - (Outstanding Utilities + Current Utilities + Other - Discount)
+  // If Refund < 0, then Tenant must pay extra (Additional Payment)
+  const depositRemaining = Math.max(0, depositInitial - depositUsed); // Usually depositUsed is 0 unless partial settlement happened
+  
+  let expectedDepositRefund = 0;
+  let additionalCashNeeded = 0;
+
+  if (depositRemaining >= totalDeductions) {
+    expectedDepositRefund = depositRemaining - totalDeductions;
+    additionalCashNeeded = 0;
+  } else {
+    expectedDepositRefund = 0;
+    additionalCashNeeded = totalDeductions - depositRemaining;
+  }
+
   const moveOutSubTotal = waterCharge + electricCharge + otherCharge;
   const moveOutTotal = Math.max(0, moveOutSubTotal - discountAmount);
-
-  const expectedDepositRefund =
-    settleMethod === 'DEPOSIT'
-      ? Math.max(0, depositBaseRefund - moveOutTotal)
-      : depositBaseRefund;
-
-  const additionalCashNeeded =
-    settleMethod === 'DEPOSIT'
-      ? Math.max(0, moveOutTotal - depositBaseRefund)
-      : moveOutTotal;
 
   useEffect(() => {
     if (open) {
@@ -1139,15 +1156,15 @@ export default function RoomDetailDialog({ room, children }: Props) {
             </TabsContent>
 
             <TabsContent value="moveout">
-               <div className="py-6 text-slate-600">
+               <div className="py-6 text-slate-600 dark:text-slate-300">
                  {activeContract ? (
                    <div className="space-y-6">
-                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                       <div className="font-semibold text-yellow-800">ขั้นตอนเคลียร์บิลค้างชำระก่อนย้ายออก</div>
-                       <div className="mt-2 text-sm">
+                     <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900/50 rounded-lg p-4">
+                       <div className="font-semibold text-yellow-800 dark:text-yellow-400">ขั้นตอนเคลียร์บิลค้างชำระก่อนย้ายออก</div>
+                       <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
                          เงินประกันคงเหลือ: ฿{Number(activeContract.deposit || 0).toLocaleString()}
                        </div>
-                       <div className="mt-1 text-sm">
+                       <div className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
                          ยอดบิลค้างชำระ: ฿{Number(outstandingTotal).toLocaleString()}
                        </div>
                        {outstandingInvoices.length > 0 ? (
@@ -1155,7 +1172,7 @@ export default function RoomDetailDialog({ room, children }: Props) {
                            <select
                              value={settleMethod}
                              onChange={(e) => setSettleMethod(e.target.value === 'DEPOSIT' ? 'DEPOSIT' : 'CASH')}
-                             className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f5a987] border-slate-200 bg-white"
+                             className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f5a987] border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                            >
                              <option value="DEPOSIT">หักจากเงินประกัน</option>
                              <option value="CASH">จ่ายเงินสด</option>
@@ -1165,7 +1182,7 @@ export default function RoomDetailDialog({ room, children }: Props) {
                            </Button>
                          </div>
                        ) : (
-                         <div className="mt-3 text-sm text-green-700">ไม่มีบิลค้างชำระ</div>
+                         <div className="mt-3 text-sm text-green-700 dark:text-green-400">ไม่มีบิลค้างชำระ</div>
                        )}
                      </div>
                      <div className="text-center">
@@ -1177,7 +1194,7 @@ export default function RoomDetailDialog({ room, children }: Props) {
                          แจ้งย้ายออก / สิ้นสุดสัญญา
                        </Button>
                        {outstandingInvoices.length > 0 && (
-                         <div className="mt-2 text-xs text-red-500">ต้องเคลียร์บิลค้างชำระก่อน</div>
+                         <div className="mt-2 text-xs text-red-500 dark:text-red-400">ต้องเคลียร์บิลค้างชำระก่อน</div>
                        )}
                      </div>
                    </div>
@@ -1187,16 +1204,16 @@ export default function RoomDetailDialog({ room, children }: Props) {
                </div>
 
                {activeContract && (
-                 <div className="mt-6 bg-white border border-slate-200 rounded-lg p-4">
+                 <div className="mt-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
                    <div className="flex items-center justify-between mb-4">
-                     <div className="text-[#8b5a3c] font-bold text-lg">สรุปการย้ายออก</div>
+                     <div className="text-[#8b5a3c] dark:text-[#f5a987] font-bold text-lg">สรุปการย้ายออก</div>
                      <div className="flex items-center gap-2">
-                       <span className="text-sm text-slate-600">กรุณาเลือกวันย้ายออก *</span>
+                       <span className="text-sm text-slate-600 dark:text-slate-400">กรุณาเลือกวันย้ายออก *</span>
                        <input
                          type="date"
                          value={moveOutDate}
                          onChange={(e) => setMoveOutDate(e.target.value)}
-                         className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f5a987] border-slate-200"
+                         className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f5a987] border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                        />
                        <div className="text-xs text-muted-foreground ml-2">
                          โอนคืนเงินประกันภายใน <span className="font-semibold">{moveOutDays}</span> วัน
@@ -1326,8 +1343,8 @@ export default function RoomDetailDialog({ room, children }: Props) {
                     </div>
 
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <div className="border rounded-lg p-3">
-                       <div className="font-semibold text-slate-700 mb-2">รายการชำระสำเร็จ</div>
+                     <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3">
+                       <div className="font-semibold text-slate-700 dark:text-slate-200 mb-2">รายการชำระสำเร็จ</div>
                        {settled.filter((s) => s.method === 'CASH').length === 0 ? (
                          <div className="text-center text-muted-foreground text-sm py-4">ไม่มีรายการชำระบิล</div>
                        ) : (
@@ -1336,16 +1353,16 @@ export default function RoomDetailDialog({ room, children }: Props) {
                              .filter((s) => s.method === 'CASH')
                              .map((s) => (
                                <div key={s.id} className="flex items-center justify-between text-sm">
-                                 <div className="text-slate-600">{s.label}</div>
-                                 <div className="font-mono">฿{s.amount.toLocaleString()}</div>
+                                 <div className="text-slate-600 dark:text-slate-400">{s.label}</div>
+                                 <div className="font-mono text-slate-900 dark:text-white">฿{s.amount.toLocaleString()}</div>
                                </div>
                              ))}
                          </div>
                        )}
                      </div>
 
-                     <div className="border rounded-lg p-3">
-                       <div className="font-semibold text-slate-700 mb-2">รายการหักจากเงินประกัน</div>
+                     <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3">
+                       <div className="font-semibold text-slate-700 dark:text-slate-200 mb-2">รายการหักจากเงินประกัน</div>
                        {settled.filter((s) => s.method === 'DEPOSIT').length === 0 ? (
                          <div className="text-center text-muted-foreground text-sm py-4">ไม่มีรายการหักจากเงินประกัน</div>
                        ) : (
@@ -1354,8 +1371,8 @@ export default function RoomDetailDialog({ room, children }: Props) {
                              .filter((s) => s.method === 'DEPOSIT')
                              .map((s) => (
                                <div key={s.id} className="flex items-center justify-between text-sm">
-                                 <div className="text-slate-600">{s.label}</div>
-                                 <div className="font-mono">฿{s.amount.toLocaleString()}</div>
+                                 <div className="text-slate-600 dark:text-slate-400">{s.label}</div>
+                                 <div className="font-mono text-slate-900 dark:text-white">฿{s.amount.toLocaleString()}</div>
                                </div>
                              ))}
                          </div>
@@ -1364,17 +1381,37 @@ export default function RoomDetailDialog({ room, children }: Props) {
                    </div>
 
                     <div className="mt-4 space-y-2">
-                      <div className="bg-red-50 text-red-700 border border-red-200 rounded-lg px-4 py-3 inline-flex items-center">
-                        <span className="mr-2">ยอดเงินประกันคืนผู้เช่า</span>
-                        <span className="font-bold">
-                          ฿{expectedDepositRefund.toLocaleString()}
-                        </span>
-                      </div>
-                      {additionalCashNeeded > 0 && (
-                        <div className="text-sm text-red-600">
-                          ต้องเก็บเงินจากผู้เช่าเพิ่ม ฿{additionalCashNeeded.toLocaleString()}
+                      <div className="grid grid-cols-2 gap-4 pt-2">
+                        <div>
+                          <Label className="text-slate-700 dark:text-slate-300">ยอดเงินประกันคงเหลือ</Label>
+                          <div className="text-xl font-bold text-slate-900 dark:text-white">฿{depositRemaining.toLocaleString()}</div>
                         </div>
-                      )}
+                        <div>
+                          <Label className="text-slate-700 dark:text-slate-300">ยอดหักทั้งหมด</Label>
+                          <div className="text-xl font-bold text-red-600 dark:text-red-400">฿{totalDeductions.toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground">
+                            (ค้างชำระ: {outstandingUtilities.toLocaleString()} + ปัจจุบัน: {moveOutTotal.toLocaleString()})
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={`p-4 rounded-lg border ${
+                        additionalCashNeeded > 0 
+                          ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50' 
+                          : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/50'
+                      }`}>
+                        {additionalCashNeeded > 0 ? (
+                          <div className="text-center">
+                            <div className="text-sm text-red-600 dark:text-red-400 font-medium">ผู้เช่าต้องจ่ายเพิ่ม</div>
+                            <div className="text-2xl font-bold text-red-700 dark:text-red-300">฿{additionalCashNeeded.toLocaleString()}</div>
+                          </div>
+                        ) : (
+                          <div className="text-center">
+                            <div className="text-sm text-green-600 dark:text-green-400 font-medium">ยอดเงินประกันคืนผู้เช่า</div>
+                            <div className="text-2xl font-bold text-green-700 dark:text-green-300">฿{expectedDepositRefund.toLocaleString()}</div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                  </div>
                )}

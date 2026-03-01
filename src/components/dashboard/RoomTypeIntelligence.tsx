@@ -1,5 +1,5 @@
 import React from 'react';
-import { Room } from '@/services/api';
+import { Room, Contract } from '@/services/api';
 
 interface RoomTypeStats {
   price: number;
@@ -10,7 +10,7 @@ interface RoomTypeStats {
   potentialRevenue: number;
 }
 
-export function RoomTypeIntelligence({ rooms }: { rooms: Room[] }) {
+export function RoomTypeIntelligence({ rooms, contracts }: { rooms: Room[]; contracts?: Contract[] }) {
   // Group rooms by price
   // Pre-populate with expected price tiers
   const statsMap = new Map<number, RoomTypeStats>();
@@ -26,9 +26,16 @@ export function RoomTypeIntelligence({ rooms }: { rooms: Room[] }) {
   });
 
   rooms.forEach(room => {
-    // If price is missing, use 0 or skip. 
-    // We'll skip if no price to avoid clutter, assuming clean data for "Room Types"
-    const price = room.pricePerMonth;
+    let price = Number(room.pricePerMonth || 0);
+
+    // If price is missing or 0, try to infer from active contract
+    if (!price && contracts && contracts.length > 0) {
+      const activeContract = contracts.find(c => c.roomId === room.id && c.isActive);
+      if (activeContract && activeContract.currentRent) {
+        price = Number(activeContract.currentRent);
+      }
+    }
+
     if (!price) return;
 
     // Filter only focused prices
@@ -59,11 +66,6 @@ export function RoomTypeIntelligence({ rooms }: { rooms: Room[] }) {
     }
     
     // Recalculate potential revenue based on total rooms found so far
-    // Note: If we pre-populated, total starts at 0, so this is correct.
-    // However, for pre-populated items that have no rooms, total is 0, potential is 0.
-    // If we want to show potential based on *capacity*, we need capacity data.
-    // But we only have `rooms` list. So "Total rooms" implies "Existing rooms in DB".
-    // So if DB has 0 rooms of type 2100, Total is 0.
     stat.potentialRevenue = stat.total * stat.price;
   });
 

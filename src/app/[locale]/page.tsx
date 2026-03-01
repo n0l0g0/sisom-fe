@@ -27,13 +27,15 @@ export default async function Dashboard({ searchParams, params }: { searchParams
   let rooms = [] as Awaited<ReturnType<typeof api.getRooms>>;
   let invoices = [] as Awaited<ReturnType<typeof api.getInvoices>>;
   let recentChats = [] as Awaited<ReturnType<typeof api.getRecentChats>>;
+  let contracts = [] as Awaited<ReturnType<typeof api.getContracts>>;
   let lineProfiles: Record<string, LineProfile> = {};
 
   try {
-    [rooms, invoices, recentChats] = await Promise.all([
+    [rooms, invoices, recentChats, contracts] = await Promise.all([
       api.getRooms(),
       api.getInvoices(),
       api.getRecentChats(),
+      api.getContracts(true), // Fetch active contracts
     ]);
     const ids = Array.from(new Set(recentChats.map(c => c.userId))).filter(s => s && s.trim().length > 0);
     if (ids.length > 0) {
@@ -153,7 +155,7 @@ export default async function Dashboard({ searchParams, params }: { searchParams
       </div>
 
       {/* ROOM TYPE INTELLIGENCE */}
-      <RoomTypeIntelligence rooms={rooms} />
+      <RoomTypeIntelligence rooms={rooms} contracts={contracts} />
 
       {/* SECTION 3: MAIN ANALYTICS */}
       <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">

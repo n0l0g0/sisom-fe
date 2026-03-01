@@ -19,12 +19,15 @@ export default async function ChatsPage({
     chats = [];
     usage = null;
   }
+
+  // Basic filtering on server side if needed, though client side handles most of it now
   const q = typeof searchParams?.q === 'string' ? searchParams?.q.trim() : '';
   const typeParam = typeof searchParams?.type === 'string' ? searchParams?.type.trim() : '';
   const from = typeof searchParams?.from === 'string' ? searchParams?.from.trim() : '';
   const to = typeof searchParams?.to === 'string' ? searchParams?.to.trim() : '';
   const fromD = from ? new Date(from) : undefined;
   const toD = to ? new Date(to) : undefined;
+
   const filtered = chats.filter((c) => {
     if (typeParam && c.type !== typeParam) return false;
     if (q) {
@@ -40,22 +43,17 @@ export default async function ChatsPage({
     }
     return true;
   });
+
   return (
-    <div className="fade-in space-y-8">
-      <header className="mb-2">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-indigo-400 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg">
-            <span className="text-2xl">💬</span>
-          </div>
-          <div>
-            <h2 className="text-3xl font-bold text-indigo-900">แชทรวม</h2>
-            <p className="text-indigo-700">รวมแชทล่าสุดและสรุปจำนวนข้อความที่ส่ง</p>
-          </div>
+    <div className="space-y-6 fade-in pb-20 md:pb-0">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">แชทรวม</h1>
+           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">รวมแชทล่าสุดและสรุปจำนวนข้อความที่ส่ง</p>
         </div>
-      </header>
-      <div>
-        <ChatsClient chats={filtered} usage={usage} />
       </div>
+      
+      <ChatsClient chats={filtered} usage={usage} />
     </div>
   );
 }

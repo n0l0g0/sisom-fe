@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { Download, ChevronDown } from 'lucide-react';
+import { Download, ChevronDown, Printer } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 type Props = {
@@ -50,9 +50,8 @@ export default function ReportsHeaderControls({ defaultMonth, defaultYear }: Pro
     router.push(`/reports?month=${month}&year=${newYear}`);
   };
 
-  const handleExport = () => {
-    // Placeholder export
-    alert(`Exporting report for ${month}/${year}`);
+  const handlePrint = () => {
+    window.open(`/reports/dorm-summary?month=${month}&year=${year}`, '_blank');
   };
 
   return (
@@ -89,13 +88,13 @@ export default function ReportsHeaderControls({ defaultMonth, defaultYear }: Pro
         <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
       </div>
 
-      {/* Export Report Button */}
+      {/* Print Report Button */}
       <button
-        onClick={handleExport}
+        onClick={handlePrint}
         className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-5 py-2.5 text-sm font-medium shadow-md shadow-indigo-500/20 transition-all active:scale-95"
       >
-        <Download className="h-4 w-4" />
-        <span>Export Report</span>
+        <Printer className="h-4 w-4" />
+        <span>Print Report</span>
       </button>
     </div>
   );

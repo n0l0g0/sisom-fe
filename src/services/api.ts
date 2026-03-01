@@ -232,6 +232,7 @@ export interface User {
   id: string;
   username: string;
   name?: string;
+  email?: string;
   role: 'OWNER' | 'ADMIN';
   permissions: string[];
   createdAt: string;
@@ -1188,6 +1189,23 @@ export const api = {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error('Failed to create activity log');
+    return res.json();
+  },
+
+  // Profile
+  getProfile: async (): Promise<User> => {
+    const res = await fetch(`${API_URL}/users/me`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch profile');
+    return res.json();
+  },
+
+  updateProfile: async (data: Partial<User> & { password?: string }): Promise<User> => {
+    const res = await fetch(`${API_URL}/users/me`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update profile');
     return res.json();
   },
 };

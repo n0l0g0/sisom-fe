@@ -4,7 +4,16 @@ import { useState } from 'react';
 import { api, Invoice } from '@/services/api';
 import { useRouter } from 'next/navigation';
 import SendAllProgressDialog, { RoomProgress } from './SendAllProgressDialog';
-import { Download, Send, FileText, Printer } from 'lucide-react';
+import { Download, Send, FileText, Printer, Building } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 
 interface BillsHeaderActionsProps {
   selectedMonthKey: string | null;
@@ -28,7 +37,6 @@ export default function BillsHeaderActions({ selectedMonthKey, invoices }: Bills
     const month = Number(m);
 
     // Filter invoices for the selected month
-    // Exclude cancelled invoices? Usually yes.
     const targets = invoices
       .filter((inv) => inv.year === year && inv.month === month && inv.status !== 'CANCELLED')
       .map((inv) => inv.id);
@@ -38,13 +46,60 @@ export default function BillsHeaderActions({ selectedMonthKey, invoices }: Bills
       return;
     }
 
-    // Use localStorage to pass IDs to avoid URL length limits
     const key = `print_ids_${Date.now()}`;
     localStorage.setItem(key, JSON.stringify(targets));
     
     const url = `/bills/print-all?key=${key}`;
     window.open(url, '_blank');
   };
+
+  const handlePrintByBuilding = (buildingId: string | null) => {
+    if (!selectedMonthKey) return;
+    const [y, m] = selectedMonthKey.split('-');
+    const year = Number(y);
+    const month = Number(m);
+
+    const targets = invoices
+      .filter((inv) => {
+        if (inv.year !== year || inv.month !== month || inv.status === 'CANCELLED') return false;
+        const bId = inv.contract?.room?.building?.id || null;
+        return bId === buildingId;
+      })
+      .map((inv) => inv.id);
+
+    if (targets.length === 0) {
+      alert('ไม่พบบิลในตึกที่เลือก');
+      return;
+    }
+
+    const key = `print_ids_${Date.now()}`;
+    localStorage.setItem(key, JSON.stringify(targets));
+    
+    const url = `/bills/print-all?key=${key}`;
+    window.open(url, '_blank');
+  };
+
+  // Extract buildings for the selected month
+  const buildings = (() => {
+    if (!selectedMonthKey) return [];
+    const [y, m] = selectedMonthKey.split('-');
+    const year = Number(y);
+    const month = Number(m);
+    
+    const map = new Map<string, { id: string; name: string }>();
+    const hasNoBuilding = false; // logic to check if there are rooms without building
+    
+    invoices.forEach(inv => {
+      if (inv.year === year && inv.month === month && inv.status !== 'CANCELLED') {
+        const b = inv.contract?.room?.building;
+        if (b) {
+          map.set(b.id, { id: b.id, name: b.name || b.code || 'ไม่ระบุชื่อ' });
+        }
+      }
+    });
+    
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  })();
 
   const sendAll = async () => {
     if (!selectedMonthKey || loading) return;
@@ -132,14 +187,34 @@ export default function BillsHeaderActions({ selectedMonthKey, invoices }: Bills
   return (
     <>
       <div className="flex items-center gap-2">
-        <button
-          onClick={handlePrintAll}
-          disabled={!selectedMonthKey}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-white font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm text-sm"
-        >
-          <Printer className="w-4 h-4" />
-          พิมพ์ทั้งหมด
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              disabled={!selectedMonthKey}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-white font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm text-sm"
+            >
+              <Printer className="w-4 h-4" />
+              พิมพ์แยกหอ
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuLabel>เลือกตึกที่จะพิมพ์</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {buildings.length === 0 ? (
+              <DropdownMenuItem disabled>ไม่พบข้อมูลตึกในเดือนนี้</DropdownMenuItem>
+            ) : (
+              buildings.map((b) => (
+                <DropdownMenuItem key={b.id} onClick={() => handlePrintByBuilding(b.id)}>
+                  {b.name}
+                </DropdownMenuItem>
+              ))
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handlePrintAll}>
+              <span className="font-semibold">พิมพ์ทั้งหมด</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <button
           onClick={handleExport}

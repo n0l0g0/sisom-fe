@@ -318,9 +318,7 @@ export default function RoomDetailDialog({ room, children }: Props) {
       const replacements = 'replacements' in replacementsResult ? replacementsResult.replacements : [];
       if (replacements && replacements.length > 0) {
          setLastMeterReplacement(replacements[0]);
-      } else {
-         setLastMeterReplacement(null);
-      }
+      } // Do not clear existing replacement if API returns empty; keep current local state
     } catch (error) {
       console.error('Failed to fetch last meter reading', error);
     }
@@ -706,7 +704,8 @@ export default function RoomDetailDialog({ room, children }: Props) {
         newMeterStartReading: payload.newMeterStartReading,
         replacedAt: new Date().toISOString(),
       });
-      await fetchLastMeter();
+      // Refresh in background without overriding local "temp" replacement
+      fetchLastMeter().catch(() => {});
       setReplaceMeterOpen(false);
       setOldMeterFinal('');
       setNewMeterStart('0');

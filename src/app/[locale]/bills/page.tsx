@@ -147,21 +147,30 @@ function BillsPageContent() {
 
     // Search Filter
     if (searchTerm.trim()) {
-      const tokens = searchTerm.trim().split(/\s+/).map((t) => normalizeSearch(t)).filter(Boolean);
-      result = result.filter((inv) => {
-        const parts = [
-          inv.contract?.room?.number || '',
-          inv.contract?.room?.building?.name || '',
-          inv.contract?.room?.building?.code || '',
-          inv.contract?.tenant?.name || '',
-          inv.contract?.tenant?.nickname || '',
-          inv.contract?.tenant?.phone || '',
-          String(inv.totalAmount),
-          inv.status
-        ];
-        const text = normalizeSearch(parts.join(' '));
-        return tokens.every((t) => text.includes(t));
-      });
+      const term = normalizeSearch(searchTerm.trim());
+      const isNumeric = /^\d+$/.test(term);
+
+      if (isNumeric) {
+        // Numeric search: Only search in Room Number (Strict mode as requested)
+        result = result.filter((inv) => {
+          const roomNum = normalizeSearch(inv.contract?.room?.number || '');
+          return roomNum.includes(term);
+        });
+      } else {
+        // Text search: Search in Room Number, Building, Tenant Name (No Phone/Amount/Status)
+        const tokens = searchTerm.trim().split(/\s+/).map((t) => normalizeSearch(t)).filter(Boolean);
+        result = result.filter((inv) => {
+          const parts = [
+            inv.contract?.room?.number || '',
+            inv.contract?.room?.building?.name || '',
+            inv.contract?.room?.building?.code || '',
+            inv.contract?.tenant?.name || '',
+            inv.contract?.tenant?.nickname || ''
+          ];
+          const text = normalizeSearch(parts.join(' '));
+          return tokens.every((t) => text.includes(t));
+        });
+      }
     }
     
     // Sort by Building -> Floor -> Room Number -> Bannoi

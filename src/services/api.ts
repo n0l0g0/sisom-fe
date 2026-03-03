@@ -72,6 +72,16 @@ export interface Contract {
   invoices?: Array<{ status: string; totalAmount: number }>;
 }
 
+export interface MeterReplacement {
+  id: string;
+  roomId: string;
+  type: 'WATER' | 'ELECTRIC';
+  oldMeterFinalReading: number;
+  newMeterStartReading: number;
+  replacedAt: string;
+  recordedBy?: string;
+}
+
 export interface MeterReading {
   id: string;
   roomId: string;
@@ -409,6 +419,17 @@ export const api = {
     return (data?.contacts || []) as RoomContact[];
   },
 
+  addRoomContact: async (roomId: string, contact: { name?: string; phone?: string }): Promise<RoomContact[]> => {
+    const res = await fetch(`${API_URL}/rooms/${roomId}/contacts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(contact),
+    });
+    if (!res.ok) throw new Error('Failed to add room contact');
+    const data = await res.json().catch(() => ({}));
+    return (data?.contacts || []) as RoomContact[];
+  },
+
   acceptLinkRequest: async (roomId: string, userId: string, tenantId: string): Promise<{ ok: boolean }> => {
     const res = await fetch(`${API_URL}/line/link-requests/${roomId}/accept`, {
       method: 'POST',
@@ -648,6 +669,27 @@ export const api = {
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error('Failed to create meter reading');
+    return res.json();
+  },
+
+  // Meter Replacements
+  getMeterReplacements: async (roomId: string): Promise<MeterReplacement[]> => {
+    const res = await fetch(`${API_URL}/rooms/${roomId}/meter-replacements`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch meter replacements');
+    const data = await res.json().catch(() => ({}));
+    return (data?.replacements || []) as MeterReplacement[];
+  },
+
+  addMeterReplacement: async (
+    roomId: string,
+    data: { type: 'WATER' | 'ELECTRIC'; oldMeterFinalReading: number; newMeterStartReading: number },
+  ): Promise<MeterReplacement> => {
+    const res = await fetch(`${API_URL}/rooms/${roomId}/meter-replacements`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to add meter replacement');
     return res.json();
   },
 

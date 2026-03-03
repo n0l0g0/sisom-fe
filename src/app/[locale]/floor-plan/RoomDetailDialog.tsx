@@ -82,6 +82,13 @@ export default function RoomDetailDialog({ room, children }: Props) {
   const [newContactPhone, setNewContactPhone] = useState('');
   const [savingContact, setSavingContact] = useState(false);
   
+  // Meter Replacement
+  const [replaceMeterOpen, setReplaceMeterOpen] = useState(false);
+  const [replaceMeterType, setReplaceMeterType] = useState<'WATER' | 'ELECTRIC'>('WATER');
+  const [oldMeterFinal, setOldMeterFinal] = useState('');
+  const [newMeterStart, setNewMeterStart] = useState('0');
+  const [savingMeter, setSavingMeter] = useState(false);
+
   // Data states
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [maintenanceRequests, setMaintenanceRequests] = useState<MaintenanceRequest[]>([]);
@@ -111,7 +118,6 @@ export default function RoomDetailDialog({ room, children }: Props) {
   const [editRent, setEditRent] = useState<string>('');
   const [editDeposit, setEditDeposit] = useState<string>('');
   const [savingContractInfo, setSavingContractInfo] = useState(false);
-  const [savingMeter, setSavingMeter] = useState(false);
 
   const handleSaveMeterReading = async () => {
     if (!moveOutWaterCurrent || !moveOutElectricCurrent) {
@@ -644,6 +650,49 @@ export default function RoomDetailDialog({ room, children }: Props) {
     } catch (e) {
       console.error(e);
       alert('เคลียร์บิลค้างชำระไม่สำเร็จ');
+    }
+  };
+
+  const handleSaveContact = async () => {
+    if (!newContactPhone) return;
+    try {
+      setSavingContact(true);
+      const data = await api.addRoomContact(room.id, {
+        name: newContactName,
+        phone: newContactPhone,
+      });
+      setRoomContacts(data);
+      setNewContactName('');
+      setNewContactPhone('');
+    } catch (error) {
+      console.error('Failed to add contact', error);
+      alert('ไม่สามารถเพิ่มรายชื่อได้ (เบอร์โทรอาจซ้ำ)');
+    } finally {
+      setSavingContact(false);
+    }
+  };
+
+  const handleSaveMeterReplacement = async () => {
+    if (!oldMeterFinal) {
+      alert('กรุณาระบุเลขมิเตอร์เก่า');
+      return;
+    }
+    try {
+      setSavingMeter(true);
+      await api.addMeterReplacement(room.id, {
+        type: replaceMeterType,
+        oldMeterFinalReading: Number(oldMeterFinal),
+        newMeterStartReading: Number(newMeterStart || 0),
+      });
+      setReplaceMeterOpen(false);
+      setOldMeterFinal('');
+      setNewMeterStart('0');
+      alert('บันทึกการเปลี่ยนมิเตอร์เรียบร้อย');
+    } catch (error) {
+      console.error('Failed to replace meter', error);
+      alert('เกิดข้อผิดพลาดในการบันทึก');
+    } finally {
+      setSavingMeter(false);
     }
   };
 

@@ -1048,6 +1048,46 @@ export default function RoomDetailDialog({ room, children }: Props) {
               </div>
             </TabsContent>
             
+            <TabsContent value="meter">
+              <Card>
+                <CardHeader>
+                  <CardTitle>เปลี่ยนมิเตอร์</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 p-4 border rounded-lg bg-blue-50 border-blue-100">
+                      <div className="text-sm font-medium text-blue-800 mb-2">มิเตอร์น้ำล่าสุด</div>
+                      <div className="text-2xl font-bold text-blue-900">
+                        {lastMeterReading ? Number(lastMeterReading.waterReading).toLocaleString() : '-'}
+                      </div>
+                      <div className="text-xs text-blue-600 mt-1">
+                        {lastMeterReading ? `จดเมื่อ ${new Date(lastMeterReading.createdAt).toLocaleDateString('th-TH')}` : ''}
+                      </div>
+                    </div>
+                    <div className="flex-1 p-4 border rounded-lg bg-yellow-50 border-yellow-100">
+                      <div className="text-sm font-medium text-yellow-800 mb-2">มิเตอร์ไฟล่าสุด</div>
+                      <div className="text-2xl font-bold text-yellow-900">
+                        {lastMeterReading ? Number(lastMeterReading.electricReading).toLocaleString() : '-'}
+                      </div>
+                      <div className="text-xs text-yellow-600 mt-1">
+                        {lastMeterReading ? `จดเมื่อ ${new Date(lastMeterReading.createdAt).toLocaleDateString('th-TH')}` : ''}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-center">
+                    <Button 
+                      onClick={() => setReplaceMeterOpen(true)}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                      บันทึกการเปลี่ยนมิเตอร์
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             <TabsContent value="contract">
               {activeContract ? (
                 <Card>

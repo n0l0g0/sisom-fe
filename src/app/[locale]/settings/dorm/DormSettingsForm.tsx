@@ -133,11 +133,11 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
       ]);
 
       // Success
-      alert('Settings saved successfully');
+      alert('บันทึกการตั้งค่าเรียบร้อยแล้ว');
       router.refresh();
     } catch (error) {
       console.error(error);
-      alert('Failed to save settings');
+      alert('บันทึกการตั้งค่าไม่สำเร็จ');
     } finally {
       setSaving(false);
     }
@@ -148,19 +148,19 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Property Settings</h1>
-          <p className="text-muted-foreground mt-1">Manage your property details, billing rates, and branding.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">ตั้งค่าหอพัก</h1>
+          <p className="text-muted-foreground mt-1">จัดการข้อมูลหอพัก, อัตราค่าสาธารณูปโภค และบัญชีธนาคาร</p>
         </div>
         <Button onClick={handleSave} disabled={saving} size="lg" className="min-w-[120px]">
           {saving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
+              กำลังบันทึก...
             </>
           ) : (
             <>
               <Save className="mr-2 h-4 w-4" />
-              Save Changes
+              บันทึกข้อมูล
             </>
           )}
         </Button>
@@ -171,22 +171,22 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
         <CardHeader>
           <div className="flex items-center gap-2">
             <Building className="h-5 w-5 text-primary" />
-            <CardTitle>General Information</CardTitle>
+            <CardTitle>ข้อมูลทั่วไป</CardTitle>
           </div>
-          <CardDescription>Basic details about your property.</CardDescription>
+          <CardDescription>รายละเอียดพื้นฐานเกี่ยวกับหอพักของคุณ</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="dormName">Property Name</Label>
+            <Label htmlFor="dormName">ชื่อหอพัก</Label>
             <Input 
               id="dormName" 
               value={dormName} 
               onChange={(e) => setDormName(e.target.value)} 
-              placeholder="e.g. Sisom Residence"
+              placeholder="เช่น หอพักสีส้ม"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">Contact Phone</Label>
+            <Label htmlFor="phone">เบอร์โทรศัพท์ติดต่อ</Label>
             <div className="relative">
               <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input 
@@ -199,7 +199,7 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
             </div>
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="address">Address</Label>
+            <Label htmlFor="address">ที่อยู่</Label>
             <div className="relative">
               <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input 
@@ -207,7 +207,7 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
                 value={address} 
                 onChange={(e) => setAddress(e.target.value)} 
                 className="pl-9"
-                placeholder="123 Sukhumvit Rd, Bangkok"
+                placeholder="เช่น 123 ถ.สุขุมวิท กรุงเทพฯ"
               />
             </div>
           </div>
@@ -232,15 +232,15 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
         <CardHeader>
           <div className="flex items-center gap-2">
             <Wallet className="h-5 w-5 text-primary" />
-            <CardTitle>Utility Rates & Billing</CardTitle>
+            <CardTitle>อัตราค่าสาธารณูปโภค & การชำระเงิน</CardTitle>
           </div>
-          <CardDescription>Set your water, electricity rates and bank account for payments.</CardDescription>
+          <CardDescription>กำหนดค่าน้ำ ค่าไฟ และบัญชีธนาคารสำหรับรับชำระเงิน</CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
           {/* Rates */}
           <div className="grid gap-6 md:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="waterRate">Water Rate (฿/unit)</Label>
+              <Label htmlFor="waterRate">ค่าน้ำ (บาท/หน่วย)</Label>
               <Input 
                 id="waterRate" 
                 type="number" 
@@ -251,7 +251,7 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="electricRate">Electricity Rate (฿/unit)</Label>
+              <Label htmlFor="electricRate">ค่าไฟ (บาท/หน่วย)</Label>
               <Input 
                 id="electricRate" 
                 type="number" 
@@ -262,7 +262,7 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="commonFee">Common Fee (฿/month)</Label>
+              <Label htmlFor="commonFee">ค่าส่วนกลาง (บาท/เดือน)</Label>
               <Input 
                 id="commonFee" 
                 type="number" 
@@ -274,13 +274,13 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
           </div>
 
           <div className="border-t pt-6">
-            <h3 className="text-sm font-medium mb-4">Bank Account Details</h3>
+            <h3 className="text-sm font-medium mb-4">ข้อมูลบัญชีธนาคาร</h3>
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="bankName">Bank Name</Label>
+                <Label htmlFor="bankName">ชื่อธนาคาร</Label>
                 <Select value={bankName} onValueChange={setBankName}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select Bank" />
+                    <SelectValue placeholder="เลือกธนาคาร" />
                   </SelectTrigger>
                   <SelectContent>
                     {bankOptions.map((opt) => (
@@ -292,7 +292,7 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="accountNumber">Account Number</Label>
+                <Label htmlFor="accountNumber">เลขที่บัญชี</Label>
                 <Input 
                   id="accountNumber" 
                   value={accountNumber} 
@@ -301,21 +301,21 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="accountName">Account Name</Label>
+                <Label htmlFor="accountName">ชื่อบัญชี</Label>
                 <Input 
                   id="accountName" 
                   value={accountName} 
                   onChange={(e) => setAccountName(e.target.value)} 
-                  placeholder="Account Owner Name"
+                  placeholder="ชื่อเจ้าของบัญชี"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="branch">Branch</Label>
+                <Label htmlFor="branch">สาขา</Label>
                 <Input 
                   id="branch" 
                   value={branch} 
                   onChange={(e) => setBranch(e.target.value)} 
-                  placeholder="Branch Name"
+                  placeholder="ชื่อสาขา"
                 />
               </div>
             </div>
@@ -328,13 +328,13 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
         <CardHeader>
           <div className="flex items-center gap-2">
             <ImageIcon className="h-5 w-5 text-primary" />
-            <CardTitle>Branding & Links</CardTitle>
+            <CardTitle>การตกแต่ง & ลิงก์</CardTitle>
           </div>
-          <CardDescription>Upload your logo and set external links.</CardDescription>
+          <CardDescription>อัปโหลดโลโก้และตั้งค่าลิงก์ภายนอก</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label>Property Logo</Label>
+            <Label>โลโก้หอพัก</Label>
             <div className="flex items-start gap-6">
               <div className="border-2 border-dashed border-muted rounded-xl p-4 w-40 h-40 flex items-center justify-center bg-muted/30">
                 {logoPreview ? (
@@ -342,15 +342,15 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
                 ) : (
                   <div className="text-center text-muted-foreground">
                     <ImageIcon className="mx-auto h-8 w-8 mb-2 opacity-50" />
-                    <span className="text-xs">No Logo</span>
+                    <span className="text-xs">ไม่มีโลโก้</span>
                   </div>
                 )}
               </div>
               <div className="flex-1 space-y-4">
                 <div className="grid w-full max-w-sm items-center gap-1.5">
-                  <Label htmlFor="logo">Upload New Logo</Label>
+                  <Label htmlFor="logo">อัปโหลดโลโก้ใหม่</Label>
                   <Input id="logo" type="file" accept="image/*" onChange={handleFileChange} />
-                  <p className="text-xs text-muted-foreground">Recommended size: 512x512px. Max file size: 2MB.</p>
+                  <p className="text-xs text-muted-foreground">ขนาดที่แนะนำ: 512x512px ขนาดไฟล์สูงสุด: 2MB</p>
                 </div>
               </div>
             </div>
@@ -358,7 +358,7 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
 
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="mapUrl">Google Maps Link</Label>
+              <Label htmlFor="mapUrl">ลิงก์ Google Maps</Label>
               <Input 
                 id="mapUrl" 
                 value={mapUrl} 
@@ -367,7 +367,7 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lineLink">LINE Official Account Link</Label>
+              <Label htmlFor="lineLink">ลิงก์ LINE Official Account</Label>
               <Input 
                 id="lineLink" 
                 value={lineLink} 
@@ -376,7 +376,7 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="dueDay">Monthly Due Day</Label>
+              <Label htmlFor="dueDay">วันครบกำหนดชำระเงินประจำเดือน</Label>
               <Input 
                 id="dueDay" 
                 type="number" 
@@ -386,7 +386,7 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
                 onChange={(e) => setMonthlyDueDay(e.target.value)} 
                 placeholder="5"
               />
-              <p className="text-xs text-muted-foreground">Default day of the month for bill payment deadline.</p>
+              <p className="text-xs text-muted-foreground">วันที่เริ่มต้นสำหรับกำหนดส่งบิลชำระเงิน</p>
             </div>
           </div>
         </CardContent>

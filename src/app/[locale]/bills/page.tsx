@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -38,6 +38,7 @@ export default function BillsPage() {
 function BillsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
 
   const page = useMemo(() => {
     const raw = Number(searchParams.get('page') || '1');
@@ -210,8 +211,30 @@ function BillsPageContent() {
   const goToPage = (p: number) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('page', String(Math.max(1, Math.min(totalPages, p))));
-    router.push(`/bills?${params.toString()}`);
+    router.push(`${pathname}?${params.toString()}`);
   };
+
+  // Reset page when filters change (search, status)
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (params.get('page') !== '1') {
+      params.set('page', '1');
+      router.replace(`${pathname}?${params.toString()}`);
+    }
+  }, [searchTerm, statusFilter, pathname, router, searchParams]);
+
+  // Reset page when month changes (skip initial load)
+  const prevMonthRef = useRef(selectedMonthKey);
+  useEffect(() => {
+    if (prevMonthRef.current !== null && prevMonthRef.current !== selectedMonthKey) {
+      const params = new URLSearchParams(searchParams.toString());
+      if (params.get('page') !== '1') {
+        params.set('page', '1');
+        router.replace(`${pathname}?${params.toString()}`);
+      }
+    }
+    prevMonthRef.current = selectedMonthKey;
+  }, [selectedMonthKey, pathname, router, searchParams]);
 
   // Schedules (Keep existing logic)
   const roomIdsKey = useMemo(() => {

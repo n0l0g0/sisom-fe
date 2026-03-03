@@ -691,10 +691,20 @@ export default function RoomDetailDialog({ room, children }: Props) {
     }
     try {
       setSavingMeter(true);
-      await api.addMeterReplacement(room.id, {
+      const payload = {
         type: replaceMeterType,
         oldMeterFinalReading: Number(oldMeterFinal),
         newMeterStartReading: Number(newMeterStart || 0),
+      };
+      await api.addMeterReplacement(room.id, payload);
+      // Immediately reflect in UI without waiting network/state
+      setLastMeterReplacement({
+        id: 'temp',
+        roomId: room.id,
+        type: payload.type,
+        oldMeterFinalReading: payload.oldMeterFinalReading,
+        newMeterStartReading: payload.newMeterStartReading,
+        replacedAt: new Date().toISOString(),
       });
       await fetchLastMeter();
       setReplaceMeterOpen(false);

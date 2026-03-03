@@ -107,7 +107,7 @@ export default function ActivityLogsPage() {
   };
 
   const setNextPageSize = (nextSize: number) => {
-    const allowed = [10, 20, 50, 100];
+    const allowed = [10, 20, 30, 40, 50, 100];
     const size = allowed.includes(nextSize) ? nextSize : 10;
     setPageSize(size);
     setPage(1);
@@ -343,10 +343,7 @@ export default function ActivityLogsPage() {
               onChange={(e) => setNextPageSize(Number(e.target.value))}
               className="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
+              {[10,20,30,40,50,100].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
             <span>รายการ ({currentRangeText})</span>
           </div>

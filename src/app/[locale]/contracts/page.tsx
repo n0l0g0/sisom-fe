@@ -47,7 +47,11 @@ function ContractsPageContent() {
     return Number.isFinite(raw) && raw >= 1 ? Math.floor(raw) : 1;
   }, [searchParams]);
   
-  const pageSize = 10;
+  const pageSize = useMemo(() => {
+    const raw = Number(searchParams.get('pageSize') || '10');
+    const allowed = [10, 20, 30, 40, 50, 100];
+    return allowed.includes(raw) ? raw : 10;
+  }, [searchParams]);
 
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -142,6 +146,15 @@ function ContractsPageContent() {
     const p = Math.max(1, Math.min(totalPages, Math.floor(nextPage)));
     const params = new URLSearchParams(searchParams.toString());
     params.set('page', String(p));
+    router.push(`/contracts?${params.toString()}`);
+  };
+  
+  const setNextPageSize = (nextSize: number) => {
+    const allowed = [10, 20, 30, 40, 50, 100];
+    const size = allowed.includes(nextSize) ? nextSize : 10;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('pageSize', String(size));
+    params.set('page', '1');
     router.push(`/contracts?${params.toString()}`);
   };
 
@@ -363,6 +376,17 @@ function ContractsPageContent() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 mt-8">
+          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl p-1 border border-slate-200 dark:border-slate-600">
+            <span className="px-2 text-xs text-slate-500 dark:text-slate-400">แสดง</span>
+            <select
+              value={pageSize}
+              onChange={(e) => setNextPageSize(Number(e.target.value))}
+              className="bg-transparent text-slate-700 dark:text-white text-sm font-medium px-3 py-2 rounded-lg focus:outline-none cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            >
+              {[10,20,30,40,50,100].map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+            <span className="px-2 text-xs text-slate-500 dark:text-slate-400">รายการ/หน้า</span>
+          </div>
           <button
             onClick={() => goToPage(page - 1)}
             disabled={page === 1}

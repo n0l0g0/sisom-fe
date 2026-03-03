@@ -73,7 +73,11 @@ function PaymentsPageContent() {
 
   // Pagination State
   const page = Number(searchParams.get('page') || '1');
-  const pageSize = 10;
+  const pageSize = useMemo(() => {
+    const raw = Number(searchParams.get('pageSize') || '10');
+    const allowed = [10, 20, 30, 40, 50, 100];
+    return allowed.includes(raw) ? raw : 10;
+  }, [searchParams]);
 
   // Fetch Data
   const fetchData = useCallback(async () => {
@@ -144,6 +148,15 @@ function PaymentsPageContent() {
     params.set('page', String(Math.max(1, Math.min(totalPages, p))));
     router.push(`/payments?${params.toString()}`);
   };
+  
+  const setNextPageSize = (nextSize: number) => {
+    const allowed = [10, 20, 30, 40, 50, 100];
+    const size = allowed.includes(nextSize) ? nextSize : 10;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('pageSize', String(size));
+    params.set('page', '1');
+    router.push(`/payments?${params.toString()}`);
+  };
 
   const handleExport = () => {
     try {
@@ -185,6 +198,17 @@ function PaymentsPageContent() {
           >
             ล้างตัวกรอง
           </Button>
+        <div className="hidden md:flex items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl p-1 border border-slate-200 dark:border-slate-600">
+          <span className="px-2 text-xs text-slate-500 dark:text-slate-400">แสดง</span>
+          <select
+            value={pageSize}
+            onChange={(e) => setNextPageSize(Number(e.target.value))}
+            className="bg-transparent text-slate-700 dark:text-white text-sm font-medium px-3 py-2 rounded-lg focus:outline-none cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+          >
+            {[10,20,30,40,50,100].map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <span className="px-2 text-xs text-slate-500 dark:text-slate-400">รายการ/หน้า</span>
+        </div>
           <Button
             onClick={handleExport}
             className="bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-900/20"

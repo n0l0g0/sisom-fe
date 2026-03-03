@@ -219,6 +219,13 @@ export function RentSettingsTable({ rooms }: { rooms: Room[] }) {
               แสดง {filteredRooms.length === 0 ? 0 : (page - 1) * pageSize + 1} ถึง {Math.min(page * pageSize, filteredRooms.length)} จาก {filteredRooms.length} รายการ
             </div>
             <div className="flex items-center gap-2">
+              <select
+                value={pageSize}
+                onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                className="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300"
+              >
+                {[10,20,30,40,50,100].map(n => <option key={n} value={n}>{n} / หน้า</option>)}
+              </select>
               <Button
                 variant="outline"
                 size="icon"

@@ -46,7 +46,7 @@ function BillsPageContent() {
   
   const pageSize = useMemo(() => {
     const raw = Number(searchParams.get('pageSize') || '10');
-    const allowed = [10, 20, 50, 100];
+    const allowed = [10, 20, 30, 40, 50, 100];
     return allowed.includes(raw) ? raw : 10;
   }, [searchParams]);
 
@@ -424,6 +424,23 @@ function BillsPageContent() {
           </div>
 
           <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
+          
+          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl p-1 border border-slate-200 dark:border-slate-600">
+            <span className="px-2 text-xs text-slate-500 dark:text-slate-400">แสดง</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set('pageSize', String(Number(e.target.value)));
+                params.set('page', '1');
+                router.push(`/bills?${params.toString()}`);
+              }}
+              className="bg-transparent text-slate-700 dark:text-white text-sm font-medium px-3 py-2 rounded-lg focus:outline-none cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            >
+              {[10,20,30,40,50,100].map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+            <span className="px-2 text-xs text-slate-500 dark:text-slate-400">รายการ/หน้า</span>
+          </div>
 
           <button
             onClick={copyOverdue}

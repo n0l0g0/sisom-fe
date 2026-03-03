@@ -158,7 +158,7 @@ function MaintenancePageContent() {
   }, [searchParams]);
   const pageSize = useMemo(() => {
     const raw = Number(searchParams.get('pageSize') || '10');
-    const allowed = [10, 20, 50, 100];
+    const allowed = [10, 20, 30, 40, 50, 100];
     return allowed.includes(raw) ? raw : 10;
   }, [searchParams]);
 
@@ -621,6 +621,19 @@ function MaintenancePageContent() {
               แสดง {((page - 1) * pageSize) + 1} ถึง {Math.min(page * pageSize, filteredRequests.length)} จาก {filteredRequests.length} รายการ
             </div>
             <div className="flex items-center gap-2">
+              <Select value={String(pageSize)} onValueChange={(v) => {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set('pageSize', v);
+                params.set('page', '1');
+                router.push(`/maintenance?${params.toString()}`);
+              }}>
+                <SelectTrigger className="w-[120px] h-9">
+                  <SelectValue placeholder="แสดง/หน้า" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10,20,30,40,50,100].map(n => <SelectItem key={n} value={String(n)}>{n} รายการ/หน้า</SelectItem>)}
+                </SelectContent>
+              </Select>
               <Button
                 variant="outline"
                 size="sm"

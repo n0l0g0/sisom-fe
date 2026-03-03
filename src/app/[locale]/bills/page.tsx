@@ -121,6 +121,7 @@ function BillsPageContent() {
   // Initialize selected month
   useEffect(() => {
     if (!selectedMonthKey && monthKeys.length > 0) {
+      // Default to latest month
       setSelectedMonthKey(monthKeys[0]);
     }
   }, [monthKeys, selectedMonthKey]);
@@ -132,7 +133,7 @@ function BillsPageContent() {
     let result = invoices;
     
     // Month Filter
-    if (selectedMonthKey) {
+    if (selectedMonthKey && selectedMonthKey !== 'ALL') {
       const [yearStr, monthStr] = selectedMonthKey.split('-');
       const year = Number(yearStr);
       const month = Number(monthStr);
@@ -151,6 +152,7 @@ function BillsPageContent() {
         const parts = [
           inv.contract?.room?.number || '',
           inv.contract?.room?.building?.name || '',
+          inv.contract?.room?.building?.code || '',
           inv.contract?.tenant?.name || '',
           inv.contract?.tenant?.nickname || '',
           inv.contract?.tenant?.phone || '',
@@ -214,27 +216,29 @@ function BillsPageContent() {
     router.push(`${pathname}?${params.toString()}`);
   };
 
-  // Reset page when filters change (search, status)
-  useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (params.get('page') !== '1') {
-      params.set('page', '1');
-      router.replace(`${pathname}?${params.toString()}`);
-    }
-  }, [searchTerm, statusFilter, pathname, router, searchParams]);
-
-  // Reset page when month changes (skip initial load)
+  // Reset page when filters change (search, status, month)
+  const prevSearchRef = useRef(searchTerm);
+  const prevStatusRef = useRef(statusFilter);
   const prevMonthRef = useRef(selectedMonthKey);
+
   useEffect(() => {
-    if (prevMonthRef.current !== null && prevMonthRef.current !== selectedMonthKey) {
+    const isSearchChanged = prevSearchRef.current !== searchTerm;
+    const isStatusChanged = prevStatusRef.current !== statusFilter;
+    const isMonthChanged = prevMonthRef.current !== selectedMonthKey;
+
+    if (isSearchChanged || isStatusChanged || isMonthChanged) {
+      // Only reset if actually changed
       const params = new URLSearchParams(searchParams.toString());
       if (params.get('page') !== '1') {
         params.set('page', '1');
         router.replace(`${pathname}?${params.toString()}`);
       }
+      
+      prevSearchRef.current = searchTerm;
+      prevStatusRef.current = statusFilter;
+      prevMonthRef.current = selectedMonthKey;
     }
-    prevMonthRef.current = selectedMonthKey;
-  }, [selectedMonthKey, pathname, router, searchParams]);
+  }, [searchTerm, statusFilter, selectedMonthKey, pathname, router, searchParams]);
 
   // Schedules (Keep existing logic)
   const roomIdsKey = useMemo(() => {
@@ -438,6 +442,7 @@ function BillsPageContent() {
               onChange={(e) => setSelectedMonthKey(e.target.value || null)}
               className="bg-transparent text-slate-700 dark:text-white text-sm font-medium px-3 py-2 rounded-lg focus:outline-none cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors min-w-[140px]"
             >
+              <option value="ALL">📅 ทุกเดือน</option>
               {monthKeys.map((key) => {
                 const [y, m] = key.split('-');
                 const label = `${thaiMonths[Number(m) - 1]} ${Number(y) + 543}`;

@@ -712,7 +712,8 @@ export default function RoomDetailDialog({ room, children }: Props) {
   const getLastWaterReading = () => {
     // Check if there is a replacement that is newer than the last reading
     if (lastMeterReplacement && lastMeterReplacement.type === 'WATER') {
-        if (!lastMeterReading || new Date(lastMeterReplacement.replacedAt) > new Date(lastMeterReading.createdAt)) {
+        // If we have a replacement, and (no reading OR replacement is newer OR equal), show replacement
+        if (!lastMeterReading || new Date(lastMeterReplacement.replacedAt).getTime() >= new Date(lastMeterReading.createdAt).getTime()) {
             return {
                 value: Number(lastMeterReplacement.newMeterStartReading).toLocaleString(),
                 date: `เปลี่ยนมิเตอร์เมื่อ ${new Date(lastMeterReplacement.replacedAt).toLocaleDateString('th-TH')}`,
@@ -730,7 +731,8 @@ export default function RoomDetailDialog({ room, children }: Props) {
   const getLastElectricReading = () => {
     // Check if there is a replacement that is newer than the last reading
     if (lastMeterReplacement && lastMeterReplacement.type === 'ELECTRIC') {
-        if (!lastMeterReading || new Date(lastMeterReplacement.replacedAt) > new Date(lastMeterReading.createdAt)) {
+        // If we have a replacement, and (no reading OR replacement is newer OR equal), show replacement
+        if (!lastMeterReading || new Date(lastMeterReplacement.replacedAt).getTime() >= new Date(lastMeterReading.createdAt).getTime()) {
             return {
                 value: Number(lastMeterReplacement.newMeterStartReading).toLocaleString(),
                 date: `เปลี่ยนมิเตอร์เมื่อ ${new Date(lastMeterReplacement.replacedAt).toLocaleDateString('th-TH')}`,

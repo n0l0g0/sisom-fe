@@ -1678,6 +1678,62 @@ export default function RoomDetailDialog({ room, children }: Props) {
             </TabsContent>
           </Tabs>
         </div>
+        <Dialog open={replaceMeterOpen} onOpenChange={setReplaceMeterOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>บันทึกการเปลี่ยนมิเตอร์</DialogTitle>
+              <DialogDescription>
+                กรุณาระบุเลขมิเตอร์เก่าก่อนถอด และเลขมิเตอร์ใหม่ที่ติดตั้ง
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label>ประเภทมิเตอร์</Label>
+                <Select 
+                  value={replaceMeterType} 
+                  onValueChange={(v: 'WATER' | 'ELECTRIC') => setReplaceMeterType(v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="WATER">มิเตอร์น้ำ (Water)</SelectItem>
+                    <SelectItem value="ELECTRIC">มิเตอร์ไฟ (Electric)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>เลขมิเตอร์เก่า (Final Reading)</Label>
+                <div className="relative">
+                  <Input 
+                    type="number" 
+                    value={oldMeterFinal} 
+                    onChange={e => setOldMeterFinal(e.target.value)} 
+                    placeholder="ระบุเลขสุดท้ายก่อนถอด"
+                  />
+                  <div className="absolute right-3 top-2.5 text-xs text-muted-foreground">
+                    ล่าสุด: {lastMeterReading ? (replaceMeterType === 'WATER' ? lastMeterReading.waterReading : lastMeterReading.electricReading) : '-'}
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>เลขมิเตอร์ใหม่ (Start Reading)</Label>
+                <Input 
+                  type="number" 
+                  value={newMeterStart} 
+                  onChange={e => setNewMeterStart(e.target.value)} 
+                  placeholder="ปกติคือ 0"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setReplaceMeterOpen(false)}>ยกเลิก</Button>
+              <Button onClick={handleSaveMeterReplacement} disabled={savingMeter}>
+                {savingMeter ? 'กำลังบันทึก...' : 'บันทึก'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </SheetContent>
     </Sheet>
   );

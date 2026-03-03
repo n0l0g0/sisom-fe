@@ -32,6 +32,7 @@ export interface Room {
   buildingId?: string;
   building?: Building;
   maintenanceRequests?: MaintenanceRequest[];
+  meterReplacements?: MeterReplacement[];
 }
 
 export interface RoomContact {

@@ -8,6 +8,7 @@ import {
   Asset,
   RoomContact,
   MeterReading,
+  MeterReplacement,
   DormConfig,
   api,
 } from '@/services/api';
@@ -69,6 +70,7 @@ export default function RoomDetailDialog({ room, children }: Props) {
   const [moveOutDays, setMoveOutDays] = useState<number>(7);
   const [dormConfig, setDormConfig] = useState<DormConfig | null>(null);
   const [lastMeterReading, setLastMeterReading] = useState<MeterReading | null>(null);
+  const [lastMeterReplacement, setLastMeterReplacement] = useState<MeterReplacement | null>(null);
   const [moveOutWaterCurrent, setMoveOutWaterCurrent] = useState('');
   const [moveOutElectricCurrent, setMoveOutElectricCurrent] = useState('');
   const [moveOutOtherDescription, setMoveOutOtherDescription] = useState('');
@@ -296,18 +298,28 @@ export default function RoomDetailDialog({ room, children }: Props) {
 
   const fetchLastMeter = useCallback(async () => {
     try {
-      const readings = await api.getMeterReadings(room.id);
+      // Parallel fetch readings and replacements
+      const [readings, replacementsResult] = await Promise.all([
+        api.getMeterReadings(room.id),
+        api.getMeterReplacements(room.id).catch(() => ({ replacements: [] })),
+      ]);
+
       if (readings.length > 0) {
         const sorted = [...readings].sort((a, b) => {
           const aTime = new Date(a.createdAt).getTime();
           const bTime = new Date(b.createdAt).getTime();
-          if (a.year !== b.year) return a.year - b.year;
-          if (a.month !== b.month) return a.month - b.month;
           return aTime - bTime;
         });
         setLastMeterReading(sorted[sorted.length - 1]);
       } else {
         setLastMeterReading(null);
+      }
+
+      const replacements = 'replacements' in replacementsResult ? replacementsResult.replacements : [];
+      if (replacements && replacements.length > 0) {
+         setLastMeterReplacement(replacements[0]);
+      } else {
+         setLastMeterReplacement(null);
       }
     } catch (error) {
       console.error('Failed to fetch last meter reading', error);
@@ -684,6 +696,7 @@ export default function RoomDetailDialog({ room, children }: Props) {
         oldMeterFinalReading: Number(oldMeterFinal),
         newMeterStartReading: Number(newMeterStart || 0),
       });
+      await fetchLastMeter();
       setReplaceMeterOpen(false);
       setOldMeterFinal('');
       setNewMeterStart('0');
@@ -694,6 +707,42 @@ export default function RoomDetailDialog({ room, children }: Props) {
     } finally {
       setSavingMeter(false);
     }
+  };
+
+  const getLastWaterReading = () => {
+    // Check if there is a replacement that is newer than the last reading
+    if (lastMeterReplacement && lastMeterReplacement.type === 'WATER') {
+        if (!lastMeterReading || new Date(lastMeterReplacement.replacedAt) > new Date(lastMeterReading.createdAt)) {
+            return {
+                value: Number(lastMeterReplacement.newMeterStartReading).toLocaleString(),
+                date: `เปลี่ยนมิเตอร์เมื่อ ${new Date(lastMeterReplacement.replacedAt).toLocaleDateString('th-TH')}`,
+                isNew: true
+            };
+        }
+    }
+    return {
+        value: lastMeterReading ? Number(lastMeterReading.waterReading).toLocaleString() : '-',
+        date: lastMeterReading ? `จดเมื่อ ${new Date(lastMeterReading.createdAt).toLocaleDateString('th-TH')}` : '',
+        isNew: false
+    };
+  };
+
+  const getLastElectricReading = () => {
+    // Check if there is a replacement that is newer than the last reading
+    if (lastMeterReplacement && lastMeterReplacement.type === 'ELECTRIC') {
+        if (!lastMeterReading || new Date(lastMeterReplacement.replacedAt) > new Date(lastMeterReading.createdAt)) {
+            return {
+                value: Number(lastMeterReplacement.newMeterStartReading).toLocaleString(),
+                date: `เปลี่ยนมิเตอร์เมื่อ ${new Date(lastMeterReplacement.replacedAt).toLocaleDateString('th-TH')}`,
+                isNew: true
+            };
+        }
+    }
+    return {
+        value: lastMeterReading ? Number(lastMeterReading.electricReading).toLocaleString() : '-',
+        date: lastMeterReading ? `จดเมื่อ ${new Date(lastMeterReading.createdAt).toLocaleDateString('th-TH')}` : '',
+        isNew: false
+    };
   };
 
   return (
@@ -1058,19 +1107,19 @@ export default function RoomDetailDialog({ room, children }: Props) {
                     <div className="flex-1 p-4 border rounded-lg bg-blue-50 border-blue-100">
                       <div className="text-sm font-medium text-blue-800 mb-2">มิเตอร์น้ำล่าสุด</div>
                       <div className="text-2xl font-bold text-blue-900">
-                        {lastMeterReading ? Number(lastMeterReading.waterReading).toLocaleString() : '-'}
+                        {getLastWaterReading().value}
                       </div>
                       <div className="text-xs text-blue-600 mt-1">
-                        {lastMeterReading ? `จดเมื่อ ${new Date(lastMeterReading.createdAt).toLocaleDateString('th-TH')}` : ''}
+                        {getLastWaterReading().date}
                       </div>
                     </div>
                     <div className="flex-1 p-4 border rounded-lg bg-yellow-50 border-yellow-100">
                       <div className="text-sm font-medium text-yellow-800 mb-2">มิเตอร์ไฟล่าสุด</div>
                       <div className="text-2xl font-bold text-yellow-900">
-                        {lastMeterReading ? Number(lastMeterReading.electricReading).toLocaleString() : '-'}
+                        {getLastElectricReading().value}
                       </div>
                       <div className="text-xs text-yellow-600 mt-1">
-                        {lastMeterReading ? `จดเมื่อ ${new Date(lastMeterReading.createdAt).toLocaleDateString('th-TH')}` : ''}
+                        {getLastElectricReading().date}
                       </div>
                     </div>
                   </div>
@@ -1712,7 +1761,7 @@ export default function RoomDetailDialog({ room, children }: Props) {
                     placeholder="ระบุเลขสุดท้ายก่อนถอด"
                   />
                   <div className="absolute right-3 top-2.5 text-xs text-muted-foreground">
-                    ล่าสุด: {lastMeterReading ? (replaceMeterType === 'WATER' ? lastMeterReading.waterReading : lastMeterReading.electricReading) : '-'}
+                    ล่าสุด: {replaceMeterType === 'WATER' ? getLastWaterReading().value : getLastElectricReading().value}
                   </div>
                 </div>
               </div>

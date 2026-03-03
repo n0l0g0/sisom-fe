@@ -181,6 +181,12 @@ export interface DormExtra {
   mapUrl?: string;
   lineLink?: string;
   monthlyDueDay?: number;
+  lineOaChannelId?: string;
+  lineOaChannelSecret?: string;
+  lineOaChannelAccessToken?: string;
+  slipokApiKey?: string;
+  slipokApiUrl?: string;
+  slipokBranchId?: string;
 }
 
 export interface MaintenanceRequest {

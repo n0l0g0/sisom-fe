@@ -3,10 +3,9 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, MaintenanceRequest, Room } from "@/services/api";
-import { CreateMaintenanceDialog } from "./CreateMaintenanceDialog";
-import MaintenanceStatusBadge from './MaintenanceStatusBadge';
+import MaintenanceStatusBadge from '../maintenance/MaintenanceStatusBadge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -32,22 +31,20 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { 
-  AlertCircle, 
   CheckCircle2, 
   Clock, 
   MoreHorizontal, 
-  Plus, 
   Search, 
   Filter, 
-  Calendar as CalendarIcon,
   Trash2,
   Eye,
   Wrench,
-  Timer
+  Timer,
+  LogOut
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -66,7 +63,7 @@ function parseMoveOutDescription(description?: string) {
   if (!description) return result;
   const lines = description.split('\n').map((l) => l.trim()).filter(Boolean);
   for (const line of lines) {
-    if (line.toUpperCase() === 'TYPE: MOVE_OUT') {
+    if (line.toUpperCase() === 'TYPE: MOVE_OUT' || line.includes('แจ้งย้ายออก')) {
       result.isMoveOut = true;
       continue;
     }
@@ -99,41 +96,15 @@ function parseMoveOutDescription(description?: string) {
   return result;
 }
 
-function parseMaintenanceDescription(description?: string) {
-  const result: { textLines: string[]; images: string[] } = {
-    textLines: [],
-    images: [],
-  };
-  if (!description) return result;
-  const lines = description.split('\n').map((l) => l.trim()).filter(Boolean);
-  for (const line of lines) {
-    if (/^IMAGE\d*:/i.test(line)) {
-      const url = line.split(':').slice(1).join(':').trim();
-      if (url) result.images.push(url);
-      continue;
-    }
-    const m = line.match(/https?:\/\/\S+/);
-    if (m && /\.(png|jpg|jpeg|gif|webp)(\?|$)/i.test(m[0])) {
-      const url = m[0];
-      result.images.push(url);
-      const rest = line.replace(url, '').trim();
-      if (rest) result.textLines.push(rest);
-      continue;
-    }
-    result.textLines.push(line);
-  }
-  return result;
-}
-
-export default function MaintenancePage() {
+export default function MoveOutPage() {
   return (
     <Suspense
       fallback={
         <div className="p-8 space-y-8 fade-in">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-foreground">Maintenance Requests</h1>
-              <p className="text-muted-foreground mt-1">Manage and track repair tickets</p>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">Move Out Requests</h1>
+              <p className="text-muted-foreground mt-1">Manage and track tenant move-outs</p>
             </div>
           </div>
           <div className="bg-card p-4 rounded-xl shadow-sm border border-border h-96 flex items-center justify-center">
@@ -142,13 +113,13 @@ export default function MaintenancePage() {
         </div>
       }
     >
-      <MaintenancePageContent />
+      <MoveOutPageContent />
     </Suspense>
   );
 }
 
-function MaintenancePageContent() {
-  const t = useTranslations('Maintenance');
+function MoveOutPageContent() {
+  const t = useTranslations('MoveOut');
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -200,23 +171,10 @@ function MaintenancePageContent() {
     };
   }, []);
 
-  const pendingRequests = useMemo(() => requests.filter(r => r.status === 'PENDING'), [requests]);
-  const inProgressRequests = useMemo(() => requests.filter(r => r.status === 'IN_PROGRESS'), [requests]);
-  const completedRequests = useMemo(() => requests.filter(r => r.status === 'COMPLETED'), [requests]);
-  
-  // Calculate Avg Resolution Time (Mock logic for now as we need real timestamps diff)
-  // Just showing a placeholder or simple calculation if resolvedAt exists
-  const avgResolutionTime = useMemo(() => {
-    const resolved = requests.filter(r => r.status === 'COMPLETED' && r.resolvedAt && r.createdAt);
-    if (resolved.length === 0) return '0h';
-    // Logic to calc avg time could go here
-    return '24h'; 
-  }, [requests]);
-
   const filteredRequests = useMemo(() => {
     let list = requests.filter((r) => {
         const parsed = parseMoveOutDescription(r.description);
-        return !parsed.isMoveOut && !r.title?.includes('ย้ายออก');
+        return parsed.isMoveOut || r.title?.includes('ย้ายออก');
     });
 
     const q = searchQuery.trim().toLowerCase();
@@ -245,6 +203,16 @@ function MaintenancePageContent() {
     return list;
   }, [requests, searchQuery, statusFilter]);
 
+  const pendingRequests = useMemo(() => filteredRequests.filter(r => r.status === 'PENDING'), [filteredRequests]);
+  const inProgressRequests = useMemo(() => filteredRequests.filter(r => r.status === 'IN_PROGRESS'), [filteredRequests]);
+  const completedRequests = useMemo(() => filteredRequests.filter(r => r.status === 'COMPLETED'), [filteredRequests]);
+  
+  const avgResolutionTime = useMemo(() => {
+    const resolved = filteredRequests.filter(r => r.status === 'COMPLETED' && r.resolvedAt && r.createdAt);
+    if (resolved.length === 0) return '0h';
+    return '24h'; 
+  }, [filteredRequests]);
+
   const totalPages = useMemo(() => {
     return Math.max(1, Math.ceil(filteredRequests.length / pageSize));
   }, [filteredRequests.length, pageSize]);
@@ -258,7 +226,7 @@ function MaintenancePageContent() {
     const p = Math.max(1, Math.min(totalPages, Math.floor(nextPage)));
     const params = new URLSearchParams(searchParams.toString());
     params.set('page', String(p));
-    router.push(`/maintenance?${params.toString()}`);
+    router.push(`/move-out?${params.toString()}`);
   };
 
   const handleStatusUpdate = async (id: string, newStatus: MaintenanceRequest['status']) => {
@@ -306,14 +274,8 @@ function MaintenancePageContent() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('title')}</h1>
-              <p className="text-muted-foreground mt-1">{t('subtitle')}</p>
+          <p className="text-muted-foreground mt-1">{t('subtitle')}</p>
         </div>
-        <CreateMaintenanceDialog
-          rooms={rooms}
-          onCreated={(req) => {
-            setRequests((prev) => [req, ...prev]);
-          }}
-        />
       </div>
 
       {/* KPI Cards */}
@@ -323,28 +285,28 @@ function MaintenancePageContent() {
           value={pendingRequests.length} 
           icon={Clock}
           color="amber"
-          description="รอการแก้ไข"
+          description="รอตรวจสอบ"
         />
         <StatCard 
           title="กำลังดำเนินการ" 
           value={inProgressRequests.length} 
-          icon={Wrench}
+          icon={LogOut}
           color="blue"
-          description="กำลังซ่อมแซม"
+          description="กำลังตรวจสอบ"
         />
         <StatCard 
           title="เสร็จสิ้น" 
           value={completedRequests.length} 
           icon={CheckCircle2}
           color="emerald"
-          description="แก้ไขเสร็จในเดือนนี้"
+          description="ย้ายออกสำเร็จ"
         />
         <StatCard 
           title="เวลาเฉลี่ย" 
           value={avgResolutionTime} 
           icon={Timer}
           color="violet"
-          description="เวลาในการแก้ไข"
+          description="เวลาในการดำเนินการ"
         />
       </div>
 
@@ -379,110 +341,18 @@ function MaintenancePageContent() {
         </div>
       </div>
 
-      {/* Requests Table & Mobile List */}
+      {/* Requests Table */}
       <Card className="border shadow-sm overflow-hidden bg-transparent border-0 shadow-none md:bg-card md:border md:shadow-sm">
-        {/* Mobile View: Stacked Cards */}
-        <div className="md:hidden space-y-4">
-          {loading ? (
-             <div className="text-center py-12 text-muted-foreground bg-card rounded-xl border shadow-sm">
-               Loading requests...
-             </div>
-          ) : filteredRequests.length === 0 ? (
-            <div className="bg-card rounded-xl border shadow-sm p-8">
-              <EmptyState 
-                icon={Wrench}
-                title="No maintenance requests found"
-                description="Try adjusting your filters or create a new request."
-                actionLabel="Create Request"
-                onAction={() => {}} 
-              />
-            </div>
-          ) : (
-            pagedRequests.map((request) => {
-              const roomFromList = rooms.find((r) => r.id === (request.room?.id || request.roomId)) || request.room;
-              const roomLabel = roomFromList?.number || request.roomId;
-              
-              return (
-                <div key={request.id} className={`bg-card p-4 rounded-xl shadow-sm border border-l-4 ${getBorderColor(request.status)}`}>
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="bg-background font-mono">
-                        {roomLabel}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground font-mono">#{request.id.substring(0, 6)}</span>
-                    </div>
-                    <MaintenanceStatusBadge status={request.status} />
-                  </div>
-                  
-                  <div className="mb-3">
-                    <h3 className="font-medium text-foreground">{request.title}</h3>
-                    {request.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                        {request.description}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs text-muted-foreground mt-4 pt-3 border-t">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-5 w-5">
-                        <AvatarFallback className="text-[9px]">
-                          {(request.reportedBy || 'U').substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span>{request.reportedBy || 'Unassigned'}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span>{request.createdAt ? new Date(request.createdAt).toLocaleDateString() : '-'}</span>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 -mr-2">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => setSelectedRequest(request)}>
-                              <Eye className="mr-2 h-4 w-4" /> View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => handleStatusUpdate(request.id, 'PENDING')}>
-                              <Clock className="mr-2 h-4 w-4" /> Mark Pending
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusUpdate(request.id, 'IN_PROGRESS')}>
-                              <Wrench className="mr-2 h-4 w-4" /> Mark In Progress
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusUpdate(request.id, 'COMPLETED')}>
-                              <CheckCircle2 className="mr-2 h-4 w-4" /> Mark Completed
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => handleDelete(request.id)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" /> Delete Request
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Desktop View: Table */}
         <div className="hidden md:block overflow-x-auto">
           <Table>
               <TableHeader className="bg-muted/40">
               <TableRow>
                 <TableHead className="w-[80px]">รหัส</TableHead>
+                <TableHead className="w-[120px]">ตึก/อาคาร</TableHead>
                 <TableHead className="w-[100px]">ห้อง</TableHead>
-                <TableHead className="w-[300px]">เรื่องที่แจ้ง</TableHead>
+                <TableHead className="w-[300px]">ผู้เช่า</TableHead>
                 <TableHead>สถานะ</TableHead>
-                <TableHead>ผู้แจ้ง</TableHead>
+                <TableHead>เบอร์โทร</TableHead>
                 <TableHead>วันที่แจ้ง</TableHead>
                 <TableHead>วันที่เสร็จ</TableHead>
                 <TableHead className="text-right">จัดการ</TableHead>
@@ -499,11 +369,11 @@ function MaintenancePageContent() {
                 <TableRow>
                   <TableCell colSpan={8} className="h-64">
                     <EmptyState 
-                      icon={Wrench}
-                      title="ไม่พบรายการแจ้งซ่อม"
-                      description="ลองปรับตัวกรองหรือสร้างรายการใหม่"
-                      actionLabel="แจ้งซ่อมใหม่"
-                      onAction={() => {}} // Hook up to create dialog trigger if possible or remove button
+                      icon={LogOut}
+                      title="ไม่พบรายการแจ้งย้ายออก"
+                      description="ยังไม่มีการแจ้งย้ายออกเข้ามา"
+                      actionLabel=""
+                      onAction={() => {}}
                     />
                   </TableCell>
                 </TableRow>
@@ -511,6 +381,8 @@ function MaintenancePageContent() {
                 pagedRequests.map((request) => {
                   const roomFromList = rooms.find((r) => r.id === (request.room?.id || request.roomId)) || request.room;
                   const roomLabel = roomFromList?.number || request.roomId;
+                  const buildingLabel = roomFromList?.building?.name || roomFromList?.building?.code || '-';
+                  const parsed = parseMoveOutDescription(request.description);
                   
                   return (
                     <TableRow 
@@ -521,33 +393,24 @@ function MaintenancePageContent() {
                         #{request.id.substring(0, 6)}
                       </TableCell>
                       <TableCell>
+                        <div className="font-medium text-foreground">{buildingLabel}</div>
+                      </TableCell>
+                      <TableCell>
                         <Badge variant="outline" className="bg-background">
                           {roomLabel}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1 max-w-[300px]">
-                          <span className="font-medium text-foreground truncate">{request.title}</span>
-                          {request.description && (
-                            <span className="text-xs text-muted-foreground truncate">
-                              {request.description}
-                            </span>
-                          )}
+                          <span className="font-medium text-foreground truncate">{parsed.tenantName || request.reportedBy || '-'}</span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <MaintenanceStatusBadge status={request.status} />
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-[10px]">
-                              {(request.reportedBy || 'U').substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm text-muted-foreground">
-                            {request.reportedBy || 'ไม่ระบุ'}
-                          </span>
+                        <div className="text-sm text-muted-foreground">
+                            {parsed.phone || '-'}
                         </div>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
@@ -571,13 +434,13 @@ function MaintenancePageContent() {
                             <DropdownMenuSeparator />
                             <DropdownMenuLabel>เปลี่ยนสถานะ</DropdownMenuLabel>
                             <DropdownMenuItem onClick={() => handleStatusUpdate(request.id, 'PENDING')}>
-                              <Clock className="mr-2 h-4 w-4" /> ระบุว่ารอดำเนินการ
+                              <Clock className="mr-2 h-4 w-4" /> รอดำเนินการ
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleStatusUpdate(request.id, 'IN_PROGRESS')}>
-                              <Wrench className="mr-2 h-4 w-4" /> ระบุว่ากำลังดำเนินการ
+                              <LogOut className="mr-2 h-4 w-4" /> กำลังตรวจสอบ
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleStatusUpdate(request.id, 'COMPLETED')}>
-                              <CheckCircle2 className="mr-2 h-4 w-4" /> ระบุว่าเสร็จสิ้น
+                              <CheckCircle2 className="mr-2 h-4 w-4" /> เสร็จสิ้น
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
@@ -608,7 +471,7 @@ function MaintenancePageContent() {
                 const params = new URLSearchParams(searchParams.toString());
                 params.set('pageSize', v);
                 params.set('page', '1');
-                router.push(`/maintenance?${params.toString()}`);
+                router.push(`/move-out?${params.toString()}`);
               }}>
                 <SelectTrigger className="w-[120px] h-9">
                   <SelectValue placeholder="แสดง/หน้า" />
@@ -657,11 +520,13 @@ function MaintenancePageContent() {
                 roomFromList?.building?.code ||
                 '';
               const roomLabel = roomFromList?.number || selectedRequest.roomId;
+              const parsed = parseMoveOutDescription(selectedRequest.description);
+
               return (
                 <>
                   <DialogHeader>
                     <DialogTitle>
-                      รายละเอียดการแจ้ง
+                      รายละเอียดการแจ้งย้ายออก
                     </DialogTitle>
                     <div className="flex items-center gap-2 mt-2">
                       <MaintenanceStatusBadge status={selectedRequest.status} />
@@ -675,18 +540,18 @@ function MaintenancePageContent() {
                     {/* Basic Info */}
                     <div className="grid grid-cols-2 gap-4 border p-4 rounded-xl bg-muted/10">
                       <div>
-                        <div className="text-xs text-muted-foreground mb-1">ผู้แจ้ง</div>
-                        <div className="font-medium text-sm">{selectedRequest.reportedBy || 'ไม่ระบุ'}</div>
+                        <div className="text-xs text-muted-foreground mb-1">ผู้เช่า</div>
+                        <div className="font-medium text-sm">{parsed.tenantName || selectedRequest.reportedBy || 'ไม่ระบุ'}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground mb-1">เบอร์โทร</div>
+                        <div className="font-medium text-sm">{parsed.phone || '-'}</div>
                       </div>
                       <div>
                         <div className="text-xs text-muted-foreground mb-1">วันที่แจ้ง</div>
                         <div className="font-medium text-sm">
                           {selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleString() : '-'}
                         </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground mb-1">เรื่องที่แจ้ง</div>
-                        <div className="font-medium text-sm">{selectedRequest.title}</div>
                       </div>
                       <div>
                         <div className="text-xs text-muted-foreground mb-1">วันที่เสร็จ</div>
@@ -698,84 +563,48 @@ function MaintenancePageContent() {
 
                     {/* Description & Content */}
                     <div className="space-y-2">
-                      <h3 className="text-sm font-medium">รายละเอียด</h3>
-                      {(() => {
-                        const parsed = parseMoveOutDescription(selectedRequest.description);
-                        if (parsed.isMoveOut) {
-                          return (
-                            <div className="space-y-4">
-                              <div className="text-sm text-foreground bg-muted/30 p-3 rounded-lg">
-                                <div className="font-medium">ผู้เช่า: {parsed.tenantName || '-'}</div>
-                                <div className="font-medium">เบอร์โทร: {parsed.phone || '-'}</div>
-                                {parsed.otherLines.length > 0 && (
-                                  <div className="mt-2 whitespace-pre-wrap text-muted-foreground">
-                                    {parsed.otherLines.join('\n')}
-                                  </div>
+                      <h3 className="text-sm font-medium">ข้อมูลมิเตอร์ & อื่นๆ</h3>
+                      <div className="space-y-4">
+                          {parsed.otherLines.length > 0 && (
+                            <div className="text-sm text-foreground bg-muted/30 p-3 rounded-lg whitespace-pre-wrap">
+                              {parsed.otherLines.join('\n')}
+                            </div>
+                          )}
+                          
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const roomId = selectedRequest.room?.id || selectedRequest.roomId;
+                                if (!roomId) return;
+                                router.push(`/contracts?roomId=${roomId}`);
+                              }}
+                            >
+                              ดูสัญญาเช่า
+                            </Button>
+                          </div>
+
+                          {(parsed.waterImageUrl || parsed.electricImageUrl) && (
+                            <div className="space-y-3">
+                              <div className="text-sm font-medium">รูปมิเตอร์</div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {parsed.waterImageUrl && (
+                                  <a href={parsed.waterImageUrl} target="_blank" rel="noreferrer" className="block border rounded-lg overflow-hidden bg-muted/20 hover:opacity-90 transition-opacity">
+                                    <div className="text-xs font-medium px-3 py-2 text-muted-foreground border-b bg-muted/10">มิเตอร์น้ำ</div>
+                                    <img src={parsed.waterImageUrl} alt="Water Meter" className="w-full object-contain max-h-60" />
+                                  </a>
+                                )}
+                                {parsed.electricImageUrl && (
+                                  <a href={parsed.electricImageUrl} target="_blank" rel="noreferrer" className="block border rounded-lg overflow-hidden bg-muted/20 hover:opacity-90 transition-opacity">
+                                    <div className="text-xs font-medium px-3 py-2 text-muted-foreground border-b bg-muted/10">มิเตอร์ไฟ</div>
+                                    <img src={parsed.electricImageUrl} alt="Electric Meter" className="w-full object-contain max-h-60" />
+                                  </a>
                                 )}
                               </div>
-                              
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    const roomId = selectedRequest.room?.id || selectedRequest.roomId;
-                                    if (!roomId) return;
-                                    router.push(`/contracts?roomId=${roomId}`);
-                                  }}
-                                >
-                                  ดูสัญญาเช่า
-                                </Button>
-                              </div>
-
-                              {(parsed.waterImageUrl || parsed.electricImageUrl) && (
-                                <div className="space-y-3">
-                                  <div className="text-sm font-medium">รูปมิเตอร์</div>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {parsed.waterImageUrl && (
-                                      <a href={parsed.waterImageUrl} target="_blank" rel="noreferrer" className="block border rounded-lg overflow-hidden bg-muted/20 hover:opacity-90 transition-opacity">
-                                        <div className="text-xs font-medium px-3 py-2 text-muted-foreground border-b bg-muted/10">มิเตอร์น้ำ</div>
-                                        <img src={parsed.waterImageUrl} alt="Water Meter" className="w-full object-contain max-h-60" />
-                                      </a>
-                                    )}
-                                    {parsed.electricImageUrl && (
-                                      <a href={parsed.electricImageUrl} target="_blank" rel="noreferrer" className="block border rounded-lg overflow-hidden bg-muted/20 hover:opacity-90 transition-opacity">
-                                        <div className="text-xs font-medium px-3 py-2 text-muted-foreground border-b bg-muted/10">มิเตอร์ไฟ</div>
-                                        <img src={parsed.electricImageUrl} alt="Electric Meter" className="w-full object-contain max-h-60" />
-                                      </a>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
                             </div>
-                          );
-                        }
-                        
-                        if (selectedRequest.description) {
-                          const parsed = parseMaintenanceDescription(selectedRequest.description);
-                          return (
-                            <div className="space-y-4">
-                              <div className="text-sm text-foreground whitespace-pre-wrap bg-muted/30 p-3 rounded-lg">
-                                {parsed.textLines.length > 0 ? parsed.textLines.join('\n') : selectedRequest.description}
-                              </div>
-                              
-                              {parsed.images.length > 0 && (
-                                <div className="space-y-3">
-                                  <div className="text-sm font-medium">รูปภาพแนบ</div>
-                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    {parsed.images.map((url, idx) => (
-                                      <a key={idx} href={url} target="_blank" rel="noreferrer" className="block border rounded-lg overflow-hidden bg-muted/20 hover:opacity-90 transition-opacity aspect-square relative">
-                                        <img src={url} alt={`Attachment ${idx + 1}`} className="w-full h-full object-cover" />
-                                      </a>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        }
-                        return <div className="text-sm text-muted-foreground italic">ไม่ระบุรายละเอียด</div>;
-                      })()}
+                          )}
+                      </div>
                     </div>
                   </div>
                 </>

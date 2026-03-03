@@ -415,10 +415,20 @@ export default function ChatsClient({ chats: initialChats, usage: initialUsage }
                           : "bg-indigo-600 text-white rounded-br-none"
                       )}>
                         {msg.type === 'received_image' ? (
-                          <div className="flex items-center gap-2 italic">
-                            <ImageIcon className="w-4 h-4" />
-                            <span>ส่งรูปภาพ</span>
-                          </div>
+                          msg.text && (msg.text.startsWith('http') || msg.text.startsWith('/api/')) ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img 
+                              src={msg.text} 
+                              alt="รูปภาพ" 
+                              className="max-w-[240px] max-h-[320px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity object-contain bg-slate-100 dark:bg-slate-900" 
+                              onClick={() => window.open(msg.text, '_blank')} 
+                            />
+                          ) : (
+                            <div className="flex items-center gap-2 italic text-slate-500">
+                              <ImageIcon className="w-4 h-4" />
+                              <span>ส่งรูปภาพ</span>
+                            </div>
+                          )
                         ) : (
                           <p className="whitespace-pre-wrap leading-relaxed">{msg.text || msg.altText || ''}</p>
                         )}

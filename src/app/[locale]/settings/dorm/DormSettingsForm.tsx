@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building, Wallet, Image as ImageIcon, MapPin, Phone, MessageCircle, Save, Loader2 } from 'lucide-react';
+import { Building, Wallet, Image as ImageIcon, MapPin, Phone, MessageCircle, Save, Loader2, Bot, Receipt } from 'lucide-react';
 
 interface DormSettingsFormProps {
   initialConfig: DormConfig | null;
@@ -80,6 +80,16 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
   const [lineLink, setLineLink] = useState(initialExtra?.lineLink || '');
   const [monthlyDueDay, setMonthlyDueDay] = useState(initialExtra?.monthlyDueDay?.toString() || '5');
 
+  // LINE OA Config State
+  const [lineOaChannelId, setLineOaChannelId] = useState(initialExtra?.lineOaChannelId || '');
+  const [lineOaChannelSecret, setLineOaChannelSecret] = useState(initialExtra?.lineOaChannelSecret || '');
+  const [lineOaChannelAccessToken, setLineOaChannelAccessToken] = useState(initialExtra?.lineOaChannelAccessToken || '');
+
+  // Slipok Config State
+  const [slipokApiKey, setSlipokApiKey] = useState(initialExtra?.slipokApiKey || '');
+  const [slipokApiUrl, setSlipokApiUrl] = useState(initialExtra?.slipokApiUrl || '');
+  const [slipokBranchId, setSlipokBranchId] = useState(initialExtra?.slipokBranchId || '');
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] || null;
     setLogoFile(f);
@@ -124,6 +134,12 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
         mapUrl: mapUrl || undefined,
         lineLink: lineLink || undefined,
         monthlyDueDay: Number(monthlyDueDay) || 5,
+        lineOaChannelId: lineOaChannelId || undefined,
+        lineOaChannelSecret: lineOaChannelSecret || undefined,
+        lineOaChannelAccessToken: lineOaChannelAccessToken || undefined,
+        slipokApiKey: slipokApiKey || undefined,
+        slipokApiUrl: slipokApiUrl || undefined,
+        slipokBranchId: slipokBranchId || undefined,
       };
 
       // 4. Call APIs
@@ -387,6 +403,88 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
                 placeholder="5"
               />
               <p className="text-xs text-muted-foreground">วันที่เริ่มต้นสำหรับกำหนดส่งบิลชำระเงิน</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      {/* Section 4: System Integration */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Bot className="h-5 w-5 text-primary" />
+            <CardTitle>LINE OA & SlipOK</CardTitle>
+          </div>
+          <CardDescription>ตั้งค่าการเชื่อมต่อกับ LINE Official Account และระบบตรวจสอบสลิปอัตโนมัติ</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          {/* LINE OA */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" /> LINE Official Account
+            </h3>
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="lineChannelId">Channel ID</Label>
+                <Input 
+                  id="lineChannelId" 
+                  value={lineOaChannelId} 
+                  onChange={(e) => setLineOaChannelId(e.target.value)} 
+                  placeholder="1234567890"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lineChannelSecret">Channel Secret</Label>
+                <Input 
+                  id="lineChannelSecret" 
+                  value={lineOaChannelSecret} 
+                  onChange={(e) => setLineOaChannelSecret(e.target.value)} 
+                  placeholder="xxxxxxxxxxxxxxxxxxxxxxxx"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="lineChannelAccessToken">Channel Access Token</Label>
+                <Input 
+                  id="lineChannelAccessToken" 
+                  value={lineOaChannelAccessToken} 
+                  onChange={(e) => setLineOaChannelAccessToken(e.target.value)} 
+                  placeholder="long_access_token_string..."
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t pt-6 space-y-4">
+            <h3 className="text-sm font-medium flex items-center gap-2">
+              <Receipt className="h-4 w-4" /> SlipOK (ระบบตรวจสลิป)
+            </h3>
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="slipokApiUrl">API URL</Label>
+                <Input 
+                  id="slipokApiUrl" 
+                  value={slipokApiUrl} 
+                  onChange={(e) => setSlipokApiUrl(e.target.value)} 
+                  placeholder="https://api.slipok.com/api/line/apikey/..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="slipokApiKey">API Key</Label>
+                <Input 
+                  id="slipokApiKey" 
+                  value={slipokApiKey} 
+                  onChange={(e) => setSlipokApiKey(e.target.value)} 
+                  placeholder="SLIPOK_API_KEY"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="slipokBranchId">Branch ID (Optional)</Label>
+                <Input 
+                  id="slipokBranchId" 
+                  value={slipokBranchId} 
+                  onChange={(e) => setSlipokBranchId(e.target.value)} 
+                  placeholder="ระบุ Branch ID หากมี"
+                />
+              </div>
             </div>
           </div>
         </CardContent>

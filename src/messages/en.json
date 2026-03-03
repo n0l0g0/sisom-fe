@@ -9,6 +9,7 @@
     "contracts": "Contracts",
     "reports": "Reports",
     "maintenance": "Maintenance",
+    "move_out": "Move Out",
     "former_tenants": "Former Tenants",
     "activity_logs": "Activity Logs",
     "settings": "Settings",
@@ -83,7 +84,11 @@
     },
     "empty": {
       "title": "No maintenance requests found",
-      "desc": "Try adjusting your filters or create a new request."
+      "desc": "Try adjusting filters or create a new request"
     }
+  },
+  "MoveOut": {
+    "title": "Move Out Requests",
+    "subtitle": "Monitor and manage tenant move-outs"
   }
 }

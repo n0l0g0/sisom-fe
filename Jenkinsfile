@@ -56,6 +56,7 @@ networks:
 
         stage('Deploy') {
             steps {
+                sh 'docker rm -f ${FE_CONTAINER_NAME} || true'
                 sh 'docker-compose up -d --remove-orphans frontend'
             }
         }

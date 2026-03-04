@@ -1,10 +1,9 @@
 pipeline {
     agent any
+    options { skipDefaultCheckout(true) }
 
     environment {
         COMPOSE_PROJECT_NAME = 'cozyhouse-fe'
-        
-        // Frontend Config
         FE_PORT = '3001'
         FE_CONTAINER_NAME = 'cozyhouse-frontend'
         NEXT_PUBLIC_API_URL = 'https://cozyapi.washqueue.com'
@@ -14,6 +13,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                deleteDir()
                 checkout scm
             }
         }
@@ -50,7 +50,6 @@ networks:
         
         stage('Build') {
             steps {
-                // Use standard docker-compose build without experimental flags
                 sh 'docker-compose build frontend'
             }
         }

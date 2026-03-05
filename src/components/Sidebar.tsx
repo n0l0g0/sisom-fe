@@ -2,7 +2,7 @@
 
 import { Link, usePathname, useRouter } from '../navigation';
 import { useState, useEffect } from 'react';
-import { User, api } from '@/services/api';
+import { User, api, DormConfig } from '@/services/api';
 import { useTranslations } from 'next-intl';
 
 const MENU_ITEMS = [
@@ -148,6 +148,7 @@ export function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
   const router = useRouter();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [dormConfig, setDormConfig] = useState<DormConfig | null>(null);
 
   const isActive = (path: string) => pathname === path;
   const isSettingsActive = pathname.startsWith('/settings');
@@ -163,6 +164,9 @@ export function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
         console.error('Failed to parse user', e);
       }
     }
+    
+    // Fetch dorm config
+    api.getDormConfig().then(setDormConfig).catch(() => {});
   }, []);
 
   const handleLogout = () => {
@@ -199,7 +203,7 @@ export function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
           </div>
           {!isCollapsed && (
             <div className="overflow-hidden whitespace-nowrap">
-              <h1 className="font-semibold text-sm text-foreground">Sisom Manager</h1>
+              <h1 className="font-semibold text-sm text-foreground">{dormConfig?.dormName || 'Sisom Manager'}</h1>
               <p className="text-xs text-muted-foreground">Pro Dashboard</p>
             </div>
           )}

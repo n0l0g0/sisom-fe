@@ -565,9 +565,12 @@ export const api = {
   },
 
   // Contracts
-  getContracts: async (isActive?: boolean): Promise<Contract[]> => {
-    const url = isActive !== undefined ? `${API_URL}/contracts?isActive=${isActive}` : `${API_URL}/contracts`;
-    const res = await fetch(url, { cache: 'no-store' });
+  getContracts: async (isActive?: boolean, q?: string): Promise<Contract[]> => {
+    const params = new URLSearchParams();
+    if (isActive !== undefined) params.append('isActive', String(isActive));
+    if (q) params.append('q', q);
+
+    const res = await fetch(`${API_URL}/contracts?${params.toString()}`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch contracts');
     return res.json();
   },

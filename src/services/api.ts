@@ -325,7 +325,20 @@ const getToken = () => {
 
 // API Functions
 export const api = {
-  // Auth
+  // Auth – Phase 5: feature flag for CMS login
+  getCmsLoginEnabled: async (): Promise<boolean> => {
+    const base = CMS_AUTH_BASE || (typeof window !== 'undefined' ? window.location.origin : '');
+    const url = base ? `${base}/api/cms-config/cms-login-enabled` : '/api/cms-config/cms-login-enabled';
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) return false;
+      const data = (await res.json()) as { enabled?: boolean };
+      return data.enabled === true;
+    } catch {
+      return false;
+    }
+  },
+
   cmsLogin: async (username: string, password: string): Promise<CmsLoginResponse> => {
     const base = CMS_AUTH_BASE || (typeof window !== 'undefined' ? window.location.origin : '');
     const url = base ? `${base}/api/cms-auth/cms-login` : '/api/cms-auth/cms-login';

@@ -43,16 +43,16 @@ function LoginPageInner() {
     try {
       const isCms = typeof window !== 'undefined' && window.location.hostname === 'cms.washqueue.com';
       if (isCms) {
-        try {
+        const cmsEnabled = await api.getCmsLoginEnabled();
+        if (cmsEnabled) {
+          // Phase 6: CMS only, no fallback to sisom
           const response = await api.cmsLogin(username, password);
-          applyLogin(response);
+          applyLogin({ access_token: response.access_token, user: { ...response.user } });
           return;
-        } catch {
-          // Fall through to sisom backend login
         }
       }
       const response = await api.login(username, password);
-      applyLogin(response);
+      applyLogin({ access_token: response.access_token, user: { ...response.user } });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Login failed';
       setError(message);

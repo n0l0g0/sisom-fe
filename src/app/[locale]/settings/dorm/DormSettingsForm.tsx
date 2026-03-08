@@ -81,6 +81,7 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
   const [monthlyDueDay, setMonthlyDueDay] = useState(initialExtra?.monthlyDueDay?.toString() || '5');
 
   // LINE OA Config State
+  const [liffId, setLiffId] = useState(initialExtra?.liffId || '');
   const [lineOaChannelId, setLineOaChannelId] = useState(initialExtra?.lineOaChannelId || '');
   const [lineOaChannelSecret, setLineOaChannelSecret] = useState(initialExtra?.lineOaChannelSecret || '');
   const [lineOaChannelAccessToken, setLineOaChannelAccessToken] = useState(initialExtra?.lineOaChannelAccessToken || '');
@@ -134,6 +135,7 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
         mapUrl: mapUrl || undefined,
         lineLink: lineLink || undefined,
         monthlyDueDay: Number(monthlyDueDay) || 5,
+        liffId: liffId || undefined,
         lineOaChannelId: lineOaChannelId || undefined,
         lineOaChannelSecret: lineOaChannelSecret || undefined,
         lineOaChannelAccessToken: lineOaChannelAccessToken || undefined,
@@ -423,6 +425,15 @@ export function DormSettingsForm({ initialConfig, initialExtra }: DormSettingsFo
               <MessageCircle className="h-4 w-4" /> LINE Official Account
             </h3>
             <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="liffId">LIFF ID</Label>
+                <Input 
+                  id="liffId" 
+                  value={liffId} 
+                  onChange={(e) => setLiffId(e.target.value)} 
+                  placeholder="เช่น 2009134626-utW52E8H"
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="lineChannelId">Channel ID</Label>
                 <Input 

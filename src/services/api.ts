@@ -4,10 +4,11 @@ export const API_URL = (() => {
   }
   const envUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
   try {
-    const hostname = new URL(envUrl).hostname;
     const currentHost = window.location.hostname;
+    // cms.washqueue.com: use same-origin /api so Authorization header is sent (no redirect)
+    if (currentHost === 'cms.washqueue.com') return '/api';
+    const hostname = new URL(envUrl).hostname;
     if (hostname === 'api.washqueue.com') return 'https://line-sisom.washqueue.com/api';
-    if (currentHost === 'cms.washqueue.com') return 'https://line-sisom.washqueue.com/api';
   } catch {}
   return envUrl;
 })();
@@ -194,6 +195,7 @@ export interface DormExtra {
   slipokApiKey?: string;
   slipokApiUrl?: string;
   slipokBranchId?: string;
+  liffId?: string;
 }
 
 export interface MaintenanceRequest {
@@ -946,6 +948,32 @@ export const api = {
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
+  },
+
+  /** รายงานสรุปห้องค้างชำระ (สำหรับพิมพ์) */
+  getOutstandingReport: async (
+    month: number,
+    year: number,
+  ): Promise<{
+    month: number;
+    year: number;
+    monthLabel: string;
+    rows: Array<{
+      roomNumber: string;
+      buildingName: string;
+      tenantName: string;
+      status: string;
+      totalDue: number;
+      dueDateNote: string | null;
+    }>;
+    totalSum: number;
+  }> => {
+    const res = await fetch(
+      `${API_URL}/invoices/outstanding-report?month=${month}&year=${year}`,
+      { cache: 'no-store' },
+    );
+    if (!res.ok) throw new Error('Failed to fetch outstanding report');
+    return res.json();
   },
 
   // Auto-send invoices config

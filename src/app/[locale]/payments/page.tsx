@@ -158,6 +158,10 @@ function PaymentsPageContent() {
     router.push(`/payments?${params.toString()}`);
   };
 
+  const goToPrintOutstanding = () => {
+    router.push(`/payments/print-outstanding?month=${month}&year=${year}`);
+  };
+
   const handleExport = () => {
     try {
       const data = payments.map(p => ({
@@ -190,7 +194,7 @@ function PaymentsPageContent() {
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">การชำระเงิน</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">ประวัติการชำระและการตรวจสอบสลิป</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Button
             variant="ghost"
             onClick={handleClear}
@@ -210,8 +214,16 @@ function PaymentsPageContent() {
           <span className="px-2 text-xs text-slate-500 dark:text-slate-400">รายการ/หน้า</span>
         </div>
           <Button
+            onClick={goToPrintOutstanding}
+            variant="outline"
+            className="border-indigo-300 text-indigo-700 dark:text-indigo-300 dark:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 shrink-0"
+          >
+            <FileText className="w-4 h-4 mr-2 shrink-0" />
+            <span className="hidden sm:inline">พิมพ์รายงานสรุป </span>ห้องค้างชำระ
+          </Button>
+          <Button
             onClick={handleExport}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-900/20"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-900/20 shrink-0"
           >
             <Download className="w-4 h-4 mr-2" />
             Export Excel
@@ -296,8 +308,8 @@ function PaymentsPageContent() {
           </Button>
         </div>
 
-        {/* Quick Tabs */}
-        <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/50">
+        {/* Quick Tabs + Print report */}
+        <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/50 items-center">
           {[
             { id: '', label: 'ทั้งหมด' },
             { id: 'VERIFIED', label: 'ตรวจสอบแล้ว' },
@@ -319,6 +331,14 @@ function PaymentsPageContent() {
               {tab.label}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={goToPrintOutstanding}
+            className="ml-auto px-4 py-2 rounded-full text-sm font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700 hover:bg-amber-200 dark:hover:bg-amber-800/50 flex items-center gap-1.5"
+          >
+            <FileText className="w-4 h-4" />
+            พิมพ์รายงานค้างชำระ
+          </button>
         </div>
       </div>
 

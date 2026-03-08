@@ -90,7 +90,11 @@ function LoginPageInner() {
         setLineError('ฟังก์ชันนี้ใช้ได้เฉพาะบนมือถือ');
         return;
       }
-      const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+      let liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+      if (!liffId) {
+        const extra = await api.getDormExtra().catch(() => null);
+        liffId = extra?.liffId;
+      }
       if (!liffId) {
         throw new Error('LINE login is not configured');
       }
@@ -138,7 +142,11 @@ function LoginPageInner() {
     (async () => {
       try {
         if (!isMobile) return;
-        const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+        let liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+        if (!liffId) {
+          const extra = await api.getDormExtra().catch(() => null);
+          liffId = extra?.liffId;
+        }
         if (!liffId) return;
         await ensureLiffReady();
         const liff = (window as any).liff;

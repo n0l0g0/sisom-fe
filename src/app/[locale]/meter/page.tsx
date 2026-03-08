@@ -661,13 +661,17 @@ function MeterPageInner() {
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
     const isMobile = /Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry|Mobile/i.test(ua);
     if (!isMobile) return;
-    const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
-    if (!liffId) return;
+    let liffId = process.env.NEXT_PUBLIC_LIFF_ID;
     const script = document.createElement('script');
     script.src = 'https://static.line-scdn.net/liff/edge/2/sdk.js';
     script.async = true;
     script.onload = async () => {
       try {
+        if (!liffId) {
+          const extra = await api.getDormExtra().catch(() => null);
+          liffId = extra?.liffId || process.env.NEXT_PUBLIC_LIFF_ID;
+        }
+        if (!liffId) return;
         // @ts-expect-error
         await window.liff.init({ liffId });
         // @ts-expect-error

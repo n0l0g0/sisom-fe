@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { api, Payment } from '@/services/api';
+import { api, Payment, normalizeMediaUrl } from '@/services/api';
 import * as XLSX from 'xlsx';
 import { 
   Search, 
@@ -611,7 +611,7 @@ function PaymentActions({ payment, mobile, onSuccess }: { payment: Payment, mobi
     <div className={`flex items-center gap-2 ${mobile ? 'justify-end' : 'justify-center'}`}>
       {hasSlip && (
         <a
-          href={payment.slipImageUrl}
+          href={normalizeMediaUrl(payment.slipImageUrl)}
           target="_blank"
           rel="noopener noreferrer"
           className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"

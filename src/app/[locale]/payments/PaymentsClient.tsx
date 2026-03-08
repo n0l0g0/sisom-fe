@@ -1,6 +1,6 @@
 'use client';
 
-import { api, Payment } from '@/services/api';
+import { api, Payment, normalizeMediaUrl } from '@/services/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useEffect, useMemo, useState } from 'react';
@@ -190,7 +190,7 @@ function PaymentsClientInner({ room, status, month, year }: { room: string; stat
                       <td className="px-6 py-4 text-center">
                         {payment.slipImageUrl && (
                           <a
-                            href={payment.slipImageUrl}
+                            href={normalizeMediaUrl(payment.slipImageUrl)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-[#f5a987] hover:text-[#e09b7d] text-sm flex items-center justify-center gap-1 mx-auto"

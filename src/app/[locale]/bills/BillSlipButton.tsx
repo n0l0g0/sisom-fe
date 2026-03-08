@@ -1,7 +1,7 @@
  'use client';
  
 import { useEffect, useMemo, useState } from 'react';
-import { api, Invoice } from '@/services/api';
+import { api, Invoice, normalizeMediaUrl } from '@/services/api';
 import {
   Dialog,
   DialogContent,
@@ -145,7 +145,7 @@ export default function BillSlipButton({ invoice }: { invoice: Invoice }) {
                         <div>เลขอ้างอิง: {ref}</div>
                         {latestPaid.slipImageUrl ? (
                           <img
-                            src={latestPaid.slipImageUrl}
+                            src={normalizeMediaUrl(latestPaid.slipImageUrl)}
                             alt="slip"
                             className="mt-2 w-full max-w-[360px] rounded border"
                           />

@@ -11,6 +11,7 @@ import {
   MeterReplacement,
   DormConfig,
   api,
+  normalizeMediaUrl,
 } from '@/services/api';
 import {
   Dialog,
@@ -1214,8 +1215,8 @@ export default function RoomDetailDialog({ room, children }: Props) {
                     {activeContract.contractImageUrl ? (
                       <div className="space-y-2">
                         <Label>รูปสัญญา</Label>
-                        <a href={activeContract.contractImageUrl} target="_blank" rel="noreferrer" className="block border rounded-lg p-2">
-                          <img src={activeContract.contractImageUrl} alt="รูปสัญญาเช่า" className="max-h-64 w-full object-contain" />
+                        <a href={normalizeMediaUrl(activeContract.contractImageUrl)} target="_blank" rel="noreferrer" className="block border rounded-lg p-2">
+                          <img src={normalizeMediaUrl(activeContract.contractImageUrl)} alt="รูปสัญญาเช่า" className="max-h-64 w-full object-contain" />
                         </a>
                       </div>
                     ) : null}

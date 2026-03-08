@@ -1,7 +1,7 @@
  'use client';
  
 import { useEffect, useMemo, useState } from 'react';
-import { api, Invoice, MeterReading, DormConfig } from '@/services/api';
+import { api, Invoice, MeterReading, DormConfig, normalizeMediaUrl } from '@/services/api';
  import { useRouter } from 'next/navigation';
 import {
   Dialog,
@@ -756,7 +756,7 @@ import { Button } from "@/components/ui/button";
                             <div>เลขอ้างอิง: {ref}</div>
                             {latest.slipImageUrl ? (
                               <img
-                                src={latest.slipImageUrl}
+                                src={normalizeMediaUrl(latest.slipImageUrl)}
                                 alt="slip"
                                 className="mt-2 w-full max-w-[360px] rounded border border-slate-200 dark:border-slate-700"
                               />

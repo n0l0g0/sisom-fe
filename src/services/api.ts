@@ -13,6 +13,23 @@ export const API_URL = (() => {
   return envUrl;
 })();
 
+/**
+ * แปลง URL รูปจาก backend (เช่น https://sisom-backend:3000/api/media/...)
+ * ให้เป็น path เดียวกับ origin ปัจจุบัน เพื่อให้เบราว์เซอร์โหลดรูปได้
+ */
+export function normalizeMediaUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    try {
+      const path = new URL(url).pathname;
+      if (path.startsWith('/api/media/')) return path;
+    } catch {
+      // ignore
+    }
+  }
+  return url;
+}
+
 /** Base URL for CMS auth (Master DB login). On cms.washqueue.com uses same-origin /api/cms-auth */
 export const CMS_AUTH_BASE = (() => {
   if (typeof window === 'undefined') return '';

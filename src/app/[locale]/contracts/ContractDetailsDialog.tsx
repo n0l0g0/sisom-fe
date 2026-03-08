@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ExternalLink, Save, Upload, FileText } from "lucide-react";
-import { api, Contract } from '@/services/api';
+import { api, Contract, normalizeMediaUrl } from '@/services/api';
 import { useRouter } from 'next/navigation';
 
 interface ContractDetailsDialogProps {
@@ -204,10 +204,10 @@ export function ContractDetailsDialog({ contract, triggerLabel }: ContractDetail
                   <Label className="text-slate-500 dark:text-slate-400">รูปบัตรประชาชน</Label>
                   {idCardImageUrl ? (
                     <div className="mt-2">
-                      <a href={idCardImageUrl} target="_blank" rel="noopener noreferrer" className="block relative h-40 w-full rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:opacity-90 transition-opacity group">
+                      <a href={normalizeMediaUrl(idCardImageUrl)} target="_blank" rel="noopener noreferrer" className="block relative h-40 w-full rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:opacity-90 transition-opacity group">
                          {/* eslint-disable-next-line @next/next/no-img-element */}
                          <img 
-                            src={`${idCardImageUrl}?v=${idCardImageVer}`} 
+                            src={`${normalizeMediaUrl(idCardImageUrl)}?v=${idCardImageVer}`} 
                             alt="ID Card" 
                             className="w-full h-full object-contain" 
                          />
@@ -290,10 +290,10 @@ export function ContractDetailsDialog({ contract, triggerLabel }: ContractDetail
               <Label className="text-slate-500 dark:text-slate-400">รูปสัญญาเช่า</Label>
               {contractImageUrl ? (
                 <div className="mt-2">
-                  <a href={contractImageUrl} target="_blank" rel="noopener noreferrer" className="block relative h-40 w-full rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:opacity-90 transition-opacity group">
+                  <a href={normalizeMediaUrl(contractImageUrl)} target="_blank" rel="noopener noreferrer" className="block relative h-40 w-full rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:opacity-90 transition-opacity group">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img 
-                        src={`${contractImageUrl}?v=${contractImageVer}`} 
+                        src={`${normalizeMediaUrl(contractImageUrl)}?v=${contractImageVer}`} 
                         alt="Contract" 
                         className="w-full h-full object-contain" 
                       />

@@ -12,6 +12,13 @@ export const API_URL = (() => {
   return envUrl;
 })();
 
+/** Base URL for CMS auth (Master DB login). On cms.washqueue.com uses same-origin /api/cms-auth */
+export const CMS_AUTH_BASE = (() => {
+  if (typeof window === 'undefined') return '';
+  if (window.location.hostname === 'cms.washqueue.com') return '';
+  return process.env.NEXT_PUBLIC_CMS_AUTH_URL || '';
+})();
+
 export interface Building {
   id: string;
   name: string;
@@ -305,6 +312,11 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface CmsLoginResponse {
+  access_token: string;
+  user: User & { tenant_id?: string; tenant_slug?: string };
+}
+
 const getToken = () => {
   if (typeof document === 'undefined') return null;
   const match = document.cookie.match(/(^| )sisom_token=([^;]+)/);
@@ -314,6 +326,21 @@ const getToken = () => {
 // API Functions
 export const api = {
   // Auth
+  cmsLogin: async (username: string, password: string): Promise<CmsLoginResponse> => {
+    const base = CMS_AUTH_BASE || (typeof window !== 'undefined' ? window.location.origin : '');
+    const url = base ? `${base}/api/cms-auth/cms-login` : '/api/cms-auth/cms-login';
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error.message || 'Login failed');
+    }
+    return res.json();
+  },
+
   login: async (username: string, password: string): Promise<LoginResponse> => {
     const res = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',

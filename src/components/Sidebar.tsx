@@ -203,7 +203,7 @@ export function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
           </div>
           {!isCollapsed && (
             <div className="overflow-hidden whitespace-nowrap">
-              <h1 className="font-semibold text-sm text-foreground">{dormConfig?.dormName || 'Sisom Manager'}</h1>
+              <h1 className="font-semibold text-sm text-foreground">13Rent</h1>
               <p className="text-xs text-muted-foreground">Pro Dashboard</p>
             </div>
           )}

@@ -26,18 +26,33 @@ function LoginPageInner() {
     setLoading(true);
     setError('');
 
-    try {
-      const response = await api.login(username, password);
+    const applyLogin = (response: { access_token: string; user: Record<string, unknown> }) => {
       document.cookie = `sisom_token=${response.access_token}; path=/; max-age=86400; SameSite=Strict`;
       localStorage.setItem('sisom_user', JSON.stringify(response.user));
       const pathParam = searchParams?.get('path');
+      const user = response.user as { role?: string; permissions?: string[] };
       const isStaff =
-        response.user?.role === 'OWNER' ||
-        response.user?.role === 'ADMIN' ||
-        (Array.isArray(response.user?.permissions) && response.user.permissions.includes('meter'));
+        user?.role === 'OWNER' ||
+        user?.role === 'ADMIN' ||
+        (Array.isArray(user?.permissions) && user.permissions?.includes('meter'));
       const target = pathParam || (isStaff ? '/meter' : '/');
       router.push(target);
       router.refresh();
+    };
+
+    try {
+      const isCms = typeof window !== 'undefined' && window.location.hostname === 'cms.washqueue.com';
+      if (isCms) {
+        try {
+          const response = await api.cmsLogin(username, password);
+          applyLogin(response);
+          return;
+        } catch {
+          // Fall through to sisom backend login
+        }
+      }
+      const response = await api.login(username, password);
+      applyLogin(response);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Login failed';
       setError(message);

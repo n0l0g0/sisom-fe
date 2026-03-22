@@ -708,9 +708,10 @@ function MeterPageInner() {
     };
   }, [uid]);
 
-  // LIFF: โหลดทุกแพลตฟอร์ม (เดสก์ท็อป LINE / มือถือ) — เดิมบล็อกเฉพาะมือถือทำให้ไม่ได้ userId
+  // LIFF: ดึง userId เฉพาะเมื่อเปิดในแอป LINE (isInClient) เท่านั้น
+  // ไม่เรียก liff.login() ป้องกัน redirect loop / 400 จาก LINE OAuth
   useEffect(() => {
-    if (uidQuery) {
+    if (uidQuery || uidManual) {
       setLiffDone(true);
       return;
     }
@@ -731,24 +732,14 @@ function MeterPageInner() {
         const liff = (window as unknown as { liff: {
           init: (o: { liffId: string }) => Promise<void>;
           isInClient?: () => boolean;
-          isLoggedIn?: () => boolean;
-          login?: (o: { redirectUri: string }) => Promise<void>;
           getProfile: () => Promise<{ userId?: string }>;
         } }).liff;
         await liff.init({ liffId });
+        // เฉพาะในแอป LINE เท่านั้นที่ getProfile() ได้โดยไม่ต้อง login
         const isInClient = typeof liff.isInClient === 'function' ? liff.isInClient() : false;
-        if (!isInClient && typeof liff.isLoggedIn === 'function' && !liff.isLoggedIn()) {
-          const href = window.location.href;
-          let redirectUri = href;
-          try {
-            const u = new URL(href);
-            if (u.hostname !== 'line-sisom.washqueue.com') {
-              redirectUri = `https://line-sisom.washqueue.com${u.pathname}${u.search}`;
-            }
-          } catch {
-            /* ignore */
-          }
-          await liff.login?.({ redirectUri });
+        if (!isInClient) {
+          // เปิดจากเบราว์เซอร์ปกติ — แสดงช่องกรอก uid แทน
+          if (!cancelled) setLiffDone(true);
           return;
         }
         const profile = await liff.getProfile();
@@ -764,7 +755,7 @@ function MeterPageInner() {
     return () => {
       cancelled = true;
     };
-  }, [uidQuery]);
+  }, [uidQuery, uidManual]);
 
   if (!sessionReady) {
     return (

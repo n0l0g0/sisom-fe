@@ -1,6 +1,6 @@
 'use client'
-import { api, Room, API_URL, User, Building, Contract } from "@/services/api";
-import { useEffect, useMemo, useState } from "react";
+import { api, Room, API_URL, User, Building, Contract, LoginResponse } from "@/services/api";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
 import { Search, Filter, CheckCircle, Zap, Droplets, Save } from "lucide-react";
@@ -597,6 +597,41 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
   );
 }
 
+function applyMeterSession(response: LoginResponse) {
+  if (typeof document === 'undefined') return;
+  document.cookie = `sisom_token=${response.access_token}; path=/; max-age=86400; SameSite=Strict`;
+  localStorage.setItem('sisom_user', JSON.stringify(response.user));
+}
+
+function userMayUseMeter(user: User | null | undefined): boolean {
+  return Boolean(
+    user?.role === 'OWNER' ||
+      user?.role === 'ADMIN' ||
+      (Array.isArray(user?.permissions) && user.permissions.includes('meter')),
+  );
+}
+
+function ensureLiffReady(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.reject(new Error('no window'));
+  if ((window as unknown as { liff?: unknown }).liff) return Promise.resolve();
+  const existing = document.querySelector<HTMLScriptElement>('script[data-liff-sdk="meter"]');
+  if (existing) {
+    return new Promise<void>((resolve, reject) => {
+      existing.addEventListener('load', () => resolve());
+      existing.addEventListener('error', () => reject(new Error('Failed to load LIFF')));
+    });
+  }
+  return new Promise<void>((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://static.line-scdn.net/liff/edge/2/sdk.js';
+    script.async = true;
+    script.dataset.liffSdk = 'meter';
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load LIFF'));
+    document.body.appendChild(script);
+  });
+}
+
 function MeterPageInner() {
   const params = useSearchParams();
   const uidQuery = params.get('uid') || '';
@@ -604,6 +639,9 @@ function MeterPageInner() {
   const [uidManual, setUidManual] = useState<string>('');
   const uid = uidQuery || uidFromLiff || uidManual;
   const [allowByLogin, setAllowByLogin] = useState<boolean>(false);
+  const [sessionReady, setSessionReady] = useState<boolean>(false);
+  const [liffDone, setLiffDone] = useState<boolean>(!!uidQuery);
+  const lineLoginSuccessForUid = useRef<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !uidManual) {
@@ -626,11 +664,7 @@ function MeterPageInner() {
           });
           if (res.ok) {
             const user = await res.json() as User;
-            const permitted =
-              user?.role === 'OWNER' ||
-              user?.role === 'ADMIN' ||
-              (Array.isArray(user?.permissions) && user.permissions.includes('meter'));
-            setAllowByLogin(Boolean(permitted));
+            setAllowByLogin(userMayUseMeter(user));
             return;
           }
         }
@@ -641,11 +675,7 @@ function MeterPageInner() {
         const raw = typeof window !== 'undefined' ? localStorage.getItem('sisom_user') : null;
         if (raw) {
           const user = JSON.parse(raw) as User;
-          const permitted =
-            user?.role === 'OWNER' ||
-            user?.role === 'ADMIN' ||
-            (Array.isArray(user?.permissions) && user.permissions.includes('meter'));
-          setAllowByLogin(Boolean(permitted));
+          setAllowByLogin(userMayUseMeter(user));
         } else {
           setAllowByLogin(false);
         }
@@ -653,48 +683,114 @@ function MeterPageInner() {
         setAllowByLogin(false);
       }
     };
-    void tryCookieProfile();
+    void tryCookieProfile().finally(() => setSessionReady(true));
   }, []);
 
+  // เมื่อมี LINE userId — เข้าสู่ระบบด้วย LINE ID ที่ผูกใน User (ไม่ต้องใช้ username/password)
   useEffect(() => {
-    if (uidQuery) return;
-    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-    const isMobile = /Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry|Mobile/i.test(ua);
-    if (!isMobile) return;
-    let liffId = process.env.NEXT_PUBLIC_LIFF_ID;
-    const script = document.createElement('script');
-    script.src = 'https://static.line-scdn.net/liff/edge/2/sdk.js';
-    script.async = true;
-    script.onload = async () => {
+    const lineId = (uid || '').trim();
+    if (!lineId.startsWith('U')) return;
+    if (lineLoginSuccessForUid.current === lineId) return;
+    let cancelled = false;
+    void (async () => {
       try {
+        const response = await api.loginWithLine(lineId);
+        if (cancelled) return;
+        lineLoginSuccessForUid.current = lineId;
+        applyMeterSession(response);
+        setAllowByLogin(userMayUseMeter(response.user));
+      } catch {
+        /* ยังไม่ผูก User ในระบบ — ใช้ /line/is-staff จาก MeterForm ต่อได้ */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [uid]);
+
+  // LIFF: โหลดทุกแพลตฟอร์ม (เดสก์ท็อป LINE / มือถือ) — เดิมบล็อกเฉพาะมือถือทำให้ไม่ได้ userId
+  useEffect(() => {
+    if (uidQuery) {
+      setLiffDone(true);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        let liffId = process.env.NEXT_PUBLIC_LIFF_ID;
         if (!liffId) {
           const extra = await api.getDormExtra().catch(() => null);
           liffId = extra?.liffId || process.env.NEXT_PUBLIC_LIFF_ID;
         }
-        if (!liffId) return;
-        // @ts-expect-error
-        await window.liff.init({ liffId });
-        // @ts-expect-error
-        if (window.liff.isInClient()) {
-          // @ts-expect-error
-          const profile = await window.liff.getProfile();
-          if (profile?.userId) setUidFromLiff(profile.userId as string);
+        if (!liffId) {
+          if (!cancelled) setLiffDone(true);
+          return;
+        }
+        await ensureLiffReady();
+        if (cancelled) return;
+        const liff = (window as unknown as { liff: {
+          init: (o: { liffId: string }) => Promise<void>;
+          isInClient?: () => boolean;
+          isLoggedIn?: () => boolean;
+          login?: (o: { redirectUri: string }) => Promise<void>;
+          getProfile: () => Promise<{ userId?: string }>;
+        } }).liff;
+        await liff.init({ liffId });
+        const isInClient = typeof liff.isInClient === 'function' ? liff.isInClient() : false;
+        if (!isInClient && typeof liff.isLoggedIn === 'function' && !liff.isLoggedIn()) {
+          const href = window.location.href;
+          let redirectUri = href;
+          try {
+            const u = new URL(href);
+            if (u.hostname !== 'line-sisom.washqueue.com') {
+              redirectUri = `https://line-sisom.washqueue.com${u.pathname}${u.search}`;
+            }
+          } catch {
+            /* ignore */
+          }
+          await liff.login?.({ redirectUri });
+          return;
+        }
+        const profile = await liff.getProfile();
+        if (profile?.userId && !cancelled) {
+          setUidFromLiff(profile.userId);
         }
       } catch {
-        // ignore
+        /* ignore */
+      } finally {
+        if (!cancelled) setLiffDone(true);
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-    document.body.appendChild(script);
   }, [uidQuery]);
+
+  if (!sessionReady) {
+    return (
+      <div className="p-6 text-center text-slate-500 dark:text-slate-400">กำลังตรวจสอบสิทธิ...</div>
+    );
+  }
+
+  if (!uid && !allowByLogin && !liffDone) {
+    return (
+      <div className="max-w-xl mx-auto p-6 space-y-4 mt-10">
+        <div className="text-xl font-bold text-slate-900 dark:text-white">บันทึกมิเตอร์ผ่าน LINE</div>
+        <div className="text-slate-600 dark:text-slate-400">กำลังเชื่อมต่อ LINE เพื่ออ่านบัญชีของคุณ...</div>
+      </div>
+    );
+  }
 
   if (!uid && !allowByLogin) {
     return (
       <div className="max-w-xl mx-auto p-6 space-y-4 mt-10">
         <div className="text-xl font-bold text-slate-900 dark:text-white">บันทึกมิเตอร์ผ่าน LINE</div>
-        <div className="text-slate-600 dark:text-slate-400">กำลังตรวจสอบสิทธิจาก LINE...</div>
+        <div className="text-slate-600 dark:text-slate-400">
+          ระบบจะเข้าสู่ระบบอัตโนมัติเมื่อ LINE userId ตรงกับผู้ใช้ใน CMS (ไม่ต้องกรอก username/password)
+        </div>
         <div className="text-slate-500 dark:text-slate-500 text-sm bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-          หากไม่สามารถตรวจจับ LINE ได้ ให้พิมพ์คำสั่ง <span className="font-mono bg-slate-200 dark:bg-slate-700 px-1 rounded">whoami</span> ในห้องแชท
-          แล้วคัดลอก LINE userId มาวางด้านล่าง
+          หากเปิดนอกแอป LINE ให้พิมพ์คำสั่ง <span className="font-mono bg-slate-200 dark:bg-slate-700 px-1 rounded">whoami</span> ในห้องแชท
+          แล้วคัดลอก LINE userId มาวางด้านล่าง (หรือใส่ลิงก์จากบอทที่มี ?uid=...)
         </div>
         <div className="space-y-2">
           <div className="text-sm font-medium text-slate-700 dark:text-slate-300">LINE userId</div>

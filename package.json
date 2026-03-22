@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy:docker": "COMPOSE_PROJECT_NAME=sisomapt-fe docker-compose up -d --build --force-recreate frontend",
-    "postdeploy:docker": "git add . && git commit -m \"chore(deploy): FE auto-commit after docker deploy - $(date '+%Y-%m-%d %H:%M:%S %z')\" || true && git push origin main && docker container prune -f",
+    "deploy:docker": "docker rm -f sisom-frontend || true && COMPOSE_PROJECT_NAME=sisomapt-fe docker-compose up -d --build --force-recreate frontend",
+    "postdeploy:docker": "docker exec sisomapt-nginx nginx -s reload || true && git add . && git commit -m \"chore(deploy): FE auto-commit after docker deploy - $(date '+%Y-%m-%d %H:%M:%S %z')\" || true && git push origin newemp && docker container prune -f",
     "auto:deploy": "npm run build && npm run deploy:docker && git push origin main || true"
   },
   "dependencies": {

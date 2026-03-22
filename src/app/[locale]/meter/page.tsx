@@ -641,6 +641,7 @@ function MeterPageInner() {
   const [allowByLogin, setAllowByLogin] = useState<boolean>(false);
   const [sessionReady, setSessionReady] = useState<boolean>(false);
   const [liffDone, setLiffDone] = useState<boolean>(!!uidQuery);
+  const [loginPending, setLoginPending] = useState<boolean>(false);
   const lineLoginSuccessForUid = useRef<string | null>(null);
 
   useEffect(() => {
@@ -692,6 +693,7 @@ function MeterPageInner() {
     if (!lineId.startsWith('U')) return;
     if (lineLoginSuccessForUid.current === lineId) return;
     let cancelled = false;
+    setLoginPending(true);
     void (async () => {
       try {
         const response = await api.loginWithLine(lineId);
@@ -701,10 +703,13 @@ function MeterPageInner() {
         setAllowByLogin(userMayUseMeter(response.user));
       } catch {
         /* ยังไม่ผูก User ในระบบ — ใช้ /line/is-staff จาก MeterForm ต่อได้ */
+      } finally {
+        if (!cancelled) setLoginPending(false);
       }
     })();
     return () => {
       cancelled = true;
+      setLoginPending(false);
     };
   }, [uid]);
 
@@ -763,11 +768,22 @@ function MeterPageInner() {
     );
   }
 
+  // กำลังรอ LIFF หรือกำลัง login ด้วย LINE ID
   if (!uid && !allowByLogin && !liffDone) {
     return (
       <div className="max-w-xl mx-auto p-6 space-y-4 mt-10">
         <div className="text-xl font-bold text-slate-900 dark:text-white">บันทึกมิเตอร์ผ่าน LINE</div>
         <div className="text-slate-600 dark:text-slate-400">กำลังเชื่อมต่อ LINE เพื่ออ่านบัญชีของคุณ...</div>
+      </div>
+    );
+  }
+
+  // มี uid แล้ว และกำลังตรวจสอบสิทธิกับ backend
+  if (uid && loginPending) {
+    return (
+      <div className="max-w-xl mx-auto p-6 space-y-4 mt-10">
+        <div className="text-xl font-bold text-slate-900 dark:text-white">บันทึกมิเตอร์ผ่าน LINE</div>
+        <div className="text-slate-600 dark:text-slate-400">กำลังตรวจสอบสิทธิจาก LINE...</div>
       </div>
     );
   }

@@ -40,6 +40,13 @@ const MENUS = [
   { id: 'settings_users', label: 'ตั้งค่า: จัดการผู้ใช้' },
 ];
 
+const LINE_NOTIFY_OPTIONS = [
+  { id: 'line_notify_payment_verified', label: 'แจ้งเมื่อยืนยันสลิปชำระเงิน', description: 'เมื่อ staff ยืนยันสลิป (ตัดยอดแล้ว)' },
+  { id: 'line_notify_payment_success', label: 'แจ้งเมื่อมีการชำระเงิน', description: 'สรุปยอดชำระ (ห้อง/รอบบิล)' },
+  { id: 'line_notify_maintenance_created', label: 'แจ้งเมื่อมีแจ้งซ่อมใหม่', description: 'มีรายการแจ้งซ่อมเข้ามา' },
+  { id: 'line_notify_moveout_created', label: 'แจ้งเมื่อมีแจ้งย้ายออก / รายการย้ายออก', description: 'แจ้งย้ายออกใหม่ และสรุปห้องย้ายออกตามวัน' },
+] as const;
+
 export default function UserDialog({ user, open, onOpenChange, onSubmit }: UserDialogProps) {
   const [formData, setFormData] = useState<{
     username: string;
@@ -133,13 +140,22 @@ export default function UserDialog({ user, open, onOpenChange, onSubmit }: UserD
       return { ...prev, permissions };
     });
   };
-  const isLineNotifyEnabled = formData.permissions.includes('line_notifications');
-  const toggleLineNotify = () => {
+
+  const lineNotifyIds = LINE_NOTIFY_OPTIONS.map(o => o.id);
+  const isLineNotifyChecked = (key: string) =>
+    formData.permissions.includes(key) || formData.permissions.includes('line_notifications');
+  const toggleLineNotify = (key: string) => {
     setFormData(prev => {
-      const has = prev.permissions.includes('line_notifications');
-      const permissions = has
-        ? prev.permissions.filter(p => p !== 'line_notifications')
-        : [...prev.permissions, 'line_notifications'];
+      const currentlyChecked = prev.permissions.includes(key) || prev.permissions.includes('line_notifications');
+      let permissions = prev.permissions.filter(p => p !== key);
+      if (currentlyChecked) {
+        if (prev.permissions.includes('line_notifications')) {
+          permissions = permissions.filter(p => p !== 'line_notifications');
+          lineNotifyIds.forEach(id => { if (id !== key) permissions.push(id); });
+        }
+      } else {
+        permissions.push(key);
+      }
       return { ...prev, permissions };
     });
   };
@@ -297,20 +313,28 @@ export default function UserDialog({ user, open, onOpenChange, onSubmit }: UserD
               <h3 className="text-sm font-medium text-muted-foreground">Permissions & Access</h3>
               
               <div className="space-y-2">
-                <div className="flex items-center space-x-2 border rounded-lg p-3">
-                  <Checkbox
-                    id="perm-line-notify"
-                    checked={isLineNotifyEnabled}
-                    onCheckedChange={toggleLineNotify}
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <Label htmlFor="perm-line-notify" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      LINE Notifications
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Receive automated system alerts via LINE.
-                    </p>
-                  </div>
+                <Label className="text-sm font-medium">แจ้งเตือน LINE (รายหัวข้อ)</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  เลือกประเภทที่ต้องการรับการแจ้งเตือนทาง LINE (ต้องมี LINE User ID)
+                </p>
+                <div className="space-y-2 border rounded-lg p-4 bg-muted/10">
+                  {LINE_NOTIFY_OPTIONS.map(opt => (
+                    <div key={opt.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`perm-${opt.id}`}
+                        checked={isLineNotifyChecked(opt.id)}
+                        onCheckedChange={() => toggleLineNotify(opt.id)}
+                      />
+                      <div className="grid gap-0.5 leading-none">
+                        <Label htmlFor={`perm-${opt.id}`} className="text-sm font-normal cursor-pointer">
+                          {opt.label}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          {opt.description}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 

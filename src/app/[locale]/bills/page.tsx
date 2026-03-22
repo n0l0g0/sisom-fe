@@ -78,20 +78,15 @@ function BillsPageContent() {
     fetchData();
   }, []);
 
-  // Listen for updates
+  // Refetch when user returns to tab or when invoice updated elsewhere. Do NOT refetch on window focus (e.g. clicking into input) to avoid constant reloads.
   useEffect(() => {
-    const onFocus = () => fetchData();
     const onVisibility = () => {
       if (document.visibilityState === 'visible') fetchData();
     };
     const onInvoiceUpdated = () => fetchData();
-    
-    window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('INVOICE_UPDATED', onInvoiceUpdated as any);
-    
     return () => {
-      window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('INVOICE_UPDATED', onInvoiceUpdated as any);
     };
@@ -230,63 +225,40 @@ function BillsPageContent() {
   const prevStatusRef = useRef(statusFilter);
   const prevMonthRef = useRef(selectedMonthKey);
 
+  // Reset page to 1 when filters change. Deps only on filter state so we don't re-run on every searchParams reference change.
   useEffect(() => {
     const isSearchChanged = prevSearchRef.current !== searchTerm;
     const isStatusChanged = prevStatusRef.current !== statusFilter;
     const isMonthChanged = prevMonthRef.current !== selectedMonthKey;
 
     if (isSearchChanged || isStatusChanged || isMonthChanged) {
-      // Only reset if actually changed
+      prevSearchRef.current = searchTerm;
+      prevStatusRef.current = statusFilter;
+      prevMonthRef.current = selectedMonthKey;
       const params = new URLSearchParams(searchParams.toString());
       if (params.get('page') !== '1') {
         params.set('page', '1');
         router.replace(`${pathname}?${params.toString()}`);
       }
-      
-      prevSearchRef.current = searchTerm;
-      prevStatusRef.current = statusFilter;
-      prevMonthRef.current = selectedMonthKey;
     }
-  }, [searchTerm, statusFilter, selectedMonthKey, pathname, router, searchParams]);
+  }, [searchTerm, statusFilter, selectedMonthKey, pathname, router]);
 
   // Schedules (Keep existing logic)
-  const roomIdsKey = useMemo(() => {
-    const ids = invoices.map((inv) => inv.contract?.room?.id).filter((id): id is string => !!id);
-    return Array.from(new Set(ids)).sort().join(',');
-  }, [invoices]);
-  
-  const fetchedIdsRef = useRef<Set<string>>(new Set());
-  
+  // Fetch payment schedules in one request to avoid N+1 API calls (slow on high latency networks).
   useEffect(() => {
-    if (!roomIdsKey) return;
-    const ids = roomIdsKey.split(',');
-    const need = ids.filter(id => !fetchedIdsRef.current.has(id));
-    if (need.length === 0) return;
-    
-    const fetchSchedules = async () => {
+    let cancelled = false;
+    (async () => {
       try {
-        const pairs = await Promise.all(
-          need.map(async (id) => {
-            const s = await api.getRoomPaymentSchedule(id).catch(() => null);
-            return [id, s] as const;
-          })
-        );
-        setSchedules(prev => {
-          const next = { ...prev };
-          let changed = false;
-          for (const [id, s] of pairs) {
-            fetchedIdsRef.current.add(id);
-            if (s && (s.monthlyDay !== undefined || s.oneTimeDate)) {
-              next[id] = { monthlyDay: s.monthlyDay, oneTimeDate: s.oneTimeDate };
-              changed = true;
-            }
-          }
-          return changed ? next : prev;
-        });
-      } catch {}
+        const all = await api.getRoomPaymentSchedules();
+        if (!cancelled) setSchedules(all || {});
+      } catch {
+        if (!cancelled) setSchedules({});
+      }
+    })();
+    return () => {
+      cancelled = true;
     };
-    fetchSchedules();
-  }, [roomIdsKey]);
+  }, []);
 
   const formatScheduleDate = (bill: Invoice) => {
     const roomId = bill.contract?.room?.id;
@@ -307,32 +279,66 @@ function BillsPageContent() {
 
   const copyOverdue = async () => {
     try {
-      const overdueInvoices = invoices.filter(i => i.status === 'OVERDUE' && i.year === Number(selectedMonthKey?.split('-')[0]) && i.month === Number(selectedMonthKey?.split('-')[1]));
+      const allOverdue = invoices.filter((i) => i.status === 'OVERDUE');
+      let overdueInvoices: Invoice[] = [];
+
+      if (!selectedMonthKey || selectedMonthKey === 'ALL') {
+        // โหมด \"ทุกเดือน\" – รวมทุกบิลที่ค้างชำระ
+        overdueInvoices = allOverdue;
+      } else {
+        const [yearStr, monthStr] = selectedMonthKey.split('-');
+        const year = Number(yearStr);
+        const month = Number(monthStr);
+        overdueInvoices = allOverdue.filter(
+          (i) => i.year === year && i.month === month,
+        );
+      }
+
       if (overdueInvoices.length === 0) {
-        alert('ไม่มีรายการค้างชำระในเดือนที่เลือก');
+        alert(
+          selectedMonthKey && selectedMonthKey !== 'ALL'
+            ? 'ไม่มีรายการค้างชำระในเดือนที่เลือก'
+            : 'ไม่มีรายการค้างชำระ',
+        );
         return;
       }
-      
-      let text = `สรุปห้องค้างชำระ (${new Date().toLocaleDateString('th-TH')})\n\n`;
+
+      let text = `สรุปห้องค้างชำระ (${new Date().toLocaleDateString(
+        'th-TH',
+      )})\n\n`;
       let total = 0;
-      
+
       const byBuilding: Record<string, Invoice[]> = {};
-      overdueInvoices.forEach(inv => {
+      overdueInvoices.forEach((inv) => {
         const b = inv.contract?.room?.building?.name || 'อื่นๆ';
         if (!byBuilding[b]) byBuilding[b] = [];
         byBuilding[b].push(inv);
       });
-      
-      Object.keys(byBuilding).sort().forEach(b => {
-        text += `ตึก ${b}\n`;
-        byBuilding[b].sort((a,b) => (a.contract?.room?.number || '').localeCompare(b.contract?.room?.number || '', undefined, {numeric:true})).forEach(inv => {
-          const amt = Number(inv.totalAmount);
-          text += `  ห้อง ${inv.contract?.room?.number} : ${amt.toLocaleString()} บาท\n`;
-          total += amt;
+
+      Object.keys(byBuilding)
+        .sort()
+        .forEach((b) => {
+          text += `ตึก ${b}\n`;
+          byBuilding[b]
+            .sort((a, b) =>
+              (a.contract?.room?.number || '').localeCompare(
+                b.contract?.room?.number || '',
+                undefined,
+                { numeric: true },
+              ),
+            )
+            .forEach((inv) => {
+              const amt = Number(inv.totalAmount);
+              const monthLabel =
+                thaiMonths[Math.max(0, Math.min(11, (inv.month || 1) - 1))];
+              text += `  ห้อง ${inv.contract?.room?.number} (${monthLabel} ${
+                inv.year
+              }) : ${amt.toLocaleString()} บาท\n`;
+              total += amt;
+            });
+          text += '\n';
         });
-        text += '\n';
-      });
-      
+
       text += `รวมทั้งสิ้น ${total.toLocaleString()} บาท`;
       await navigator.clipboard.writeText(text);
       alert('คัดลอกสรุปห้องค้างชำระแล้ว');

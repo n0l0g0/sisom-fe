@@ -2,7 +2,12 @@
 
 import { useEffect, useMemo, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { api, Invoice } from '@/services/api';
+import { api, Invoice, MeterReading } from '@/services/api';
+
+type MeterPair = {
+  current: MeterReading | null;
+  previous: MeterReading | null;
+};
 
 function PrintAllPage() {
   const searchParams = useSearchParams();
@@ -10,6 +15,7 @@ function PrintAllPage() {
   const keyParam = searchParams.get('key');
   const [ids, setIds] = useState<string | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [meterByInvoiceId, setMeterByInvoiceId] = useState<Record<string, MeterPair>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -92,6 +98,50 @@ function PrintAllPage() {
     };
   }, [ids]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (invoices.length === 0) {
+        setMeterByInvoiceId({});
+        return;
+      }
+      try {
+        const entries = await Promise.all(
+          invoices.map(async (inv) => {
+            const roomId = inv.contract?.room?.id;
+            if (!roomId) return [inv.id, { current: null, previous: null }] as const;
+            let pm = inv.month - 1;
+            let py = inv.year;
+            if (pm <= 0) {
+              pm = 12;
+              py -= 1;
+            }
+            const [currList, prevList] = await Promise.all([
+              api.getMeterReadings(roomId, inv.month, inv.year),
+              api.getMeterReadings(roomId, pm, py),
+            ]);
+            return [
+              inv.id,
+              {
+                current: currList[0] || null,
+                previous: prevList[0] || null,
+              },
+            ] as const;
+          }),
+        );
+        if (cancelled) return;
+        setMeterByInvoiceId(Object.fromEntries(entries));
+      } catch {
+        if (cancelled) return;
+        setMeterByInvoiceId({});
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [invoices]);
+
   const thaiMonthLabel = useMemo(() => {
     if (invoices.length === 0) return 'สรุปห้องค้างชำระ';
     const inv = invoices[0];
@@ -105,24 +155,55 @@ function PrintAllPage() {
     return `${name} ${year}`;
   }, [invoices]);
 
-  const totalAmount = useMemo(
-    () =>
-      invoices.reduce(
-        (sum, inv) => sum + Number(inv.totalAmount ?? 0),
-        0,
-      ),
-    [invoices],
-  );
-
-  const maxRows = 25;
-  const displayRows = useMemo(() => {
-    const rows = [...invoices];
-    const blanks = Math.max(0, maxRows - rows.length);
-    for (let i = 0; i < blanks; i += 1) {
-      rows.push(null as unknown as Invoice);
+  const groupedByBuilding = useMemo(() => {
+    const groups = new Map<string, Invoice[]>();
+    for (const inv of invoices) {
+      const buildingName =
+        inv.contract?.room?.building?.name ||
+        inv.contract?.room?.building?.code ||
+        'ไม่ระบุตึก';
+      if (!groups.has(buildingName)) groups.set(buildingName, []);
+      groups.get(buildingName)!.push(inv);
     }
-    return rows;
+    return Array.from(groups.entries()).map(([buildingName, rows]) => ({
+      buildingName,
+      rows,
+      subtotal: rows.reduce((sum, inv) => sum + Number(inv.totalAmount ?? 0), 0),
+      subtotalRent: rows.reduce((sum, inv) => sum + Number(inv.rentAmount ?? 0), 0),
+      subtotalWater: rows.reduce((sum, inv) => sum + Number(inv.waterAmount ?? 0), 0),
+      subtotalElectric: rows.reduce((sum, inv) => sum + Number(inv.electricAmount ?? 0), 0),
+      subtotalWaterUnits: rows.reduce((sum, inv) => {
+        const p = meterByInvoiceId[inv.id];
+        const v =
+          p?.current && p?.previous
+            ? Math.max(0, Number(p.current.waterReading) - Number(p.previous.waterReading))
+            : 0;
+        return sum + v;
+      }, 0),
+      subtotalElectricUnits: rows.reduce((sum, inv) => {
+        const p = meterByInvoiceId[inv.id];
+        const v =
+          p?.current && p?.previous
+            ? Math.max(0, Number(p.current.electricReading) - Number(p.previous.electricReading))
+            : 0;
+        return sum + v;
+      }, 0),
+    }));
+  }, [invoices, meterByInvoiceId]);
+
+  const totals = useMemo(() => {
+    return {
+      rent: invoices.reduce((sum, inv) => sum + Number(inv.rentAmount ?? 0), 0),
+      water: invoices.reduce((sum, inv) => sum + Number(inv.waterAmount ?? 0), 0),
+      electric: invoices.reduce((sum, inv) => sum + Number(inv.electricAmount ?? 0), 0),
+      total: invoices.reduce((sum, inv) => sum + Number(inv.totalAmount ?? 0), 0),
+    };
   }, [invoices]);
+
+  const pages = useMemo(() => {
+    if (groupedByBuilding.length === 0) return [];
+    return groupedByBuilding;
+  }, [groupedByBuilding]);
 
   if (loading) {
     return (
@@ -161,26 +242,59 @@ function PrintAllPage() {
         .arrears-page {
           width: 210mm;
           height: 297mm;
-          padding: 15mm;
+          padding: 12mm;
           box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+        }
+        .arrears-page.page-break {
+          page-break-after: always;
+          break-after: page;
+        }
+        .arrears-page.page-break:last-child {
+          page-break-after: auto;
+          break-after: auto;
         }
 
         table.arrears-table {
           border-collapse: collapse;
           width: 100%;
+          table-layout: fixed;
         }
 
         table.arrears-table th,
         table.arrears-table td {
           border: 1px solid #000;
-          padding: 0 6px;
-          font-size: 13px;
-          height: 20px;
-          line-height: 20px;
+          padding: 1px 3px;
+          font-size: 15px;
+          height: 24px;
+          line-height: 1.1;
+          vertical-align: middle;
         }
 
         table.arrears-table th {
           background-color: #f5f5f5;
+        }
+        .building-row td {
+          background: #f0f4ff;
+          font-weight: 700;
+        }
+        .number-cell {
+          text-align: right;
+          white-space: nowrap;
+        }
+        .left-cell {
+          text-align: left;
+        }
+        .center-cell {
+          text-align: center;
+        }
+        .print-area {
+          flex: 1;
+        }
+        .red {
+          color: #ff0000;
+          font-weight: 700;
         }
 
         @media print {
@@ -194,76 +308,161 @@ function PrintAllPage() {
           }
         }
       `}</style>
-      <div className="arrears-page">
-        <div className="flex justify-between items-center mb-4 print-button">
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          >
-            พิมพ์
-          </button>
-        </div>
-        <h1
-          className="text-3xl font-bold text-center mb-4"
-          style={{ color: '#ff0000' }}
+      <div className="flex justify-between items-center mb-4 print-button p-4">
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
         >
-          {thaiMonthLabel}
-        </h1>
-        <div className="print-area">
-          <table className="arrears-table">
-            <thead>
-              <tr>
-                <th style={{ width: '10%' }}>หอ</th>
-                <th style={{ width: '10%' }}>ห้อง</th>
-                <th style={{ width: '38%' }}>ผู้เช่า</th>
-                <th style={{ width: '14%' }}>สถานะ</th>
-                <th style={{ width: '14%' }}>รวม</th>
-                <th style={{ width: '14%' }}>หมายเหตุ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayRows.map((inv, index) => {
-                if (!inv) {
+          พิมพ์
+        </button>
+      </div>
+      {pages.map((group, pageIndex) => (
+        <div key={`page-${pageIndex}`} className="arrears-page page-break">
+          <div className="mb-1 text-right" style={{ fontSize: '17px' }}>หน้า {pageIndex + 1}/{pages.length}</div>
+          <h1 className="font-bold text-center mb-2" style={{ color: '#ff0000', fontSize: '35px' }}>
+            {thaiMonthLabel}
+          </h1>
+          <p className="text-center font-bold mb-4" style={{ fontSize: '21px' }}>ตึก/หอ: {group.buildingName}</p>
+          <div className="print-area">
+            <table className="arrears-table">
+              <thead>
+                <tr>
+                  <th rowSpan={2} style={{ width: '7%' }}>ห้อง</th>
+                  <th colSpan={4}>น้ำ</th>
+                  <th colSpan={4}>ไฟ</th>
+                  <th rowSpan={2} style={{ width: '8%' }}>ค่าเช่า</th>
+                  <th rowSpan={2} style={{ width: '9%' }}>รวม</th>
+                  <th rowSpan={2} style={{ width: '16%' }}>หมายเหตุ</th>
+                </tr>
+                <tr>
+                  <th style={{ width: '7%' }}>ใหม่</th>
+                  <th style={{ width: '7%' }}>เก่า</th>
+                  <th style={{ width: '6%' }}>หน่วย</th>
+                  <th style={{ width: '7%' }}>ค่าน้ำ</th>
+                  <th style={{ width: '7%' }}>ใหม่</th>
+                  <th style={{ width: '7%' }}>เก่า</th>
+                  <th style={{ width: '6%' }}>หน่วย</th>
+                  <th style={{ width: '7%' }}>ค่าไฟ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {group.rows.map((inv) => {
+                  const meter = meterByInvoiceId[inv.id];
+                  const waterNew = meter?.current?.waterReading ?? null;
+                  const waterOld = meter?.previous?.waterReading ?? null;
+                  const electricNew = meter?.current?.electricReading ?? null;
+                  const electricOld = meter?.previous?.electricReading ?? null;
+                  const waterUnits =
+                    waterNew != null && waterOld != null
+                      ? Math.max(0, Number(waterNew) - Number(waterOld))
+                      : 0;
+                  const electricUnits =
+                    electricNew != null && electricOld != null
+                      ? Math.max(0, Number(electricNew) - Number(electricOld))
+                      : 0;
+                  const itemText = (inv.items || [])
+                    .filter((it) => Number(it.amount || 0) > 0)
+                    .map((it) => it.description?.trim())
+                    .filter(Boolean)
+                    .join(', ');
+                  const noteParts = [
+                    inv.note?.trim(),
+                    inv.discountNote?.trim() ? `ส่วนลด: ${inv.discountNote.trim()}` : '',
+                    itemText ? `เพิ่มเติม: ${itemText}` : '',
+                  ].filter(Boolean);
+                  const reportNote = noteParts.join(' | ');
                   return (
-                    <tr key={`blank-${index}`}>
-                      <td /><td /><td /><td /><td /><td />
+                    <tr key={inv.id}>
+                      <td className="center-cell">{inv.contract?.room?.number ?? ''}</td>
+                      <td className="number-cell">{waterNew != null ? Number(waterNew).toLocaleString('th-TH') : '-'}</td>
+                      <td className="number-cell">{waterOld != null ? Number(waterOld).toLocaleString('th-TH') : '-'}</td>
+                      <td className="number-cell">{waterUnits > 0 ? waterUnits.toLocaleString('th-TH') : '-'}</td>
+                      <td className="number-cell">{Number(inv.waterAmount ?? 0).toLocaleString('th-TH')}</td>
+                      <td className="number-cell">{electricNew != null ? Number(electricNew).toLocaleString('th-TH') : '-'}</td>
+                      <td className="number-cell">{electricOld != null ? Number(electricOld).toLocaleString('th-TH') : '-'}</td>
+                      <td className="number-cell">{electricUnits > 0 ? electricUnits.toLocaleString('th-TH') : '-'}</td>
+                      <td className="number-cell">{Number(inv.electricAmount ?? 0).toLocaleString('th-TH')}</td>
+                      <td className="number-cell">{Number(inv.rentAmount ?? 0).toLocaleString('th-TH')}</td>
+                      <td className="number-cell">{Number(inv.totalAmount ?? 0).toLocaleString('th-TH')}</td>
+                      <td className="left-cell">{reportNote}</td>
                     </tr>
                   );
-                }
-                return (
-                  <tr key={inv.id}>
-                    <td>{inv.contract?.room?.building?.name ?? ''}</td>
-                    <td>{inv.contract?.room?.number ?? ''}</td>
-                    <td>{inv.contract?.tenant?.name ?? ''}</td>
-                    <td>ค้างชำระ</td>
-                    <td>
-                      {Number(inv.totalAmount ?? 0).toLocaleString('th-TH')}
+                })}
+                {group.rows.length === 0 && (
+                  <tr>
+                    <td colSpan={12} style={{ textAlign: 'center' }}>
+                      ไม่มีห้องค้างชำระ
+                    </td>
+                  </tr>
+                )}
+                <tr>
+                  <td className="number-cell" style={{ fontWeight: 700 }}>
+                    รวมตึก {group.buildingName}
+                  </td>
+                  <td />
+                  <td />
+                  <td className="number-cell" style={{ fontWeight: 700 }}>
+                    {group.subtotalWaterUnits.toLocaleString('th-TH')}
+                  </td>
+                  <td className="number-cell" style={{ fontWeight: 700 }}>
+                    {group.subtotalWater.toLocaleString('th-TH')}
+                  </td>
+                  <td />
+                  <td />
+                  <td className="number-cell" style={{ fontWeight: 700 }}>
+                    {group.subtotalElectricUnits.toLocaleString('th-TH')}
+                  </td>
+                  <td className="number-cell" style={{ fontWeight: 700 }}>
+                    {group.subtotalElectric.toLocaleString('th-TH')}
+                  </td>
+                  <td className="number-cell" style={{ fontWeight: 700 }}>
+                    {group.subtotalRent.toLocaleString('th-TH')}
+                  </td>
+                  <td className="number-cell" style={{ fontWeight: 700 }}>
+                    {group.subtotal.toLocaleString('th-TH')}
+                  </td>
+                  <td />
+                </tr>
+                {pageIndex === pages.length - 1 && (
+                  <tr>
+                    <td style={{ textAlign: 'right', fontWeight: 700 }}>
+                      รวมทั้งหมด
+                    </td>
+                    <td />
+                    <td />
+                    <td />
+                    <td className="number-cell" style={{ fontWeight: 700 }}>
+                      {totals.water.toLocaleString('th-TH')}
+                    </td>
+                    <td />
+                    <td />
+                    <td />
+                    <td className="number-cell" style={{ fontWeight: 700 }}>
+                      {totals.electric.toLocaleString('th-TH')}
+                    </td>
+                    <td className="number-cell" style={{ fontWeight: 700 }}>
+                      {totals.rent.toLocaleString('th-TH')}
+                    </td>
+                    <td className="number-cell" style={{ fontWeight: 700 }}>
+                      {totals.total.toLocaleString('th-TH')}
                     </td>
                     <td />
                   </tr>
-                );
-              })}
-              {invoices.length === 0 && (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: 'center' }}>
-                    ไม่มีห้องค้างชำระ
-                  </td>
-                </tr>
-              )}
-              <tr>
-                <td colSpan={4} style={{ textAlign: 'right', fontWeight: 700 }}>
-                  รวมยอด
-                </td>
-                <td style={{ fontWeight: 700 }}>
-                  {totalAmount.toLocaleString('th-TH')}
-                </td>
-                <td />
-              </tr>
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      ))}
+      {pages.length === 0 && (
+        <div className="arrears-page">
+          <h1 className="text-3xl font-bold text-center mb-2" style={{ color: '#ff0000' }}>
+            {thaiMonthLabel}
+          </h1>
+          <p className="text-center text-sm mb-4">ไม่มีห้องค้างชำระ</p>
+        </div>
+      )}
     </div>
   );
 }

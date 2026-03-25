@@ -23,6 +23,8 @@ import { Button } from "@/components/ui/button";
   const [itemDesc, setItemDesc] = useState('');
   const [itemAmount, setItemAmount] = useState('');
   const [discount, setDiscount] = useState('');
+  const [discountNote, setDiscountNote] = useState('');
+  const [invoiceNote, setInvoiceNote] = useState('');
   const [currentMR, setCurrentMR] = useState<MeterReading | null>(null);
   const [prevMR, setPrevMR] = useState<MeterReading | null>(null);
   const [dormConfig, setDormConfig] = useState<DormConfig | null>(null);
@@ -78,6 +80,8 @@ import { Button } from "@/components/ui/button";
       setDetail(data);
       setSettlePaidAt(formatLocalDateTime(new Date()));
       setDiscount(data.discount === null || data.discount === undefined ? '' : String(data.discount));
+      setDiscountNote(data.discountNote || '');
+      setInvoiceNote(data.note || '');
       try {
         const cfg = await api.getDormConfig();
         setDormConfig(cfg || null);
@@ -173,8 +177,16 @@ import { Button } from "@/components/ui/button";
     if (!detail) return;
     try {
       setLoading(true);
-      const updates: { discount?: number; waterAmount?: number; electricAmount?: number } = {
+      const updates: {
+        discount?: number;
+        discountNote?: string;
+        note?: string;
+        waterAmount?: number;
+        electricAmount?: number;
+      } = {
         discount: Math.max(0, Number(discount || 0)),
+        discountNote: discountNote.trim(),
+        note: invoiceNote.trim(),
       };
       if (pendingUtilities?.waterAmount !== undefined) {
         updates.waterAmount = pendingUtilities.waterAmount;
@@ -228,6 +240,28 @@ import { Button } from "@/components/ui/button";
       router.refresh();
     } catch (e) {
       alert((e as Error).message || 'รับชำระเงินไม่สำเร็จ');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUnsettle = async () => {
+    if (!detail) return;
+    if (detail.status !== 'PAID') {
+      alert('บิลนี้ยังไม่ได้อยู่สถานะชำระแล้ว');
+      return;
+    }
+    if (!confirm('ยืนยันการยกเลิกรับชำระ? ระบบจะปรับบิลกลับเป็นสถานะร่าง')) return;
+    try {
+      setLoading(true);
+      await api.unsettleInvoice(detail.id);
+      try {
+        window.dispatchEvent(new Event('INVOICE_UPDATED'));
+      } catch {}
+      setOpen(false);
+      router.refresh();
+    } catch (e) {
+      alert((e as Error).message || 'ยกเลิกรับชำระไม่สำเร็จ');
     } finally {
       setLoading(false);
     }
@@ -556,11 +590,29 @@ import { Button } from "@/components/ui/button";
                     </div>
                     <div className="space-y-2">
                       <div className="font-semibold text-slate-700 dark:text-slate-300">ส่วนลด</div>
-                      <div className="flex items-center gap-2">
+                      <div className="grid grid-cols-1 gap-2">
                         <Input
                           type="number"
+                          placeholder="จำนวนเงินส่วนลด"
                           value={discount}
                           onChange={(e) => setDiscount(e.target.value)}
+                          className="flex-1 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                        />
+                        <Input
+                          placeholder="รายละเอียดส่วนลด"
+                          value={discountNote}
+                          onChange={(e) => setDiscountNote(e.target.value)}
+                          className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="font-semibold text-slate-700 dark:text-slate-300">หมายเหตุ</div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          placeholder="หมายเหตุสำหรับรายงานพิมพ์"
+                          value={invoiceNote}
+                          onChange={(e) => setInvoiceNote(e.target.value)}
                           className="flex-1 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                         />
                       </div>
@@ -588,8 +640,16 @@ import { Button } from "@/components/ui/button";
                   <Button
                     onClick={handleSettle}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    disabled={detail?.status === 'PAID'}
                   >
                     รับชำระ
+                  </Button>
+                  <Button
+                    onClick={handleUnsettle}
+                    className="bg-rose-700 hover:bg-rose-800 text-white"
+                    disabled={detail?.status !== 'PAID'}
+                  >
+                    ยกเลิกรับชำระ
                   </Button>
                   <Button
                     onClick={async () => {
@@ -612,13 +672,22 @@ import { Button } from "@/components/ui/button";
                 </div>
             </div>
             <DialogFooter>
-              <div className="w-full flex justify-start">
+              <div className="w-full flex justify-between">
+                <Button
+                  onClick={handleUnsettle}
+                  className="bg-rose-700 hover:bg-rose-800 text-white"
+                  disabled={!detail || detail.status !== 'PAID' || loading}
+                >
+                  ยกเลิกรับชำระ
+                </Button>
+                <div className="flex justify-start">
                 <Button
                   onClick={() => setOpen(false)}
                   className="bg-red-600 hover:bg-red-700 text-white"
                 >
                   ปิดหน้าต่าง
                 </Button>
+                </div>
               </div>
             </DialogFooter>
           </DialogContent>

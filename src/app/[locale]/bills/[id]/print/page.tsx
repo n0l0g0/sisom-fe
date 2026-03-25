@@ -189,6 +189,14 @@ export function InvoicePrint({
     '';
   const bankAccountText = (dormConfig?.bankAccount || '').trim();
   const bankAccountParts = bankAccountText ? bankAccountText.split('เลขที่บัญชี') : [];
+  const additionalItems = (invoice.items || []).filter(
+    (it) => Number(it.amount || 0) > 0 && String(it.description || '').trim().length > 0,
+  );
+  const customNotes = [
+    invoice.note?.trim() || '',
+    invoice.discountNote?.trim() ? `ส่วนลด: ${invoice.discountNote.trim()}` : '',
+    ...additionalItems.map((it) => `เพิ่มเติม: ${it.description}`),
+  ].filter(Boolean);
 
   return (
     <div
@@ -291,6 +299,22 @@ export function InvoicePrint({
                 </td>
               </tr>
             )}
+            {additionalItems.map((it) => (
+              <tr key={it.id}>
+                <td className="border border-black p-1">{it.description}</td>
+                <td className="border border-black p-1 text-center">-</td>
+                <td className="border border-black p-1 text-center">-</td>
+                <td className="border border-black p-1 text-center">-</td>
+                <td className="border border-black p-1 text-center">-</td>
+                <td className="border border-black p-1 text-center">-</td>
+                <td className="border border-black p-1 text-center">-</td>
+                <td className="border border-black p-1 text-right">
+                  {Number(it.amount).toLocaleString('th-TH', {
+                    minimumFractionDigits: 2,
+                  })}
+                </td>
+              </tr>
+            ))}
             {invoice.discount > 0 && (
               <tr>
                 <td className="border border-black p-1">ส่วนลด</td>
@@ -305,6 +329,13 @@ export function InvoicePrint({
                   {Number(invoice.discount).toLocaleString('th-TH', {
                     minimumFractionDigits: 2,
                   })}
+                </td>
+              </tr>
+            )}
+            {invoice.discount > 0 && invoice.discountNote && (
+              <tr>
+                <td className="border border-black p-1 text-xs text-slate-600" colSpan={8}>
+                  หมายเหตุส่วนลด: {invoice.discountNote}
                 </td>
               </tr>
             )}
@@ -327,6 +358,9 @@ export function InvoicePrint({
           <div className="font-semibold">หมายเหตุ:</div>
           <ul className="list-disc list-inside pl-2">
             <li>กรุณาชำระภายในวันที่ 5 ของทุกเดือน</li>
+            {customNotes.map((line, idx) => (
+              <li key={`custom-note-${idx}`}>{line}</li>
+            ))}
             {bankAccountText && (
               <li className="leading-snug">
                 ชำระโดยการโอนเงินที่ <br />

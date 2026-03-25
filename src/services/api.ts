@@ -129,6 +129,8 @@ export interface Invoice {
   electricAmount: number;
   otherFees: number;
   discount: number;
+  discountNote?: string | null;
+  note?: string | null;
   totalAmount: number;
   status: 'DRAFT' | 'SENT' | 'PAID' | 'OVERDUE' | 'CANCELLED';
   dueDate: string;
@@ -571,6 +573,17 @@ export const api = {
     return res.json();
   },
 
+  unsettleInvoice: async (id: string): Promise<Invoice> => {
+    const res = await fetch(`${API_URL}/invoices/${id}/unsettle`, {
+      method: 'POST',
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new Error(txt || 'Failed to unsettle invoice');
+    }
+    return res.json();
+  },
+
   // Buildings
   getBuildings: async (): Promise<Building[]> => {
     const res = await fetch(`${API_URL}/buildings`, { cache: 'no-store' });
@@ -945,9 +958,40 @@ export const api = {
       body: JSON.stringify({ roomId, month, year }),
     });
     if (!res.ok) {
-      const txt = await res.text().catch(() => '');
-      throw new Error(txt || 'Failed to send invoice for room');
+      const pickMessage = (body: any): string => {
+        const m = body?.message ?? body?.error ?? body;
+        if (Array.isArray(m)) return m.filter((x) => typeof x === 'string').join(', ');
+        if (typeof m === 'string') return m;
+        return 'Failed to send invoice for room';
+      };
+
+      // Some servers may not return JSON reliably; fallback tries to parse text as JSON too.
+      try {
+        const errBody = await res.json();
+        throw new Error(pickMessage(errBody));
+      } catch {
+        const txt = await res.text().catch(() => '');
+        try {
+          const parsed = JSON.parse(txt);
+          throw new Error(pickMessage(parsed));
+        } catch {
+          throw new Error(txt || 'Failed to send invoice for room');
+        }
+      }
     }
+    return res.json();
+  },
+
+  recalculateInvoicesByMonth: async (
+    month: number,
+    year: number,
+  ): Promise<{ ok: boolean; updated: number; total: number; month: number; year: number }> => {
+    const res = await fetch(`${API_URL}/invoices/recalculate-month`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ month, year }),
+    });
+    if (!res.ok) throw new Error('Failed to recalculate invoices');
     return res.json();
   },
 

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { api, Invoice } from '@/services/api';
 import { useRouter } from 'next/navigation';
 import SendAllProgressDialog, { RoomProgress } from './SendAllProgressDialog';
-import { Download, Send, FileText, Printer, Building } from 'lucide-react';
+import { Download, Send, FileText, Printer, Droplets } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +25,7 @@ export default function BillsHeaderActions({ selectedMonthKey, invoices }: Bills
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [open, setOpen] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [completed, setCompleted] = useState(0);
   const [failed, setFailed] = useState(0);
@@ -75,8 +76,28 @@ export default function BillsHeaderActions({ selectedMonthKey, invoices }: Bills
     const key = `print_ids_${Date.now()}`;
     localStorage.setItem(key, JSON.stringify(targets));
     
-    const url = `/bills/print-all?key=${key}`;
+    const url = `/bills/print-rooms?key=${key}`;
     window.open(url, '_blank');
+  };
+
+  const handlePrintRoomsAll = () => {
+    if (!selectedMonthKey) return;
+    const [y, m] = selectedMonthKey.split('-');
+    const year = Number(y);
+    const month = Number(m);
+
+    const targets = invoices
+      .filter((inv) => inv.year === year && inv.month === month && inv.status !== 'CANCELLED')
+      .map((inv) => inv.id);
+
+    if (targets.length === 0) {
+      alert('ไม่พบบิลในเดือนที่เลือก');
+      return;
+    }
+
+    const key = `print_ids_${Date.now()}`;
+    localStorage.setItem(key, JSON.stringify(targets));
+    window.open(`/bills/print-rooms?key=${key}`, '_blank');
   };
 
   // Extract buildings for the selected month
@@ -184,6 +205,27 @@ export default function BillsHeaderActions({ selectedMonthKey, invoices }: Bills
     }
   };
 
+  const handleRecalculateUtilities = async () => {
+    if (!selectedMonthKey || recalculating) return;
+    const [y, m] = selectedMonthKey.split('-');
+    const year = Number(y);
+    const month = Number(m);
+    if (!confirm('ยืนยันอัพเดทค่าน้ำไฟทุกห้องของเดือนนี้?')) return;
+    try {
+      setRecalculating(true);
+      const result = await api.recalculateInvoicesByMonth(month, year);
+      try {
+        window.dispatchEvent(new Event('INVOICE_UPDATED'));
+      } catch {}
+      router.refresh();
+      alert(`อัพเดทแล้ว ${result.updated}/${result.total} บิล`);
+    } catch (e) {
+      alert((e as Error).message || 'อัพเดทค่าน้ำไฟไม่สำเร็จ');
+    } finally {
+      setRecalculating(false);
+    }
+  };
+
   return (
     <>
       <div className="flex items-center gap-2">
@@ -219,11 +261,20 @@ export default function BillsHeaderActions({ selectedMonthKey, invoices }: Bills
               ))
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handlePrintAll}>
+            <DropdownMenuItem onClick={handlePrintRoomsAll}>
               <span className="font-semibold">พิมพ์ทั้งหมด</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <button
+          onClick={handleRecalculateUtilities}
+          disabled={!selectedMonthKey || recalculating}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-white font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm text-sm"
+        >
+          {recalculating ? <span className="animate-spin">⏳</span> : <Droplets className="w-4 h-4" />}
+          อัพเดทค่าน้ำไฟ
+        </button>
 
         <button
           onClick={handleExport}

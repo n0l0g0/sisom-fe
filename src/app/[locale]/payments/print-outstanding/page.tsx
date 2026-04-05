@@ -7,6 +7,16 @@ import { api } from '@/services/api';
 const A4_PORTRAIT_HEIGHT_MM = 297 - 16;
 const MM_TO_PX = 96 / 25.4;
 
+/** แสดงห้องแบบ เลขตึก/เลขห้อง โดยตัดคำว่า "ตึก" ออกจากชื่อตึก */
+function formatOutstandingRoomLabel(buildingName: string, roomNumber: string): string {
+  const room = (roomNumber || '').trim();
+  let b = (buildingName || '').trim().replace(/^ตึก(?:\s+)?/u, '').trim();
+  if (!b && !room) return '-';
+  if (!b) return room || '-';
+  if (!room) return b;
+  return `${b}/${room}`;
+}
+
 function PrintOutstandingContent() {
   const searchParams = useSearchParams();
   const monthParam = searchParams.get('month');
@@ -92,7 +102,7 @@ function PrintOutstandingContent() {
   }
 
   const roomCell = (r: { buildingName: string; roomNumber: string }) =>
-    [r.buildingName, r.roomNumber].filter(Boolean).join(' ').trim() || '-';
+    formatOutstandingRoomLabel(r.buildingName, r.roomNumber);
   const noteCell = (r: { dueDateNote: string | null }) =>
     r.dueDateNote != null && r.dueDateNote !== '' ? r.dueDateNote : '';
 
@@ -123,17 +133,39 @@ function PrintOutstandingContent() {
 
         .print-outstanding-page table {
           width: 100%;
+          table-layout: fixed;
           border-collapse: collapse;
           border: 1px solid #000;
           font-size: 14px;
         }
 
+        .print-outstanding-page .col-room {
+          width: 11%;
+        }
+
+        .print-outstanding-page .col-tenant {
+          width: 26%;
+        }
+
+        .print-outstanding-page .col-status {
+          width: 12%;
+        }
+
+        .print-outstanding-page .col-total {
+          width: 13%;
+        }
+
+        .print-outstanding-page .col-note {
+          width: 38%;
+        }
+
         .print-outstanding-page th,
         .print-outstanding-page td {
           border: 1px solid #000;
-          padding: 5px 6px;
+          padding: 6px 8px;
           overflow: hidden;
           text-overflow: ellipsis;
+          word-wrap: break-word;
         }
 
         .print-outstanding-page th {
@@ -181,6 +213,29 @@ function PrintOutstandingContent() {
 
           .fit-a4 {
             transform-origin: top left;
+            box-sizing: border-box;
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
+          .print-outstanding-page h1 {
+            font-size: 18pt;
+            margin-bottom: 8px;
+          }
+
+          .print-outstanding-page table {
+            font-size: 11pt;
+          }
+
+          .print-outstanding-page th,
+          .print-outstanding-page td {
+            padding: 5px 7px;
+          }
+
+          .print-outstanding-page .total-row {
+            font-size: 12pt;
           }
         }
       `}</style>
@@ -194,7 +249,7 @@ function PrintOutstandingContent() {
         </button>
       </div>
       <div
-        className="fit-a4 print-outstanding-page p-4 md:p-6 max-w-4xl mx-auto"
+        className="fit-a4 print-outstanding-page w-full max-w-none mx-auto box-border px-3 py-4 md:px-6 md:py-6 print:px-0 print:py-0"
         ref={contentRef}
         style={{
           transform: `scale(${fitScale})`,

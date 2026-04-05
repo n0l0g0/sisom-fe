@@ -107,7 +107,7 @@ function PrintOutstandingContent() {
     r.dueDateNote != null && r.dueDateNote !== '' ? r.dueDateNote : '';
 
   return (
-    <div className="bg-white text-black">
+    <div className="print-outstanding-root bg-white text-black">
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
 
@@ -211,13 +211,27 @@ function PrintOutstandingContent() {
             height: auto;
           }
 
-          .fit-a4 {
+          /* ยกเลิก scale ตอนพิมพ์ — ไม่งั้นตารางย่อไปมุมซ้ายบนเต็มความกว้างไม่ได้ */
+          .print-outstanding-root .fit-a4 {
+            transform: none !important;
             transform-origin: top left;
             box-sizing: border-box;
             width: 100% !important;
             max-width: none !important;
             margin: 0 !important;
             padding: 0 !important;
+          }
+
+          body main {
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
+          .print-outstanding-root {
+            width: 100% !important;
+            max-width: none !important;
           }
 
           .print-outstanding-page h1 {

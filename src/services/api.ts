@@ -573,6 +573,28 @@ export const api = {
     return res.json();
   },
 
+  settleInvoicePartial: async (
+    id: string,
+    amount: number,
+    paidAt?: string,
+  ): Promise<Invoice & { paidAmount: number; remaining: number }> => {
+    const res = await fetch(`${API_URL}/invoices/${id}/settle-partial`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount, paidAt }),
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      try {
+        const parsed = JSON.parse(txt);
+        throw new Error(parsed.message || txt || 'Failed to settle partial');
+      } catch {
+        throw new Error(txt || 'Failed to settle partial');
+      }
+    }
+    return res.json();
+  },
+
   unsettleInvoice: async (id: string): Promise<Invoice> => {
     const res = await fetch(`${API_URL}/invoices/${id}/unsettle`, {
       method: 'POST',
@@ -595,30 +617,7 @@ export const api = {
   getRooms: async (): Promise<Room[]> => {
     const res = await fetch(`${API_URL}/rooms`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch rooms');
-    const data: Room[] = await res.json();
-
-    // Debug logging to verify rooms loaded from API
-    if (typeof window !== 'undefined') {
-      // Browser console
-      // eslint-disable-next-line no-console
-      console.log(
-        '[sisom-fe] getRooms:',
-        data.length,
-        'rooms ->',
-        data.map((r) => r.number).join(', '),
-      );
-    } else {
-      // Server / Node console
-      // eslint-disable-next-line no-console
-      console.log(
-        '[sisom-fe] getRooms (server):',
-        data.length,
-        'rooms ->',
-        data.map((r) => r.number).join(', '),
-      );
-    }
-
-    return data;
+    return res.json();
   },
   createRoom: async (data: Omit<Room, 'id' | 'contracts' | 'meterReadings'> & { buildingId?: string }): Promise<Room> => {
     const res = await fetch(`${API_URL}/rooms`, {
@@ -776,13 +775,20 @@ export const api = {
   },
 
   // Invoices
-  getInvoices: async (params?: { roomId?: string, ids?: string }): Promise<Invoice[]> => {
+  getInvoiceMonths: async (): Promise<{ year: number; month: number; count: number }[]> => {
+    const res = await fetch(`${API_URL}/invoices/months`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return res.json();
+  },
+
+  getInvoices: async (params?: { roomId?: string; ids?: string; month?: number; year?: number }): Promise<Invoice[]> => {
     let url = `${API_URL}/invoices?`;
     if (params?.roomId) url += `roomId=${params.roomId}&`;
+    if (params?.month) url += `month=${params.month}&`;
+    if (params?.year) url += `year=${params.year}&`;
     if (params?.ids) {
       const idsArray = params.ids.split(',');
       if (idsArray.length > 50) {
-        // Use POST for many IDs
         return api.fetchInvoicesByIds(idsArray);
       }
       url += `ids=${params.ids}&`;

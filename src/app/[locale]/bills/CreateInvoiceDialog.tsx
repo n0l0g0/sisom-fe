@@ -26,11 +26,17 @@ import { useRouter } from 'next/navigation';
 interface CreateInvoiceDialogProps {
   rooms: Room[];
   onCreated?: () => Promise<void> | void;
+  onOpen?: () => Promise<void> | void;
 }
 
-export function CreateInvoiceDialog({ rooms, onCreated }: CreateInvoiceDialogProps) {
+export function CreateInvoiceDialog({ rooms, onCreated, onOpen }: CreateInvoiceDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+
+  const handleOpenChange = (value: boolean) => {
+    if (value && onOpen) onOpen();
+    setOpen(value);
+  };
   const [loading, setLoading] = useState(false);
   const [roomId, setRoomId] = useState<string>('');
   const [month, setMonth] = useState<string>(String(new Date().getMonth() + 1));
@@ -92,7 +98,7 @@ export function CreateInvoiceDialog({ rooms, onCreated }: CreateInvoiceDialogPro
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <button className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition shadow-sm flex items-center gap-2">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

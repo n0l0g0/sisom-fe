@@ -33,6 +33,9 @@ import { Button } from "@/components/ui/button";
   const [scheduleMonthly, setScheduleMonthly] = useState<boolean>(false);
   const [settlePaidAt, setSettlePaidAt] = useState<string>('');
   const [invoicePayments, setInvoicePayments] = useState<any[]>([]);
+  const [settleMode, setSettleMode] = useState<'FULL' | 'PARTIAL' | null>(null);
+  const [partialAmount, setPartialAmount] = useState<string>('');
+  const [settlePickerOpen, setSettlePickerOpen] = useState(false);
   const formatLocalDateTime = (d: Date) => {
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -227,15 +230,25 @@ import { Button } from "@/components/ui/button";
     }
   };
 
-  const handleSettle = async () => {
+  const computedPaidSum = (() => {
+    const list = (detail?.payments || []).filter((p: any) => p.status === 'VERIFIED');
+    return list.reduce((s: number, p: any) => s + Number(p.amount), 0);
+  })();
+  const computedRemaining = Math.max(0, Number(detail?.totalAmount || 0) - computedPaidSum);
+
+  const openSettlePicker = () => {
+    setPartialAmount('');
+    setSettleMode(null);
+    setSettlePickerOpen(true);
+  };
+
+  const handleSettleFull = async () => {
     if (!detail) return;
-    if (!confirm('ยืนยันการรับชำระเงิน?')) return;
     try {
       setLoading(true);
       await api.settleInvoice(detail.id, 'CASH', settlePaidAt || undefined);
-      try {
-        window.dispatchEvent(new Event('INVOICE_UPDATED'));
-      } catch {}
+      try { window.dispatchEvent(new Event('INVOICE_UPDATED')); } catch {}
+      setSettlePickerOpen(false);
       setOpen(false);
       router.refresh();
     } catch (e) {
@@ -243,6 +256,35 @@ import { Button } from "@/components/ui/button";
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSettlePartial = async () => {
+    if (!detail) return;
+    const amt = Number(partialAmount);
+    if (!Number.isFinite(amt) || amt <= 0) {
+      alert('กรุณาระบุยอดชำระที่ถูกต้อง');
+      return;
+    }
+    if (amt > computedRemaining) {
+      alert(`ยอดชำระ (${amt.toLocaleString()}) มากกว่ายอดคงค้าง (${computedRemaining.toLocaleString()})`);
+      return;
+    }
+    try {
+      setLoading(true);
+      await api.settleInvoicePartial(detail.id, amt, settlePaidAt || undefined);
+      try { window.dispatchEvent(new Event('INVOICE_UPDATED')); } catch {}
+      setSettlePickerOpen(false);
+      setOpen(false);
+      router.refresh();
+    } catch (e) {
+      alert((e as Error).message || 'บันทึกการแบ่งจ่ายไม่สำเร็จ');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSettle = async () => {
+    openSettlePicker();
   };
 
   const handleUnsettle = async () => {
@@ -638,7 +680,7 @@ import { Button } from "@/components/ui/button";
                     บันทึก
                   </Button>
                   <Button
-                    onClick={handleSettle}
+                    onClick={openSettlePicker}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white"
                     disabled={detail?.status === 'PAID'}
                   >
@@ -671,6 +713,126 @@ import { Button } from "@/components/ui/button";
                   </Button>
                 </div>
             </div>
+
+            {/* ─── Settle Picker Popup ─── */}
+            <Dialog open={settlePickerOpen} onOpenChange={setSettlePickerOpen}>
+              <DialogContent className="sm:max-w-[420px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <DialogHeader>
+                  <DialogTitle className="text-slate-900 dark:text-white">เลือกรูปแบบการรับชำระ</DialogTitle>
+                  <DialogDescription className="text-slate-500 dark:text-slate-400">
+                    ห้อง {detail?.contract?.room?.number} — ยอดบิล ฿{Number(detail?.totalAmount || 0).toLocaleString()}
+                    {computedPaidSum > 0 && (
+                      <span className="block text-emerald-600 dark:text-emerald-400 font-medium">
+                        ชำระไปแล้ว ฿{computedPaidSum.toLocaleString()} · คงค้าง ฿{computedRemaining.toLocaleString()}
+                      </span>
+                    )}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4 py-2">
+                  {/* วันที่รับชำระ */}
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium text-slate-700 dark:text-slate-300">วันที่รับชำระ</div>
+                    <input
+                      type="datetime-local"
+                      value={settlePaidAt}
+                      onChange={(e) => setSettlePaidAt(e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  {/* โหมดเลือก */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setSettleMode('FULL')}
+                      className={`rounded-xl border-2 p-4 text-left transition-all ${settleMode === 'FULL' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'border-slate-200 dark:border-slate-600 hover:border-emerald-300'}`}
+                    >
+                      <div className="text-base font-bold text-emerald-700 dark:text-emerald-400">ชำระเต็มจำนวน</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">ตัดยอดทั้งหมด ฿{computedRemaining.toLocaleString()}</div>
+                    </button>
+                    <button
+                      onClick={() => setSettleMode('PARTIAL')}
+                      className={`rounded-xl border-2 p-4 text-left transition-all ${settleMode === 'PARTIAL' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-slate-200 dark:border-slate-600 hover:border-indigo-300'}`}
+                    >
+                      <div className="text-base font-bold text-indigo-700 dark:text-indigo-400">แบ่งจ่าย</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">ระบุยอดที่รับครั้งนี้</div>
+                    </button>
+                  </div>
+
+                  {/* กรอกยอดแบ่งจ่าย */}
+                  {settleMode === 'PARTIAL' && (
+                    <div className="space-y-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-4">
+                      <div className="space-y-1">
+                        <div className="text-sm font-medium text-slate-700 dark:text-slate-300">ยอดที่ชำระครั้งนี้ (บาท)</div>
+                        <input
+                          type="number"
+                          min={1}
+                          max={computedRemaining}
+                          step="any"
+                          placeholder={`สูงสุด ${computedRemaining.toLocaleString()}`}
+                          value={partialAmount}
+                          onChange={(e) => setPartialAmount(e.target.value)}
+                          className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          autoFocus
+                        />
+                      </div>
+                      {/* สรุปยอดคงเหลือ realtime */}
+                      {(() => {
+                        const amt = Number(partialAmount);
+                        const newRem = Math.max(0, computedRemaining - (Number.isFinite(amt) ? amt : 0));
+                        const valid = Number.isFinite(amt) && amt > 0 && amt <= computedRemaining;
+                        return valid ? (
+                          <div className="rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-slate-500 dark:text-slate-400">รับชำระครั้งนี้</span>
+                              <span className="font-semibold text-emerald-600 dark:text-emerald-400">฿{amt.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-500 dark:text-slate-400">ยอดคงเหลือในบิล</span>
+                              <span className={`font-semibold ${newRem === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                ฿{newRem.toLocaleString()}
+                              </span>
+                            </div>
+                            {newRem === 0 && (
+                              <div className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">ชำระครบ — บิลจะเปลี่ยนเป็นสถานะ "ชำระแล้ว"</div>
+                            )}
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                  )}
+                </div>
+
+                <DialogFooter className="gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setSettlePickerOpen(false)}
+                    className="border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300"
+                  >
+                    ยกเลิก
+                  </Button>
+                  {settleMode === 'FULL' && (
+                    <Button
+                      onClick={handleSettleFull}
+                      disabled={loading}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      {loading ? 'กำลังบันทึก...' : `ยืนยันชำระ ฿${computedRemaining.toLocaleString()}`}
+                    </Button>
+                  )}
+                  {settleMode === 'PARTIAL' && (
+                    <Button
+                      onClick={handleSettlePartial}
+                      disabled={loading || !Number.isFinite(Number(partialAmount)) || Number(partialAmount) <= 0 || Number(partialAmount) > computedRemaining}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                    >
+                      {loading ? 'กำลังบันทึก...' : `บันทึกแบ่งจ่าย ฿${Number(partialAmount) > 0 ? Number(partialAmount).toLocaleString() : '...'}`}
+                    </Button>
+                  )}
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <DialogFooter>
               <div className="w-full flex justify-between">
                 <Button
@@ -743,6 +905,27 @@ import { Button } from "@/components/ui/button";
                       })()}
                     </div>
                   </div>
+                  {/* ยอดชำระ / คงค้าง */}
+                  {(() => {
+                    const verified = (detail.payments || []).filter((p: any) => p.status === 'VERIFIED');
+                    const paidSum = verified.reduce((s: number, p: any) => s + Number(p.amount), 0);
+                    const remaining = Math.max(0, Number(detail.totalAmount) - paidSum);
+                    if (verified.length <= 1 && remaining === 0) return null;
+                    return (
+                      <>
+                        <div className="space-y-1">
+                          <div className="text-sm text-slate-500 dark:text-slate-400">ชำระรวมแล้ว</div>
+                          <div className="font-semibold text-emerald-600 dark:text-emerald-400">฿{paidSum.toLocaleString()}</div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-sm text-slate-500 dark:text-slate-400">คงค้าง</div>
+                          <div className={`font-semibold ${remaining === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                            ฿{remaining.toLocaleString()}
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
                 <div className="md:grid md:grid-cols-2 md:gap-6">
                   <div className="space-y-2">
@@ -801,6 +984,44 @@ import { Button } from "@/components/ui/button";
                         )}
                       </div>
                     </div>
+                    {/* ประวัติการแบ่งจ่าย */}
+                    {(() => {
+                      const all = [...(detail.payments || []), ...(invoicePayments || [])];
+                      const seen = new Set<string>();
+                      const unique = all.filter((p: any) => {
+                        if (seen.has(p.id)) return false;
+                        seen.add(p.id);
+                        return true;
+                      });
+                      const verified = unique.filter((p: any) => p.status === 'VERIFIED');
+                      if (verified.length <= 1) return null;
+                      const sorted = [...verified].sort((a: any, b: any) => new Date(a.paidAt).getTime() - new Date(b.paidAt).getTime());
+                      const totalPaid = sorted.reduce((s: number, p: any) => s + Number(p.amount), 0);
+                      const remaining = Math.max(0, Number(detail.totalAmount) - totalPaid);
+                      return (
+                        <div className="space-y-2">
+                          <div className="font-semibold text-slate-700 dark:text-slate-300">ประวัติการชำระ</div>
+                          <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                            {sorted.map((p: any, idx: number) => {
+                              const d = new Date(p.paidAt);
+                              return (
+                                <div key={p.id} className={`flex items-center justify-between px-3 py-2 text-sm ${idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-900/50'}`}>
+                                  <div className="text-slate-500 dark:text-slate-400">ครั้งที่ {idx + 1} · {d.toLocaleDateString('th-TH')} {d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}</div>
+                                  <div className="font-semibold text-emerald-600 dark:text-emerald-400">+฿{Number(p.amount).toLocaleString()}</div>
+                                </div>
+                              );
+                            })}
+                            <div className="flex items-center justify-between px-3 py-2 text-sm bg-slate-100 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">
+                              <div className="font-semibold text-slate-700 dark:text-slate-300">คงเหลือ</div>
+                              <div className={`font-bold ${remaining === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                ฿{remaining.toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     <div className="space-y-2">
                       <div className="font-semibold text-slate-700 dark:text-slate-300">ข้อมูลสลิป</div>
                       {(() => {

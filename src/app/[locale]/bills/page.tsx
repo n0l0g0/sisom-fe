@@ -52,45 +52,11 @@ function BillsPageContent() {
   }, [searchParams]);
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  // Rooms are only needed by CreateInvoiceDialog — lazy-loaded on first open
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [roomsLoaded, setRoomsLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Fetch Data
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const [invoicesRes, roomsRes] = await Promise.all([
-        api.getInvoices(),
-        api.getRooms(),
-      ]);
-      setInvoices(invoicesRes);
-      setRooms(roomsRes);
-    } catch (e) {
-      setError((e as Error).message || 'โหลดข้อมูลไม่สำเร็จ');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Refetch when user returns to tab or when invoice updated elsewhere. Do NOT refetch on window focus (e.g. clicking into input) to avoid constant reloads.
-  useEffect(() => {
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') fetchData();
-    };
-    const onInvoiceUpdated = () => fetchData();
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('INVOICE_UPDATED', onInvoiceUpdated as any);
-    return () => {
-      document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener('INVOICE_UPDATED', onInvoiceUpdated as any);
-    };
-  }, []);
 
   // State
   const [searchTerm, setSearchTerm] = useState('');
@@ -98,28 +64,116 @@ function BillsPageContent() {
   const [statusFilter, setStatusFilter] = useState<'ALL'|'DRAFT'|'SENT'|'PAID'|'OVERDUE'|'CANCELLED'>('ALL');
   const [schedules, setSchedules] = useState<Record<string, { monthlyDay?: number; oneTimeDate?: string }>>({});
 
-  // Month Keys
-  const monthKeys = useMemo(() => {
-    const set = new Set<string>();
-    for (const inv of invoices) {
-      set.add(`${inv.year}-${String(inv.month).padStart(2, '0')}`);
-    }
-    const sorted = Array.from(set).sort().reverse();
-    return sorted;
-  }, [invoices]);
+  // Available months from server (lightweight: no joins, just GROUP BY)
+  const [invoiceMonths, setInvoiceMonths] = useState<{ year: number; month: number; count: number }[]>([]);
 
   const thaiMonths = [
     'มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
     'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'
   ];
 
-  // Initialize selected month
-  useEffect(() => {
-    if (!selectedMonthKey && monthKeys.length > 0) {
-      // Default to latest month
-      setSelectedMonthKey(monthKeys[0]);
+  // Month keys derived from server month list (fast, no joins)
+  const monthKeys = useMemo(() => {
+    return invoiceMonths.map(
+      ({ year, month }) => `${year}-${String(month).padStart(2, '0')}`
+    );
+  }, [invoiceMonths]);
+
+  // Fetch invoices for a specific month (or all if no month given)
+  const fetchInvoices = async (month?: number, year?: number) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await api.getInvoices({ month, year });
+      setInvoices(data);
+    } catch (e) {
+      setError((e as Error).message || 'โหลดข้อมูลไม่สำเร็จ');
+    } finally {
+      setLoading(false);
     }
-  }, [monthKeys, selectedMonthKey]);
+  };
+
+  // Fetch available month list (no joins — very fast)
+  const fetchMonths = async () => {
+    try {
+      const data = await api.getInvoiceMonths();
+      setInvoiceMonths(data);
+      return data;
+    } catch {
+      return [];
+    }
+  };
+
+  // Lazy-load rooms only when CreateInvoiceDialog needs them
+  const ensureRooms = async () => {
+    if (roomsLoaded) return;
+    try {
+      const data = await api.getRooms();
+      setRooms(data);
+      setRoomsLoaded(true);
+    } catch {
+      // silently ignore — dialog will handle empty rooms
+    }
+  };
+
+  // Initial load: fetch months + current month's invoices in parallel
+  useEffect(() => {
+    const now = new Date();
+    const curMonth = now.getMonth() + 1;
+    const curYear = now.getFullYear();
+    // Set selectedMonthKey immediately so month picker is pre-selected
+    setSelectedMonthKey(`${curYear}-${String(curMonth).padStart(2, '0')}`);
+    // Fetch both in parallel — months is tiny (<1KB), invoices is filtered
+    Promise.all([
+      fetchMonths(),
+      fetchInvoices(curMonth, curYear),
+    ]);
+  }, []);
+
+  // When user picks a different month, fetch only that month's invoices
+  const prevMonthKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedMonthKey || selectedMonthKey === prevMonthKeyRef.current) return;
+    prevMonthKeyRef.current = selectedMonthKey;
+    if (selectedMonthKey === 'ALL') {
+      fetchInvoices(); // no filter = all
+    } else {
+      const [yearStr, monthStr] = selectedMonthKey.split('-');
+      fetchInvoices(Number(monthStr), Number(yearStr));
+    }
+  }, [selectedMonthKey]);
+
+  // Refetch current month when returning after 60+ seconds away, or on INVOICE_UPDATED
+  const fetchData = () => {
+    if (!selectedMonthKey || selectedMonthKey === 'ALL') {
+      fetchInvoices();
+    } else {
+      const [yearStr, monthStr] = (selectedMonthKey || '').split('-');
+      fetchInvoices(Number(monthStr), Number(yearStr));
+    }
+  };
+
+  useEffect(() => {
+    let hiddenAt: number | null = null;
+    const AWAY_THRESHOLD_MS = 60_000;
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now();
+      } else {
+        if (hiddenAt !== null && Date.now() - hiddenAt >= AWAY_THRESHOLD_MS) {
+          fetchData();
+        }
+        hiddenAt = null;
+      }
+    };
+    const onInvoiceUpdated = () => fetchData();
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('INVOICE_UPDATED', onInvoiceUpdated as EventListener);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('INVOICE_UPDATED', onInvoiceUpdated as EventListener);
+    };
+  }, [selectedMonthKey]);
 
   // Filtering
   const normalizeSearch = (value: string) => value.toLowerCase().replace(/[\s\-_/]+/g, '').trim();
@@ -361,6 +415,7 @@ function BillsPageContent() {
           <CreateInvoiceDialog 
             rooms={rooms} 
             onCreated={fetchData}
+            onOpen={ensureRooms}
           />
         </div>
       </div>

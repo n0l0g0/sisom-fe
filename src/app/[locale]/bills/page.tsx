@@ -333,26 +333,28 @@ function BillsPageContent() {
 
   const copyOverdue = async () => {
     try {
-      const allOverdue = invoices.filter((i) => i.status === 'OVERDUE');
-      let overdueInvoices: Invoice[] = [];
+      const allOutstanding = invoices.filter(
+        (i) => i.status === 'OVERDUE' || i.status === 'SENT',
+      );
+      let outstandingInvoices: Invoice[] = [];
 
       if (!selectedMonthKey || selectedMonthKey === 'ALL') {
-        // โหมด \"ทุกเดือน\" – รวมทุกบิลที่ค้างชำระ
-        overdueInvoices = allOverdue;
+        // โหมด \"ทุกเดือน\" – รวมทุกบิลที่ค้างชำระ/รอชำระ
+        outstandingInvoices = allOutstanding;
       } else {
         const [yearStr, monthStr] = selectedMonthKey.split('-');
         const year = Number(yearStr);
         const month = Number(monthStr);
-        overdueInvoices = allOverdue.filter(
+        outstandingInvoices = allOutstanding.filter(
           (i) => i.year === year && i.month === month,
         );
       }
 
-      if (overdueInvoices.length === 0) {
+      if (outstandingInvoices.length === 0) {
         alert(
           selectedMonthKey && selectedMonthKey !== 'ALL'
-            ? 'ไม่มีรายการค้างชำระในเดือนที่เลือก'
-            : 'ไม่มีรายการค้างชำระ',
+            ? 'ไม่มีรายการค้างชำระ/รอชำระในเดือนที่เลือก'
+            : 'ไม่มีรายการค้างชำระ/รอชำระ',
         );
         return;
       }
@@ -363,7 +365,7 @@ function BillsPageContent() {
       let total = 0;
 
       const byBuilding: Record<string, Invoice[]> = {};
-      overdueInvoices.forEach((inv) => {
+      outstandingInvoices.forEach((inv) => {
         const b = inv.contract?.room?.building?.name || 'อื่นๆ';
         if (!byBuilding[b]) byBuilding[b] = [];
         byBuilding[b].push(inv);

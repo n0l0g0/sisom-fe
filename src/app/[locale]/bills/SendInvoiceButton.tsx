@@ -237,8 +237,27 @@ import { Button } from "@/components/ui/button";
     }
   };
 
+  const scopedPayments = useMemo(() => {
+    if (!detail) return [] as any[];
+    const roomId = detail.contract?.room?.id;
+    const all = [...(detail.payments || []), ...(invoicePayments || [])];
+    const seen = new Set<string>();
+    return all.filter((p: any) => {
+      if (!p || !p.id || seen.has(p.id)) return false;
+      seen.add(p.id);
+
+      // Strict scope: this invoice only. If payload includes invoice relation,
+      // also enforce same month/year and same room for extra safety.
+      if (p.invoiceId !== detail.id) return false;
+      const inv = p.invoice;
+      if (inv && (inv.month !== detail.month || inv.year !== detail.year)) return false;
+      if (inv && roomId && inv.contract?.room?.id && inv.contract.room.id !== roomId) return false;
+      return true;
+    });
+  }, [detail, invoicePayments]);
+
   const computedPaidSum = (() => {
-    const list = (detail?.payments || []).filter((p: any) => p.status === 'VERIFIED');
+    const list = scopedPayments.filter((p: any) => p.status === 'VERIFIED');
     return list.reduce((s: number, p: any) => s + Number(p.amount), 0);
   })();
   const computedRemaining = Math.max(0, Number(detail?.totalAmount || 0) - computedPaidSum);
@@ -910,7 +929,7 @@ import { Button } from "@/components/ui/button";
                     <div className="text-sm text-slate-500 dark:text-slate-400">รับชำระเมื่อ</div>
                     <div className="font-semibold text-slate-900 dark:text-white">
                       {(() => {
-                        const list = (detail.payments || []).filter((p: any) => !!p.paidAt);
+                        const list = scopedPayments.filter((p: any) => !!p.paidAt);
                         if (list.length === 0) return '-';
                         const latest = list.sort((a: any, b: any) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime())[0];
                         const d = new Date(latest.paidAt);
@@ -920,7 +939,7 @@ import { Button } from "@/components/ui/button";
                   </div>
                   {/* ยอดชำระ / คงค้าง */}
                   {(() => {
-                    const verified = (detail.payments || []).filter((p: any) => p.status === 'VERIFIED');
+                    const verified = scopedPayments.filter((p: any) => p.status === 'VERIFIED');
                     const paidSum = verified.reduce((s: number, p: any) => s + Number(p.amount), 0);
                     const remaining = Math.max(0, Number(detail.totalAmount) - paidSum);
                     if (verified.length <= 1 && remaining === 0) return null;
@@ -999,14 +1018,7 @@ import { Button } from "@/components/ui/button";
                     </div>
                     {/* ประวัติการแบ่งจ่าย */}
                     {(() => {
-                      const all = [...(detail.payments || []), ...(invoicePayments || [])];
-                      const seen = new Set<string>();
-                      const unique = all.filter((p: any) => {
-                        if (seen.has(p.id)) return false;
-                        seen.add(p.id);
-                        return true;
-                      });
-                      const verified = unique.filter((p: any) => p.status === 'VERIFIED');
+                      const verified = scopedPayments.filter((p: any) => p.status === 'VERIFIED');
                       if (verified.length <= 1) return null;
                       const sorted = [...verified].sort((a: any, b: any) => new Date(a.paidAt).getTime() - new Date(b.paidAt).getTime());
                       const totalPaid = sorted.reduce((s: number, p: any) => s + Number(p.amount), 0);
@@ -1038,9 +1050,7 @@ import { Button } from "@/components/ui/button";
                     <div className="space-y-2">
                       <div className="font-semibold text-slate-700 dark:text-slate-300">ข้อมูลสลิป</div>
                       {(() => {
-                        const base = (detail.payments || []).filter((p: any) => !!p.paidAt);
-                        const fetched = (invoicePayments || []).filter((p: any) => !!p);
-                        const list = base.length > 0 ? base : fetched;
+                        const list = scopedPayments.filter((p: any) => !!p.paidAt);
                         if (list.length === 0) {
                           return <div className="text-sm text-slate-500 dark:text-slate-400">ไม่พบข้อมูลสลิป</div>;
                         }

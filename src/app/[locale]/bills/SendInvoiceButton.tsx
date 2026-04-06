@@ -79,6 +79,7 @@ import { Button } from "@/components/ui/button";
   const openEdit = async () => {
     if (!canEdit) return;
     try {
+      setInvoicePayments([]);
       setOpen(true);
       setMode('EDIT');
       const data = await api.getInvoice(invoice.id);
@@ -125,6 +126,7 @@ import { Button } from "@/components/ui/button";
   const openView = async () => {
     if (!canViewOnly) return;
     try {
+      setInvoicePayments([]);
       setOpen(true);
       setMode('VIEW');
       const data = await api.getInvoice(invoice.id);
@@ -132,7 +134,9 @@ import { Button } from "@/components/ui/button";
       try {
         const payments = await api.getPaymentsByInvoice(invoice.id);
         setInvoicePayments(Array.isArray(payments) ? payments : []);
-      } catch {}
+      } catch {
+        setInvoicePayments([]);
+      }
       if (data.contract?.room?.id) {
         const roomId = data.contract.room.id;
         const list = await api.getMeterReadings(roomId, data.month, data.year);
@@ -147,6 +151,7 @@ import { Button } from "@/components/ui/button";
         setPrevMR(prevList[0] || null);
       }
     } catch {
+      setInvoicePayments([]);
       alert('โหลดบิลไม่สำเร็จ');
       setOpen(false);
     }

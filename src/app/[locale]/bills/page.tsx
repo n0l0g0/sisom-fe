@@ -619,20 +619,16 @@ function BillsPageContent() {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex justify-center items-center gap-2">
-                          {bill.status === 'CANCELLED' ? (
-                            <span className="text-xs text-slate-500 italic">ยกเลิกแล้ว</span>
-                          ) : (
-                            <>
-                              <button
-                                onClick={() => window.open(`/bills/${bill.id}/print`, '_blank')}
-                                className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                                title="พิมพ์ใบแจ้งหนี้"
-                              >
-                                <Printer className="w-4 h-4" />
-                              </button>
-                              <SendInvoiceButton invoice={bill} />
-                            </>
+                          {bill.status !== 'CANCELLED' && (
+                            <button
+                              onClick={() => window.open(`/bills/${bill.id}/print`, '_blank')}
+                              className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                              title="พิมพ์ใบแจ้งหนี้"
+                            >
+                              <Printer className="w-4 h-4" />
+                            </button>
                           )}
+                          <SendInvoiceButton invoice={bill} />
                         </div>
                       </td>
                     </tr>
@@ -664,8 +660,8 @@ function BillsPageContent() {
                     <div className="text-xs text-slate-500 uppercase tracking-wide">ยอดรวม</div>
                     <div className="text-xl font-bold text-slate-900 dark:text-slate-200 font-mono">฿{Number(bill.totalAmount).toLocaleString()}</div>
                   </div>
-                  {bill.status !== 'CANCELLED' && (
-                    <div className="flex gap-2">
+                  <div className="flex gap-2">
+                    {bill.status !== 'CANCELLED' && (
                       <button
                         onClick={() => window.open(`/bills/${bill.id}/print`, '_blank')}
                         className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-600 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
@@ -673,12 +669,12 @@ function BillsPageContent() {
                       >
                         <Printer className="w-5 h-5" />
                       </button>
-                      <SendInvoiceButton 
-                        invoice={bill} 
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium text-sm shadow-lg shadow-indigo-900/20 active:scale-95 transition-all"
-                      />
-                    </div>
-                  )}
+                    )}
+                    <SendInvoiceButton 
+                      invoice={bill} 
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium text-sm shadow-lg shadow-indigo-900/20 active:scale-95 transition-all"
+                    />
+                  </div>
                 </div>
                 
                 <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-between text-xs text-slate-500 pl-2">

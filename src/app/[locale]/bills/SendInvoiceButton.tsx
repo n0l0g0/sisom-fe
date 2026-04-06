@@ -60,6 +60,8 @@ import { Button } from "@/components/ui/button";
   const canSend = invoice.status !== 'PAID' && invoice.status !== 'CANCELLED';
   const canEdit = invoice.status !== 'CANCELLED';
   const isPaid = invoice.status === 'PAID';
+  const isCancelled = invoice.status === 'CANCELLED';
+  const canViewOnly = isPaid || isCancelled;
  
    const doSend = async () => {
      if (!canSend || loading) return;
@@ -121,7 +123,7 @@ import { Button } from "@/components/ui/button";
     }
   };
   const openView = async () => {
-    if (!isPaid) return;
+    if (!canViewOnly) return;
     try {
       setOpen(true);
       setMode('VIEW');
@@ -858,13 +860,17 @@ import { Button } from "@/components/ui/button";
     );
   }
 
-  if (isPaid) {
+  if (canViewOnly) {
     return (
       <>
         <button
           onClick={openView}
-          className="px-3 py-1 rounded-md text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-800 transition-colors"
-          title="ดูข้อมูลบิลที่ชำระแล้ว"
+          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+            isCancelled
+              ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-800'
+          }`}
+          title={isCancelled ? 'ดูข้อมูลบิลที่ยกเลิก' : 'ดูข้อมูลบิลที่ชำระแล้ว'}
         >
           ดูข้อมูล
         </button>
@@ -872,7 +878,9 @@ import { Button } from "@/components/ui/button";
           <DialogContent className="sm:max-w-[900px] md:max-w-[1024px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
             <DialogHeader>
               <DialogTitle className="text-slate-900 dark:text-white">รายละเอียดบิล</DialogTitle>
-              <DialogDescription className="text-slate-500 dark:text-slate-400">ข้อมูลบิลที่ชำระแล้ว</DialogDescription>
+              <DialogDescription className="text-slate-500 dark:text-slate-400">
+                {isCancelled ? 'ข้อมูลบิลที่ยกเลิก' : 'ข้อมูลบิลที่ชำระแล้ว'}
+              </DialogDescription>
             </DialogHeader>
             {detail ? (
               <div className="space-y-4">

@@ -36,6 +36,7 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
   const [month, setMonth] = useState<number>(nextMonthInit);
   const [year, setYear] = useState<number>(nextYearInit);
   const [values, setValues] = useState<Record<string, { water: string; electric: string }>>({});
+  const [dbValues, setDbValues] = useState<Record<string, { water: string; electric: string }>>({});
   const [prevValues, setPrevValues] = useState<Record<string, { water?: number; electric?: number }>>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -76,6 +77,7 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
           map[m.roomId] = { water: String(m.waterReading ?? ''), electric: String(m.electricReading ?? '') };
         }
         setValues(map);
+        setDbValues(JSON.parse(JSON.stringify(map)));
         const prevMonth = month === 1 ? 12 : month - 1;
         const prevYear = month === 1 ? year - 1 : year;
         const mrPrev = await api.getMeterReadings(undefined, prevMonth, prevYear).catch(() => []);
@@ -263,7 +265,11 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
     const candidates = sortedRooms.filter((r) => {
       if (selectedBuilding && r.buildingId !== selectedBuilding) return false;
       const v = values[r.id];
-      return v && v.water.trim() !== '' && v.electric.trim() !== '';
+      if (!v || v.water.trim() === '' || v.electric.trim() === '') return false;
+      const orig = dbValues[r.id];
+      const waterChanged = !orig || orig.water !== v.water;
+      const electricChanged = !orig || orig.electric !== v.electric;
+      return waterChanged || electricChanged;
     });
     if (!candidates.length) {
       setMessage('กรอกค่าน้ำและค่าไฟอย่างน้อยหนึ่งห้อง');
@@ -281,6 +287,7 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
     try {
       const created: string[] = [];
       const invoiced: string[] = [];
+      const invoiceFailed: { room: string; reason: string }[] = [];
       for (let i = 0; i < candidates.length; i++) {
         const room = candidates[i];
         const v = values[room.id];
@@ -299,7 +306,11 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
           try {
             const invoice = await api.generateInvoice({ roomId: room.id, month, year });
             if (invoice?.id) invoiced.push(room.id);
-          } catch (e) {
+          } catch (e: any) {
+            const reason = e?.message || 'ไม่ทราบสาเหตุ';
+            if (!reason.includes('already exists')) {
+              invoiceFailed.push({ room: room.number, reason });
+            }
           }
         }
 
@@ -307,12 +318,15 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
         setProgressRooms(done);
         setProgressPct(Math.round((done / candidates.length) * 100));
       }
+      const failMsg = invoiceFailed.length
+        ? ` | สร้างบิลไม่สำเร็จ ${invoiceFailed.length} ห้อง: ${invoiceFailed.map((f) => `${f.room} (${f.reason})`).join(', ')}`
+        : '';
       setMessage(
         `บันทึกสำเร็จ ${created.length} ห้อง${
           invoiced.length ? ` และสร้างบิลแล้ว ${invoiced.length} ห้อง` : ''
-        }`,
+        }${failMsg}`,
       );
-      router.push('/bills');
+      router.push(`/bills?month=${month}&year=${year}`);
     } catch (e) {
       setMessage('บันทึกไม่สำเร็จ');
     } finally {

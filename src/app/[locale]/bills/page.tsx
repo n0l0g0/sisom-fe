@@ -116,14 +116,15 @@ function BillsPageContent() {
     }
   };
 
-  // Initial load: fetch months + current month's invoices in parallel
+  // Initial load: fetch months + target month's invoices in parallel
+  // Honour ?month=&year= from meter page redirect; otherwise default to current month
   useEffect(() => {
     const now = new Date();
-    const curMonth = now.getMonth() + 1;
-    const curYear = now.getFullYear();
-    // Set selectedMonthKey immediately so month picker is pre-selected
+    const qMonth = Number(searchParams.get('month'));
+    const qYear = Number(searchParams.get('year'));
+    const curMonth = (qMonth >= 1 && qMonth <= 12) ? qMonth : now.getMonth() + 1;
+    const curYear = (qYear >= 2000) ? qYear : now.getFullYear();
     setSelectedMonthKey(`${curYear}-${String(curMonth).padStart(2, '0')}`);
-    // Fetch both in parallel — months is tiny (<1KB), invoices is filtered
     Promise.all([
       fetchMonths(),
       fetchInvoices(curMonth, curYear),

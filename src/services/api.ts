@@ -753,6 +753,12 @@ export const api = {
     return res.json();
   },
 
+  getLatestMeterReadingsPerRoom: async (beforeMonth: number, beforeYear: number): Promise<MeterReading[]> => {
+    const res = await fetch(`${API_URL}/meter-readings/latest-per-room?beforeMonth=${beforeMonth}&beforeYear=${beforeYear}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch latest meter readings');
+    return res.json();
+  },
+
   // Meter Replacements
   getMeterReplacements: async (roomId: string): Promise<MeterReplacement[]> => {
     const res = await fetch(`${API_URL}/rooms/${roomId}/meter-replacements`, { cache: 'no-store' });

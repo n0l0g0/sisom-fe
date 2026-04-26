@@ -76,14 +76,36 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
         for (const m of mr) {
           map[m.roomId] = { water: String(m.waterReading ?? ''), electric: String(m.electricReading ?? '') };
         }
-        setValues(map);
         setDbValues(JSON.parse(JSON.stringify(map)));
+
+        // Pre-fill rooms with no current-month reading using their latest historical reading
+        const latestPerRoom = await api.getLatestMeterReadingsPerRoom(month, year).catch(() => []);
+        const latestMap: Record<string, { water: number; electric: number }> = {};
+        for (const m of latestPerRoom) {
+          latestMap[m.roomId] = { water: Number(m.waterReading), electric: Number(m.electricReading) };
+        }
+        for (const r of rs) {
+          if (map[r.id].water === '' && map[r.id].electric === '') {
+            const latest = latestMap[r.id];
+            if (latest !== undefined) {
+              map[r.id] = { water: String(latest.water), electric: String(latest.electric) };
+            }
+          }
+        }
+        setValues(map);
+
         const prevMonth = month === 1 ? 12 : month - 1;
         const prevYear = month === 1 ? year - 1 : year;
         const mrPrev = await api.getMeterReadings(undefined, prevMonth, prevYear).catch(() => []);
         const prevMap: Record<string, { water?: number; electric?: number }> = {};
         for (const m of mrPrev) {
           prevMap[m.roomId] = { water: m.waterReading, electric: m.electricReading };
+        }
+        // For rooms where prevMonth also has no reading, use latestPerRoom as prev
+        for (const r of rs) {
+          if (!prevMap[r.id] && latestMap[r.id]) {
+            prevMap[r.id] = latestMap[r.id];
+          }
         }
         setPrevValues(prevMap);
       } catch {

@@ -169,8 +169,11 @@ export default function RoomDetailDialog({ room, children }: Props) {
       setTenantRent(room.pricePerMonth !== undefined ? String(room.pricePerMonth) : '');
       computeDepositForRent(room.pricePerMonth);
       setTenantOccupantCount('1');
+      setTenantWaterReading(lastMeterReading ? String(Number(lastMeterReading.waterReading)) : '');
+      setTenantElectricReading(lastMeterReading ? String(Number(lastMeterReading.electricReading)) : '');
     }
-  }, [tenantDialogOpen, room.id, room.pricePerMonth]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantDialogOpen, room.id, room.pricePerMonth, lastMeterReading]);
 
   useEffect(() => {
     computeDepositForRent(tenantRent);

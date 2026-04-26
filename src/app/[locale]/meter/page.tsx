@@ -38,6 +38,7 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
   const [values, setValues] = useState<Record<string, { water: string; electric: string }>>({});
   const [dbValues, setDbValues] = useState<Record<string, { water: string; electric: string }>>({});
   const [prevValues, setPrevValues] = useState<Record<string, { water?: number; electric?: number }>>({});
+  const [twoMonthsAgoValues, setTwoMonthsAgoValues] = useState<Record<string, { water?: number; electric?: number }>>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [message, setMessage] = useState<string>('');
@@ -108,6 +109,16 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
           }
         }
         setPrevValues(prevMap);
+
+        // Fetch 2-months-ago readings for anomaly detection reference
+        const twoAgoMonth = prevMonth === 1 ? 12 : prevMonth - 1;
+        const twoAgoYear = prevMonth === 1 ? prevYear - 1 : prevYear;
+        const mrTwoAgo = await api.getMeterReadings(undefined, twoAgoMonth, twoAgoYear).catch(() => []);
+        const twoAgoMap: Record<string, { water?: number; electric?: number }> = {};
+        for (const m of mrTwoAgo) {
+          twoAgoMap[m.roomId] = { water: m.waterReading, electric: m.electricReading };
+        }
+        setTwoMonthsAgoValues(twoAgoMap);
       } catch {
         setIsStaff(false);
       } finally {
@@ -132,6 +143,24 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
     if (diff < 0) return '-';
     const isInteger = Math.floor(diff) === diff;
     return isInteger ? String(diff) : diff.toFixed(2);
+  }
+
+  function anomalyLevel(roomId: string, type: 'water' | 'electric'): 'negative' | 'high' | 'low' | null {
+    const curStr = values[roomId]?.[type] ?? '';
+    if (curStr.trim() === '') return null;
+    const cur = Number(curStr);
+    const prev = prevValues[roomId]?.[type];
+    if (prev === undefined || prev === null || !Number.isFinite(Number(prev))) return null;
+    const usage = cur - Number(prev);
+    if (usage < 0) return 'negative';
+    const twoAgo = twoMonthsAgoValues[roomId]?.[type];
+    if (twoAgo === undefined || twoAgo === null || !Number.isFinite(Number(twoAgo))) return null;
+    const refUsage = Number(prev) - Number(twoAgo);
+    const minRef = type === 'electric' ? 10 : 3;
+    if (refUsage < minRef) return null;
+    if (usage > refUsage * 2.5) return 'high';
+    if (usage > 0 && usage < refUsage * 0.2) return 'low';
+    return null;
   }
 
   const filteredRooms = useMemo(() => {
@@ -253,7 +282,18 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
             />
           </td>
           <td className="px-4 py-2 text-center bg-rose-50/10 dark:bg-rose-900/10 border-r border-slate-100 dark:border-slate-800">
-            <div className="text-rose-600 dark:text-rose-400 font-bold font-mono text-sm">{usedAmount(r.id, 'electric')}</div>
+            <div className="flex items-center justify-center gap-1">
+              <span className="text-rose-600 dark:text-rose-400 font-bold font-mono text-sm">{usedAmount(r.id, 'electric')}</span>
+              {anomalyLevel(r.id, 'electric') === 'negative' && (
+                <span title="ค่าปัจจุบันน้อยกว่าเดือนก่อน กรุณาตรวจสอบ" className="text-red-600 dark:text-red-400 text-xs cursor-help select-none">⚠</span>
+              )}
+              {anomalyLevel(r.id, 'electric') === 'high' && (
+                <span title="ใช้ไฟมากกว่าปกติ อาจกรอกเลขผิด" className="text-amber-500 dark:text-amber-400 text-xs cursor-help select-none">⚠↑</span>
+              )}
+              {anomalyLevel(r.id, 'electric') === 'low' && (
+                <span title="ใช้ไฟน้อยกว่าปกติ อาจกรอกเลขผิด" className="text-sky-500 dark:text-sky-400 text-xs cursor-help select-none">⚠↓</span>
+              )}
+            </div>
           </td>
           <td className="px-4 py-2 text-center bg-slate-50/30 dark:bg-slate-800/30">
             <div className="text-slate-500 dark:text-slate-400 font-mono text-sm">{prevValues[r.id]?.water ?? '-'}</div>
@@ -275,13 +315,24 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
             />
           </td>
           <td className="px-4 py-2 text-center bg-cyan-50/10 dark:bg-cyan-900/10">
-            <div className="text-cyan-600 dark:text-cyan-400 font-bold font-mono text-sm">{usedAmount(r.id, 'water')}</div>
+            <div className="flex items-center justify-center gap-1">
+              <span className="text-cyan-600 dark:text-cyan-400 font-bold font-mono text-sm">{usedAmount(r.id, 'water')}</span>
+              {anomalyLevel(r.id, 'water') === 'negative' && (
+                <span title="ค่าปัจจุบันน้อยกว่าเดือนก่อน กรุณาตรวจสอบ" className="text-red-600 dark:text-red-400 text-xs cursor-help select-none">⚠</span>
+              )}
+              {anomalyLevel(r.id, 'water') === 'high' && (
+                <span title="ใช้น้ำมากกว่าปกติ อาจกรอกเลขผิด" className="text-amber-500 dark:text-amber-400 text-xs cursor-help select-none">⚠↑</span>
+              )}
+              {anomalyLevel(r.id, 'water') === 'low' && (
+                <span title="ใช้น้ำน้อยกว่าปกติ อาจกรอกเลขผิด" className="text-sky-500 dark:text-sky-400 text-xs cursor-help select-none">⚠↓</span>
+              )}
+            </div>
           </td>
         </tr>
       );
     });
     return items;
-  }, [sortedRooms, values, prevValues]);
+  }, [sortedRooms, values, prevValues, twoMonthsAgoValues]);
 
   const submitAll = async () => {
     const candidates = sortedRooms.filter((r) => {

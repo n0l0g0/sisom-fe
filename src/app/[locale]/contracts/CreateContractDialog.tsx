@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { api, Room } from '@/services/api';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Plus } from 'lucide-react';
+import { Droplets, Plus, Zap } from 'lucide-react';
 
 interface CreateContractDialogProps {
   rooms: Room[];
@@ -54,6 +54,8 @@ export function CreateContractDialog({ rooms }: CreateContractDialogProps) {
   const [deposit, setDeposit] = useState('5000');
   const [rent, setRent] = useState('3500');
   const [occupantCount, setOccupantCount] = useState('1');
+  const [waterReading, setWaterReading] = useState('');
+  const [electricReading, setElectricReading] = useState('');
 
   const computeDepositFromRent = (rentValue?: string | number) => {
     const r = Number(rentValue ?? rent);
@@ -106,6 +108,24 @@ export function CreateContractDialog({ rooms }: CreateContractDialogProps) {
         contractImageUrl: contractImageUrl || undefined,
       });
 
+      // 4. Save initial meter reading if provided
+      const wReading = parseFloat(waterReading);
+      const eReading = parseFloat(electricReading);
+      if (!isNaN(wReading) || !isNaN(eReading)) {
+        const d = new Date(startDate);
+        try {
+          await api.createMeterReading({
+            roomId,
+            month: d.getMonth() + 1,
+            year: d.getFullYear(),
+            waterReading: isNaN(wReading) ? 0 : wReading,
+            electricReading: isNaN(eReading) ? 0 : eReading,
+          });
+        } catch {
+          // non-fatal: contract already created
+        }
+      }
+
       setOpen(false);
       resetForm();
       router.refresh();
@@ -130,6 +150,8 @@ export function CreateContractDialog({ rooms }: CreateContractDialogProps) {
     setDeposit('5000');
     setRent('3500');
     setOccupantCount('1');
+    setWaterReading('');
+    setElectricReading('');
   };
 
   useEffect(() => {
@@ -173,6 +195,45 @@ export function CreateContractDialog({ rooms }: CreateContractDialogProps) {
               <div className="space-y-2">
                 <Label htmlFor="address" className="text-slate-700 dark:text-slate-300">ที่อยู่ตามทะเบียนบ้าน</Label>
                 <Input id="address" value={tenantAddress} onChange={e => setTenantAddress(e.target.value)} className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" />
+              </div>
+            </div>
+          </div>
+
+          {/* Meter Readings */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-2">มิเตอร์วันเข้าอยู่ (ไม่บังคับ)</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="waterReading" className="text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                  <Droplets className="w-4 h-4 text-blue-500" />
+                  มิเตอร์น้ำ (หน่วย)
+                </Label>
+                <Input
+                  id="waterReading"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={waterReading}
+                  onChange={e => setWaterReading(e.target.value)}
+                  placeholder="เลขมิเตอร์น้ำ"
+                  className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="electricReading" className="text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                  <Zap className="w-4 h-4 text-yellow-500" />
+                  มิเตอร์ไฟ (หน่วย)
+                </Label>
+                <Input
+                  id="electricReading"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={electricReading}
+                  onChange={e => setElectricReading(e.target.value)}
+                  placeholder="เลขมิเตอร์ไฟ"
+                  className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                />
               </div>
             </div>
           </div>

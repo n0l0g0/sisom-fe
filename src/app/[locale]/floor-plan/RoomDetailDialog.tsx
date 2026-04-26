@@ -116,6 +116,8 @@ export default function RoomDetailDialog({ room, children }: Props) {
   const [tenantRent, setTenantRent] = useState('');
   const [tenantDeposit, setTenantDeposit] = useState('5000');
   const [tenantOccupantCount, setTenantOccupantCount] = useState('1');
+  const [tenantWaterReading, setTenantWaterReading] = useState('');
+  const [tenantElectricReading, setTenantElectricReading] = useState('');
   const [occupantCount, setOccupantCount] = useState('1');
   const [savingOccupantCount, setSavingOccupantCount] = useState(false);
   const [editRent, setEditRent] = useState<string>('');
@@ -503,6 +505,23 @@ export default function RoomDetailDialog({ room, children }: Props) {
         });
       } catch (e) {
         void e;
+      }
+      // Save initial meter reading if provided
+      const wReading = parseFloat(tenantWaterReading);
+      const eReading = parseFloat(tenantElectricReading);
+      if (!isNaN(wReading) || !isNaN(eReading)) {
+        const d = new Date(tenantStartDate);
+        try {
+          await api.createMeterReading({
+            roomId: room.id,
+            month: d.getMonth() + 1,
+            year: d.getFullYear(),
+            waterReading: isNaN(wReading) ? 0 : wReading,
+            electricReading: isNaN(eReading) ? 0 : eReading,
+          });
+        } catch {
+          // non-fatal
+        }
       }
       setTenantDialogOpen(false);
       window.location.reload();
@@ -1026,6 +1045,38 @@ export default function RoomDetailDialog({ room, children }: Props) {
                             <div className="space-y-2">
                               <Label>จำนวนผู้เช่า (คน)</Label>
                               <Input type="number" min={1} value={tenantOccupantCount} onChange={e => setTenantOccupantCount(e.target.value)} />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <h3 className="text-sm font-semibold text-[#8b5a3c] border-b pb-2">มิเตอร์วันเข้าอยู่ (ไม่บังคับ)</h3>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label className="flex items-center gap-1">
+                                <span className="text-blue-500">💧</span> มิเตอร์น้ำ (หน่วย)
+                              </Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                step="0.01"
+                                value={tenantWaterReading}
+                                onChange={e => setTenantWaterReading(e.target.value)}
+                                placeholder="เลขมิเตอร์น้ำ"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="flex items-center gap-1">
+                                <span className="text-yellow-500">⚡</span> มิเตอร์ไฟ (หน่วย)
+                              </Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                step="0.01"
+                                value={tenantElectricReading}
+                                onChange={e => setTenantElectricReading(e.target.value)}
+                                placeholder="เลขมิเตอร์ไฟ"
+                              />
                             </div>
                           </div>
                         </div>

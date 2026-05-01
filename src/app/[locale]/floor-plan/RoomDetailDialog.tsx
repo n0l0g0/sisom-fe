@@ -312,9 +312,8 @@ export default function RoomDetailDialog({ room, children }: Props) {
 
       if (readings.length > 0) {
         const sorted = [...readings].sort((a, b) => {
-          const aTime = new Date(a.createdAt).getTime();
-          const bTime = new Date(b.createdAt).getTime();
-          return aTime - bTime;
+          if (a.year !== b.year) return a.year - b.year;
+          return a.month - b.month;
         });
         setLastMeterReading(sorted[sorted.length - 1]);
       } else {

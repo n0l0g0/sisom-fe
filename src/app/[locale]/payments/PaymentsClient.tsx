@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PaymentActions from './PaymentActions';
 import Filters from './Filters';
+import PaymentDetailDialog from './PaymentDetailDialog';
 
 export default function PaymentsClient() {
   const sp = useSearchParams();
@@ -22,6 +23,7 @@ export default function PaymentsClient() {
 function PaymentsClientInner({ room, status, month, year }: { room: string; status: string; month: number; year: number }) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,6 +68,9 @@ function PaymentsClientInner({ room, status, month, year }: { room: string; stat
 
   return (
     <div className="space-y-8 fade-in">
+      {selectedPayment && (
+        <PaymentDetailDialog payment={selectedPayment} onClose={() => setSelectedPayment(null)} />
+      )}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-[#8b5a3c]">การชำระเงิน</h1>
@@ -148,7 +153,11 @@ function PaymentsClientInner({ room, status, month, year }: { room: string; stat
                   </tr>
                 ) : (
                   filteredPayments.map((payment) => (
-                    <tr key={payment.id} className="bg-white border-b hover:bg-slate-50 transition-colors">
+                    <tr
+                      key={payment.id}
+                      className="bg-white border-b hover:bg-orange-50/40 transition-colors cursor-pointer group"
+                      onClick={() => setSelectedPayment(payment)}
+                    >
                       <td className="px-6 py-4 text-slate-600">
                         <div>{new Date(payment.paidAt).toLocaleDateString('th-TH')}</div>
                         <div className="text-xs text-slate-400">{new Date(payment.paidAt).toLocaleTimeString('th-TH')}</div>
@@ -187,19 +196,17 @@ function PaymentsClientInner({ room, status, month, year }: { room: string; stat
                           {payment.status === 'VERIFIED' ? 'ตรวจสอบแล้ว' : payment.status === 'PENDING' ? 'รอยืนยัน' : 'ปฏิเสธ'}
                         </Badge>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                         {payment.slipImageUrl && (
-                          <a
-                            href={normalizeMediaUrl(payment.slipImageUrl)}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSelectedPayment(payment); }}
                             className="text-[#f5a987] hover:text-[#e09b7d] text-sm flex items-center justify-center gap-1 mx-auto"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                             ดูสลิป
-                          </a>
+                          </button>
                         )}
                         <PaymentActions payment={payment} />
                       </td>

@@ -240,6 +240,7 @@ export default function RoomDetailDialog({ room, children }: Props) {
             : undefined;
       setEditRent(initialRent !== undefined ? String(initialRent) : '');
       setEditDeposit(activeContract?.deposit !== undefined ? String(Number(activeContract.deposit)) : '');
+      setSettled([]);
     }
   }, [open, activeContract?.id, activeContract?.occupantCount]);
 
@@ -647,26 +648,9 @@ export default function RoomDetailDialog({ room, children }: Props) {
     }
     try {
       for (const inv of outstandingInvoices) {
-        // If settling via deposit, we technically might need to split payment?
-        // But for now, we just mark it as settled. The backend settleInvoice takes 'DEPOSIT' method.
-        // NOTE: If the user intends to WAIVE the rent part, this 'settleInvoice' might mark the whole invoice as PAID.
-        // If the intention is to only pay the utility part, then the invoice should remain partially paid?
-        // However, based on the prompt "money should be enough", it implies we proceed with the transaction.
-        // We will proceed assuming the "Deduct from Deposit" action covers the necessary parts.
-        // If the invoice includes Rent, and we use Deposit, the system usually records it as "Paid via Deposit".
-        // If the deposit < total invoice amount (including rent), usually it fails.
-        // But here we bypass the check if deposit >= non-rent amount.
-        // If we send settleInvoice, it might try to deduct the FULL amount from deposit log?
-        // Let's assume the backend handles 'DEPOSIT' settlement by recording a transaction.
-        // If we want to be precise, we should probably only settle the non-rent part?
-        // But 'settleInvoice' usually settles the whole invoice.
-        
-        // Let's proceed with the check modification first. 
-        // If the system allows "Partial Settlement" or "Waive Rent", that would be ideal.
-        // But without backend changes, we can only control the frontend check.
-        // If we bypass the check, and call settleInvoice, and if backend checks balance, it might fail there.
-        // Assuming backend relies on frontend check or just records it.
         await api.settleInvoice(inv.id, settleMethod);
+        // Optimistic update: mark as PAID immediately so UI reflects change without waiting for refetch
+        setInvoices((prev) => prev.map((i) => i.id === inv.id ? { ...i, status: 'PAID' as const } : i));
         setSettled((prev) => [
           ...prev,
           {
@@ -681,6 +665,7 @@ export default function RoomDetailDialog({ room, children }: Props) {
       alert('เคลียร์บิลค้างชำระเรียบร้อย');
     } catch (e) {
       console.error(e);
+      await fetchInvoices();
       alert('เคลียร์บิลค้างชำระไม่สำเร็จ');
     }
   };

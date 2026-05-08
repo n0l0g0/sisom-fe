@@ -197,29 +197,43 @@ function BillsPageContent() {
 
     // Search Filter
     if (searchTerm.trim()) {
-      const term = normalizeSearch(searchTerm.trim());
-      const isNumeric = /^\d+$/.test(term);
+      const raw = searchTerm.trim();
+      const slashMatch = raw.match(/^([^/]+)\/(.*)$/);
 
-      if (isNumeric) {
-        // Numeric search: Only search in Room Number (Strict mode as requested)
+      if (slashMatch) {
+        // "ตึก/ห้อง" format e.g. "2/10" → building contains "2" AND room contains "10"
+        const buildingQ = normalizeSearch(slashMatch[1]);
+        const roomQ = normalizeSearch(slashMatch[2]);
         result = result.filter((inv) => {
-          const roomNum = normalizeSearch(inv.contract?.room?.number || '');
-          return roomNum.includes(term);
+          const building = normalizeSearch(
+            (inv.contract?.room?.building?.name || '') + (inv.contract?.room?.building?.code || '')
+          );
+          const room = normalizeSearch(inv.contract?.room?.number || '');
+          return (!buildingQ || building.includes(buildingQ)) && (!roomQ || room.includes(roomQ));
         });
       } else {
-        // Text search: Search in Room Number, Building, Tenant Name (No Phone/Amount/Status)
-        const tokens = searchTerm.trim().split(/\s+/).map((t) => normalizeSearch(t)).filter(Boolean);
-        result = result.filter((inv) => {
-          const parts = [
-            inv.contract?.room?.number || '',
-            inv.contract?.room?.building?.name || '',
-            inv.contract?.room?.building?.code || '',
-            inv.contract?.tenant?.name || '',
-            inv.contract?.tenant?.nickname || ''
-          ];
-          const text = normalizeSearch(parts.join(' '));
-          return tokens.every((t) => text.includes(t));
-        });
+        const term = normalizeSearch(raw);
+        const isNumeric = /^\d+$/.test(term);
+
+        if (isNumeric) {
+          result = result.filter((inv) => {
+            const roomNum = normalizeSearch(inv.contract?.room?.number || '');
+            return roomNum.includes(term);
+          });
+        } else {
+          const tokens = raw.split(/\s+/).map((t) => normalizeSearch(t)).filter(Boolean);
+          result = result.filter((inv) => {
+            const parts = [
+              inv.contract?.room?.number || '',
+              inv.contract?.room?.building?.name || '',
+              inv.contract?.room?.building?.code || '',
+              inv.contract?.tenant?.name || '',
+              inv.contract?.tenant?.nickname || ''
+            ];
+            const text = normalizeSearch(parts.join(' '));
+            return tokens.every((t) => text.includes(t));
+          });
+        }
       }
     }
     
@@ -615,7 +629,7 @@ function BillsPageContent() {
                         {formatScheduleDate(bill)}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <div className="font-mono font-bold text-slate-900 dark:text-slate-200">฿{Number(bill.totalAmount).toLocaleString()}</div>
+                        <AmountCell bill={bill} />
                       </td>
                       <td className="px-6 py-4 text-center">
                         <StatusBadge status={bill.status} />
@@ -660,8 +674,7 @@ function BillsPageContent() {
 
                 <div className="flex justify-between items-end pl-2">
                   <div>
-                    <div className="text-xs text-slate-500 uppercase tracking-wide">ยอดรวม</div>
-                    <div className="text-xl font-bold text-slate-900 dark:text-slate-200 font-mono">฿{Number(bill.totalAmount).toLocaleString()}</div>
+                    <MobileAmountCell bill={bill} />
                   </div>
                   <div className="flex gap-2">
                     {bill.status !== 'CANCELLED' && (
@@ -713,6 +726,49 @@ function BillsPageContent() {
         </>
       )}
     </div>
+  );
+}
+
+function getPaidAmount(bill: Invoice): number {
+  if (!bill.payments || bill.payments.length === 0) return 0;
+  return bill.payments.reduce((sum, p) => sum + Number(p.amount), 0);
+}
+
+function AmountCell({ bill }: { bill: Invoice }) {
+  const paidAmount = getPaidAmount(bill);
+  const total = Number(bill.totalAmount);
+  const outstanding = Math.max(0, total - paidAmount);
+
+  if (paidAmount > 0 && bill.status !== 'PAID') {
+    return (
+      <div>
+        <div className="font-mono font-bold text-rose-600 dark:text-rose-400">฿{outstanding.toLocaleString()}</div>
+        <div className="text-xs text-slate-400 dark:text-slate-500 font-mono">จาก ฿{total.toLocaleString()}</div>
+      </div>
+    );
+  }
+  return <div className="font-mono font-bold text-slate-900 dark:text-slate-200">฿{total.toLocaleString()}</div>;
+}
+
+function MobileAmountCell({ bill }: { bill: Invoice }) {
+  const paidAmount = getPaidAmount(bill);
+  const total = Number(bill.totalAmount);
+  const outstanding = Math.max(0, total - paidAmount);
+
+  if (paidAmount > 0 && bill.status !== 'PAID') {
+    return (
+      <>
+        <div className="text-xs text-slate-500 uppercase tracking-wide">คงค้าง</div>
+        <div className="text-xl font-bold text-rose-600 dark:text-rose-400 font-mono">฿{outstanding.toLocaleString()}</div>
+        <div className="text-xs text-slate-400 font-mono">จาก ฿{total.toLocaleString()}</div>
+      </>
+    );
+  }
+  return (
+    <>
+      <div className="text-xs text-slate-500 uppercase tracking-wide">ยอดรวม</div>
+      <div className="text-xl font-bold text-slate-900 dark:text-slate-200 font-mono">฿{total.toLocaleString()}</div>
+    </>
   );
 }
 

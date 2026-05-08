@@ -168,7 +168,7 @@ export default function FloorPlanContent({ rooms, buildings }: { rooms: Room[]; 
   };
 
   const uiFilteredRooms = useMemo(() => {
-    const text = debouncedQ.trim().toLowerCase();
+    const raw = debouncedQ.trim();
     const priceRange = uiPrice;
     const priceMatch = (room: Room) => {
       const v = (room.contracts?.[0]?.currentRent ?? room.pricePerMonth) ?? 0;
@@ -179,8 +179,9 @@ export default function FloorPlanContent({ rooms, buildings }: { rooms: Room[]; 
       if (priceRange === '8000+') return v >= 8000;
       return true;
     };
+    const slashMatch = raw.match(/^([^/]+)\/(.*)$/);
     const rooms = filteredRooms.filter((room) => {
-      const rb = room as Room & { buildingId?: string };
+      const rb = room as Room & { buildingId?: string; building?: { name?: string; code?: string } };
       if (uiBuilding && rb.buildingId !== uiBuilding) return false;
       if (uiFloor && String(room.floor) !== uiFloor) return false;
       if (uiStatus) {
@@ -191,13 +192,23 @@ export default function FloorPlanContent({ rooms, buildings }: { rooms: Room[]; 
         if (!match) return false;
       }
       if (!priceMatch(room)) return false;
-      if (text) {
-        const t = [
-          String(room.number || ''),
-          String(room.contracts?.[0]?.tenant?.name || ''),
-          String(room.contracts?.[0]?.tenant?.nickname || ''),
-        ].join(' ').toLowerCase();
-        if (!t.includes(text)) return false;
+      if (raw) {
+        if (slashMatch) {
+          const buildingQ = slashMatch[1].trim().toLowerCase();
+          const roomQ = slashMatch[2].trim().toLowerCase();
+          const buildingText = [rb.building?.name || '', rb.building?.code || ''].join(' ').toLowerCase();
+          const roomText = String(room.number || '').toLowerCase();
+          if (buildingQ && !buildingText.includes(buildingQ)) return false;
+          if (roomQ && !roomText.includes(roomQ)) return false;
+        } else {
+          const text = raw.toLowerCase();
+          const t = [
+            String(room.number || ''),
+            String(room.contracts?.[0]?.tenant?.name || ''),
+            String(room.contracts?.[0]?.tenant?.nickname || ''),
+          ].join(' ').toLowerCase();
+          if (!t.includes(text)) return false;
+        }
       }
       return true;
     });

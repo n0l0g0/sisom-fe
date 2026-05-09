@@ -13,7 +13,7 @@ import type { Room, Building, Invoice, DormExtra } from '@/services/api';
 import { useDebounce } from '@/lib/hooks';
 import { Search, ChevronDown, Filter, LayoutGrid } from 'lucide-react';
 
-export default function FloorPlanContent({ rooms, buildings }: { rooms: Room[]; buildings: Building[] }) {
+export default function FloorPlanContent({ rooms, buildings, onRoomChange }: { rooms: Room[]; buildings: Building[]; onRoomChange?: () => void }) {
   const searchParams = useSearchParams();
   const selectedBuilding = searchParams.get('building') || undefined;
   const statusParam = (searchParams.get('status') || '').toUpperCase();
@@ -368,6 +368,7 @@ export default function FloorPlanContent({ rooms, buildings }: { rooms: Room[]; 
           totalRooms={uiFilteredRooms.length}
           groups={sortedGroups.map(g => ({ ...g, key: g.buildingId || 'none' }))}
           defaultOpen
+          onRoomChange={onRoomChange}
         />
       </div>
     );
@@ -440,7 +441,7 @@ export default function FloorPlanContent({ rooms, buildings }: { rooms: Room[]; 
                     return numA - numB;
                   })
                   .map((room: Room) => (
-                  <RoomDetailDialog key={room.id} room={room}>
+                  <RoomDetailDialog key={room.id} room={room} onRoomChange={onRoomChange}>
                     <div 
                       className={`
                         p-4 rounded-xl border text-center cursor-pointer hover:shadow-lg hover:shadow-indigo-500/10 transition-all hover:-translate-y-1 relative group

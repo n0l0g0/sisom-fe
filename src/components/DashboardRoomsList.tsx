@@ -21,8 +21,8 @@ type BuildingGroup = {
   floors: FloorGroup[];
 };
 
-export default function DashboardRoomsList(props: { groups: BuildingGroup[]; totalRooms: number; defaultOpen?: boolean }) {
-  const { groups, totalRooms, defaultOpen = false } = props;
+export default function DashboardRoomsList(props: { groups: BuildingGroup[]; totalRooms: number; defaultOpen?: boolean; onRoomChange?: () => void }) {
+  const { groups, totalRooms, defaultOpen = false, onRoomChange } = props;
 
   const allBuildingKeys = useMemo(() => groups.map((g) => g.key), [groups]);
   const defaultOpenBuildings = useMemo(() => new Set(allBuildingKeys), [allBuildingKeys]);
@@ -155,7 +155,7 @@ export default function DashboardRoomsList(props: { groups: BuildingGroup[]; tot
                         {isFloorOpen && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pl-4 border-l-2 border-muted ml-1.5">
                             {f.rooms.map((room) => (
-                              <RoomDetailDialog key={room.id} room={room}>
+                              <RoomDetailDialog key={room.id} room={room} onRoomChange={onRoomChange}>
                                 <div className="group cursor-pointer rounded-lg border bg-background p-4 transition-all hover:shadow-md hover:border-primary/50 relative overflow-hidden">
                                   <div className="flex items-center justify-between mb-3">
                                     <span className="font-bold text-lg text-foreground">{room.number}</span>

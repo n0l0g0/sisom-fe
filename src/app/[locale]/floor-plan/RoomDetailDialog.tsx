@@ -50,9 +50,10 @@ import { ContractDetailsDialog } from "../contracts/ContractDetailsDialog";
 interface Props {
   room: Room;
   children: React.ReactNode;
+  onRoomChange?: () => void;
 }
 
-export default function RoomDetailDialog({ room, children }: Props) {
+export default function RoomDetailDialog({ room, children, onRoomChange }: Props) {
   const [open, setOpen] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState(room.number);
@@ -251,7 +252,7 @@ export default function RoomDetailDialog({ room, children }: Props) {
       await api.updateRoom(room.id, { number: newName.trim() });
       setEditingName(false);
       setSaving(false);
-      window.location.reload();
+      onRoomChange?.();
     } catch {
       setSaving(false);
       alert('แก้ไขชื่อห้องไม่สำเร็จ');
@@ -527,7 +528,8 @@ export default function RoomDetailDialog({ room, children }: Props) {
         }
       }
       setTenantDialogOpen(false);
-      window.location.reload();
+      setOpen(false);
+      onRoomChange?.();
     } catch {
       alert('เพิ่มผู้เช่าไม่สำเร็จ');
     } finally {
@@ -538,14 +540,15 @@ export default function RoomDetailDialog({ room, children }: Props) {
   const handleRemoveTenant = async (contractId: string, tenantId?: string) => {
     if (!confirm('ยืนยันการลบผู้เช่า? ระบบจะสิ้นสุดสัญญาและทำให้ห้องว่างทันที')) return;
     try {
-      await api.updateContract(contractId, { 
-        isActive: false, 
+      await api.updateContract(contractId, {
+        isActive: false,
         endDate: new Date().toISOString(),
       });
       if (tenantId) {
         await api.updateTenant(tenantId, { status: 'MOVED_OUT' });
       }
-      window.location.reload();
+      setOpen(false);
+      onRoomChange?.();
     } catch {
       alert('ลบผู้เช่าไม่สำเร็จ');
     }
@@ -559,7 +562,8 @@ export default function RoomDetailDialog({ room, children }: Props) {
       setMoveDialogOpen(false);
       setMovingContractId(null);
       setTargetRoomId('');
-      window.location.reload();
+      setOpen(false);
+      onRoomChange?.();
     } catch {
       alert('ย้ายห้องไม่สำเร็จ');
     } finally {
@@ -573,7 +577,7 @@ export default function RoomDetailDialog({ room, children }: Props) {
     try {
       setSavingOccupantCount(true);
       await api.updateContract(activeContract.id, { occupantCount: nextValue });
-      window.location.reload();
+      onRoomChange?.();
     } catch {
       alert('บันทึกจำนวนผู้เช่าไม่สำเร็จ');
     } finally {
@@ -599,7 +603,7 @@ export default function RoomDetailDialog({ room, children }: Props) {
     try {
       setSavingContractInfo(true);
       await api.updateContract(activeContract.id, payload as any);
-      window.location.reload();
+      onRoomChange?.();
     } catch {
       alert('บันทึกข้อมูลสัญญาเช่าไม่สำเร็จ');
     } finally {
@@ -616,12 +620,13 @@ export default function RoomDetailDialog({ room, children }: Props) {
     if (!confirm('ยืนยันการแจ้งย้ายออก? สัญญาจะถูกยกเลิกและห้องจะว่างทันที')) return;
 
     try {
-      await api.updateContract(activeContract.id, { 
-        isActive: false, 
-        endDate: new Date().toISOString() 
+      await api.updateContract(activeContract.id, {
+        isActive: false,
+        endDate: new Date().toISOString()
       });
       alert('แจ้งย้ายออกเรียบร้อยแล้ว');
-      window.location.reload();
+      setOpen(false);
+      onRoomChange?.();
     } catch (error) {
       console.error('Failed to move out', error);
       alert('เกิดข้อผิดพลาดในการแจ้งย้ายออก');
@@ -789,7 +794,8 @@ export default function RoomDetailDialog({ room, children }: Props) {
                     if (window.confirm('Are you sure you want to delete this room? All history will be lost.')) {
                       try {
                         await api.deleteRoom(room.id);
-                        window.location.reload();
+                        setOpen(false);
+                        onRoomChange?.();
                       } catch (e) {
                         alert('Failed to delete room: ' + (e instanceof Error ? e.message : 'Unknown error'));
                       }

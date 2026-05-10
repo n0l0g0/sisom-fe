@@ -2,7 +2,8 @@
  
 import { useEffect, useMemo, useState } from 'react';
 import { api, Invoice, MeterReading, DormConfig, normalizeMediaUrl } from '@/services/api';
- import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import SlipUploadZone from '@/components/SlipUploadZone';
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,7 @@ import { Button } from "@/components/ui/button";
   const [settleMode, setSettleMode] = useState<'FULL' | 'PARTIAL' | null>(null);
   const [partialAmount, setPartialAmount] = useState<string>('');
   const [settlePickerOpen, setSettlePickerOpen] = useState(false);
+  const [settleSlipUrl, setSettleSlipUrl] = useState<string | null>(null);
   const formatLocalDateTime = (d: Date) => {
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -265,6 +267,7 @@ import { Button } from "@/components/ui/button";
   const openSettlePicker = () => {
     setPartialAmount('');
     setSettleMode(null);
+    setSettleSlipUrl(null);
     setSettlePickerOpen(true);
   };
 
@@ -272,7 +275,7 @@ import { Button } from "@/components/ui/button";
     if (!detail) return;
     try {
       setLoading(true);
-      await api.settleInvoice(detail.id, 'CASH', settlePaidAt || undefined);
+      await api.settleInvoice(detail.id, 'CASH', settlePaidAt || undefined, settleSlipUrl || undefined);
       try { window.dispatchEvent(new Event('INVOICE_UPDATED')); } catch {}
       setSettlePickerOpen(false);
       setOpen(false);
@@ -297,7 +300,7 @@ import { Button } from "@/components/ui/button";
     }
     try {
       setLoading(true);
-      await api.settleInvoicePartial(detail.id, amt, settlePaidAt || undefined);
+      await api.settleInvoicePartial(detail.id, amt, settlePaidAt || undefined, settleSlipUrl || undefined);
       try { window.dispatchEvent(new Event('INVOICE_UPDATED')); } catch {}
       setSettlePickerOpen(false);
       setOpen(false);
@@ -766,6 +769,13 @@ import { Button } from "@/components/ui/button";
                       className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
+
+                  {/* อัปโหลดสลิป */}
+                  <SlipUploadZone
+                    value={settleSlipUrl}
+                    onChange={setSettleSlipUrl}
+                    disabled={loading}
+                  />
 
                   {/* โหมดเลือก */}
                   <div className="grid grid-cols-2 gap-3">

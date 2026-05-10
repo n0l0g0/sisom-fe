@@ -560,11 +560,11 @@ export const api = {
     return res.json();
   },
 
-  settleInvoice: async (id: string, method: 'DEPOSIT' | 'CASH', paidAt?: string): Promise<Invoice> => {
+  settleInvoice: async (id: string, method: 'DEPOSIT' | 'CASH', paidAt?: string, slipImageUrl?: string): Promise<Invoice> => {
     const res = await fetch(`${API_URL}/invoices/${id}/settle`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ method, paidAt }),
+      body: JSON.stringify({ method, paidAt, slipImageUrl }),
     });
     if (!res.ok) {
       const txt = await res.text().catch(() => '');
@@ -577,11 +577,12 @@ export const api = {
     id: string,
     amount: number,
     paidAt?: string,
+    slipImageUrl?: string,
   ): Promise<Invoice & { paidAmount: number; remaining: number }> => {
     const res = await fetch(`${API_URL}/invoices/${id}/settle-partial`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount, paidAt }),
+      body: JSON.stringify({ amount, paidAt, slipImageUrl }),
     });
     if (!res.ok) {
       const txt = await res.text().catch(() => '');

@@ -15,8 +15,8 @@ export default function PaymentsClient() {
   const status = sp.get('status') || '';
   const m = sp.get('month');
   const y = sp.get('year');
-  const month = m === null ? new Date().getMonth() + 1 : Number(m);
-  const year = y === null ? new Date().getFullYear() : Number(y);
+  const month = m === null ? 0 : Number(m);
+  const year = y === null ? 0 : Number(y);
   return <PaymentsClientInner key={`${room}|${status}|${month}|${year}`} room={room} status={status} month={month} year={year} />;
 }
 

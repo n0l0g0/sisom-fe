@@ -7,20 +7,20 @@ export default function Filters({ defaultRoom, defaultStatus, defaultMonth, defa
   const searchParams = useSearchParams();
   const [room, setRoom] = useState(defaultRoom || '');
   const [status, setStatus] = useState(defaultStatus || '');
-  const [month, setMonth] = useState<number | ''>(defaultMonth || '');
-  const [year, setYear] = useState<number | ''>(defaultYear || '');
+  const [month, setMonth] = useState<number>(defaultMonth ?? 0);
+  const [year, setYear] = useState<number>(defaultYear ?? 0);
 
-  const submit = (nextRoom?: string, nextStatus?: string, nextMonth?: number | '', nextYear?: number | '') => {
+  const submit = (nextRoom?: string, nextStatus?: string, nextMonth?: number, nextYear?: number) => {
     const r = typeof nextRoom === 'string' ? nextRoom : room;
     const s = typeof nextStatus === 'string' ? nextStatus : status;
     const m = nextMonth !== undefined ? nextMonth : month;
     const y = nextYear !== undefined ? nextYear : year;
-    
+
     const params = new URLSearchParams(searchParams.toString());
     if (r && r.trim()) params.set('room', r.trim()); else params.delete('room');
     if (s && s.trim()) params.set('status', s.trim()); else params.delete('status');
-    if (m !== '') params.set('month', m.toString()); else params.delete('month');
-    if (y !== '') params.set('year', y.toString()); else params.delete('year');
+    if (m > 0) params.set('month', m.toString()); else params.delete('month');
+    if (y > 0) params.set('year', y.toString()); else params.delete('year');
     
     params.delete('page');
     const qs = params.toString();
@@ -46,7 +46,7 @@ export default function Filters({ defaultRoom, defaultStatus, defaultMonth, defa
           onChange={(e) => {
             const val = Number(e.target.value);
             setMonth(val);
-            submit(undefined, undefined, val, undefined);
+            submit(undefined, undefined, val, year);
           }}
           className="mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f5a987] border-slate-200"
         >
@@ -63,7 +63,7 @@ export default function Filters({ defaultRoom, defaultStatus, defaultMonth, defa
           onChange={(e) => {
             const val = Number(e.target.value);
             setYear(val);
-            submit(undefined, undefined, undefined, val);
+            submit(undefined, undefined, month, val);
           }}
           className="mt-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f5a987] border-slate-200"
         >
@@ -100,8 +100,8 @@ export default function Filters({ defaultRoom, defaultStatus, defaultMonth, defa
           onClick={() => {
             setRoom('');
             setStatus('');
-            setMonth('');
-            setYear('');
+            setMonth(0);
+            setYear(0);
             router.push('/payments');
           }}
           className="px-4 py-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 transition"

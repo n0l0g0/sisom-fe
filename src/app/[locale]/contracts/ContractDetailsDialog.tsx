@@ -11,8 +11,9 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ExternalLink, Save, Upload, FileText } from "lucide-react";
-import { api, Contract, normalizeMediaUrl } from '@/services/api';
+import { Save, FileText } from "lucide-react";
+import { api, Contract } from '@/services/api';
+import SlipUploadZone from '@/components/SlipUploadZone';
 import { useRouter } from 'next/navigation';
 
 interface ContractDetailsDialogProps {
@@ -26,34 +27,36 @@ export function ContractDetailsDialog({ contract, triggerLabel }: ContractDetail
     (contract.deposit ?? '').toString(),
   );
   const [isSaving, setIsSaving] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [contractImageUrl, setContractImageUrl] = useState(contract.contractImageUrl ?? '');
-  const [contractImageVer, setContractImageVer] = useState(0);
   const [tenantName, setTenantName] = useState(contract.tenant?.name ?? '');
   const [tenantPhone, setTenantPhone] = useState(contract.tenant?.phone ?? '');
   const [tenantIdCard, setTenantIdCard] = useState(contract.tenant?.idCard ?? '');
   const [tenantAddress, setTenantAddress] = useState(contract.tenant?.address ?? '');
   const [isSavingTenant, setIsSavingTenant] = useState(false);
-  const [isUploadingIdCard, setIsUploadingIdCard] = useState(false);
   const [idCardImageUrl, setIdCardImageUrl] = useState(contract.tenant?.idCardImageUrl ?? '');
-  const [idCardImageVer, setIdCardImageVer] = useState(0);
 
-  const handleIdCardUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !contract.tenant?.id) return;
+  const handleIdCardUrlChange = async (url: string | null) => {
+    if (!contract.tenant?.id) return;
+    setIdCardImageUrl(url ?? '');
+    if (url) {
+      try {
+        await api.updateTenant(contract.tenant.id, { idCardImageUrl: url });
+        router.refresh();
+      } catch {
+        alert('บันทึกรูปบัตรประชาชนไม่สำเร็จ');
+      }
+    }
+  };
 
-    try {
-      setIsUploadingIdCard(true);
-      const uploadRes = await api.uploadMedia(file);
-      await api.updateTenant(contract.tenant.id, { idCardImageUrl: uploadRes.url });
-      setIdCardImageUrl(uploadRes.url);
-      setIdCardImageVer((v) => v + 1);
-      router.refresh();
-    } catch (error) {
-      console.error('Failed to upload id card image:', error);
-      alert('อัปโหลดรูปบัตรประชาชนไม่สำเร็จ');
-    } finally {
-      setIsUploadingIdCard(false);
+  const handleContractUrlChange = async (url: string | null) => {
+    setContractImageUrl(url ?? '');
+    if (url) {
+      try {
+        await api.updateContract(contract.id, { contractImageUrl: url });
+        router.refresh();
+      } catch {
+        alert('บันทึกรูปสัญญาไม่สำเร็จ');
+      }
     }
   };
 
@@ -71,25 +74,6 @@ export function ContractDetailsDialog({ contract, triggerLabel }: ContractDetail
       alert('บันทึกเงินประกันไม่สำเร็จ');
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      setIsUploading(true);
-      const uploadRes = await api.uploadMedia(file);
-      await api.updateContract(contract.id, { contractImageUrl: uploadRes.url });
-      setContractImageUrl(uploadRes.url);
-      setContractImageVer((v) => v + 1);
-      router.refresh();
-    } catch (error) {
-      console.error('Failed to upload image:', error);
-      alert('อัปโหลดรูปภาพไม่สำเร็จ');
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -200,44 +184,11 @@ export function ContractDetailsDialog({ contract, triggerLabel }: ContractDetail
                 </div>
 
                 {/* ID Card Image */}
-                <div className="space-y-2">
-                  <Label className="text-slate-500 dark:text-slate-400">รูปบัตรประชาชน</Label>
-                  {idCardImageUrl ? (
-                    <div className="mt-2">
-                      <a href={normalizeMediaUrl(idCardImageUrl)} target="_blank" rel="noopener noreferrer" className="block relative h-40 w-full rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:opacity-90 transition-opacity group">
-                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                         <img 
-                            src={`${normalizeMediaUrl(idCardImageUrl)}?v=${idCardImageVer}`} 
-                            alt="ID Card" 
-                            className="w-full h-full object-contain" 
-                         />
-                         <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="text-white text-sm font-medium flex items-center gap-2">
-                              <ExternalLink className="w-4 h-4" />
-                              ดูรูปเต็ม
-                            </span>
-                         </div>
-                      </a>
-                    </div>
-                  ) : (
-                    <div className="mt-2 h-20 w-full rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center text-slate-400 text-sm">
-                      ไม่มีรูปบัตรประชาชน
-                    </div>
-                  )}
-                  <div className="mt-2">
-                     <Label htmlFor="upload-idcard" className="cursor-pointer inline-flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
-                        {isUploadingIdCard ? 'กำลังอัปโหลด...' : <><Upload className="w-4 h-4" /> อัปโหลดรูปบัตรประชาชนใหม่</>}
-                     </Label>
-                     <Input 
-                        id="upload-idcard" 
-                        type="file" 
-                        accept="image/*" 
-                        className="hidden" 
-                        onChange={handleIdCardUpload}
-                        disabled={isUploadingIdCard}
-                     />
-                  </div>
-                </div>
+                <SlipUploadZone
+                  label="รูปบัตรประชาชน"
+                  value={idCardImageUrl || null}
+                  onChange={handleIdCardUrlChange}
+                />
               </div>
             ) : (
               <div className="text-slate-500 dark:text-slate-400 text-sm italic">ไม่พบข้อมูลผู้เช่า</div>
@@ -286,44 +237,11 @@ export function ContractDetailsDialog({ contract, triggerLabel }: ContractDetail
             </div>
 
             {/* Contract Image */}
-            <div className="space-y-2">
-              <Label className="text-slate-500 dark:text-slate-400">รูปสัญญาเช่า</Label>
-              {contractImageUrl ? (
-                <div className="mt-2">
-                  <a href={normalizeMediaUrl(contractImageUrl)} target="_blank" rel="noopener noreferrer" className="block relative h-40 w-full rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:opacity-90 transition-opacity group">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img 
-                        src={`${normalizeMediaUrl(contractImageUrl)}?v=${contractImageVer}`} 
-                        alt="Contract" 
-                        className="w-full h-full object-contain" 
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="text-white text-sm font-medium flex items-center gap-2">
-                          <ExternalLink className="w-4 h-4" />
-                          ดูรูปเต็ม
-                        </span>
-                      </div>
-                  </a>
-                </div>
-              ) : (
-                <div className="mt-2 h-20 w-full rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center text-slate-400 text-sm">
-                  ไม่มีรูปสัญญา
-                </div>
-              )}
-              <div className="mt-2">
-                 <Label htmlFor="upload-contract" className="cursor-pointer inline-flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
-                    {isUploading ? 'กำลังอัปโหลด...' : <><Upload className="w-4 h-4" /> อัปโหลดรูปสัญญาใหม่</>}
-                 </Label>
-                 <Input 
-                    id="upload-contract" 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={handleImageUpload}
-                    disabled={isUploading}
-                 />
-              </div>
-            </div>
+            <SlipUploadZone
+              label="รูปสัญญาเช่า"
+              value={contractImageUrl || null}
+              onChange={handleContractUrlChange}
+            />
           </div>
         </div>
       </DialogContent>

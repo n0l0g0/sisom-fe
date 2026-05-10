@@ -8,9 +8,10 @@ type Props = {
   value: string | null;
   onChange: (url: string | null) => void;
   disabled?: boolean;
+  label?: string;
 };
 
-export default function SlipUploadZone({ value, onChange, disabled }: Props) {
+export default function SlipUploadZone({ value, onChange, disabled, label = 'รูปสลิป (ไม่บังคับ)' }: Props) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -70,7 +71,7 @@ export default function SlipUploadZone({ value, onChange, disabled }: Props) {
 
   return (
     <div className="space-y-2">
-      <div className="text-sm font-medium text-slate-700 dark:text-slate-300">รูปสลิป (ไม่บังคับ)</div>
+      {label && <div className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</div>}
 
       {slipSrc ? (
         <div className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900">

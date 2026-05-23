@@ -1343,7 +1343,36 @@ export const api = {
       document.body.removeChild(a);
     }
   },
-  
+  uploadBackupToDrive: async (name: string): Promise<{ ok: boolean; fileId?: string; webViewLink?: string; error?: string }> => {
+    const res = await fetch(`${API_URL}/backups/files/${encodeURIComponent(name)}/upload-drive`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to upload to Google Drive');
+    return res.json();
+  },
+  getGoogleDriveConfig: async (): Promise<{ folderId: string; autoUpload: boolean; connected: boolean }> => {
+    const res = await fetch(`${API_URL}/backups/google-drive`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch Google Drive config');
+    return res.json();
+  },
+  setGoogleDriveConfig: async (data: { folderId: string; autoUpload: boolean; credentials?: object | null }): Promise<{ folderId: string; autoUpload: boolean; connected: boolean }> => {
+    const res = await fetch(`${API_URL}/backups/google-drive`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to save Google Drive config');
+    return res.json();
+  },
+  removeGoogleDriveConfig: async (): Promise<{ ok: boolean }> => {
+    const res = await fetch(`${API_URL}/backups/google-drive`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to remove Google Drive config');
+    return res.json();
+  },
+  testGoogleDriveConnection: async (): Promise<{ ok: boolean; email?: string; error?: string }> => {
+    const res = await fetch(`${API_URL}/backups/google-drive/test`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to test connection');
+    return res.json();
+  },
+
   // Activity Logs
   getActivityLogs: async (limit = 500): Promise<Array<{
     timestamp: string;

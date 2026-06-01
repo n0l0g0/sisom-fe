@@ -20,13 +20,7 @@ export default function FormerTenantsPage() {
       try {
         setLoading(true);
         const allTenants = await api.getTenants({ includeHistory: true });
-        const formerTenants = allTenants.filter(t => {
-          if (t.status !== 'MOVED_OUT') return false;
-          const hasDebt = t.contracts?.some(contract =>
-            contract.invoices?.some((inv: any) => inv.status === 'SENT' || inv.status === 'OVERDUE')
-          );
-          return !hasDebt;
-        });
+        const formerTenants = allTenants.filter(t => t.status === 'MOVED_OUT');
         setTenants(formerTenants);
       } catch {
         // ignore

@@ -3,7 +3,7 @@
 import { Link, usePathname, useRouter } from '../navigation';
 import { useState, useEffect } from 'react';
 import { User, api, DormConfig } from '@/services/api';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 const MENU_ITEMS = [
   { 
@@ -13,6 +13,16 @@ const MENU_ITEMS = [
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
+      </svg>
+    )
+  },
+  {
+    id: 'dashboard_2',
+    href: '/dashboard-2',
+    labelKey: 'Sidebar.dashboard_2',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 19V5m0 14h16M8 16V9m4 7V6m4 10v-4m4 4V8" />
       </svg>
     )
   },
@@ -144,6 +154,7 @@ interface SidebarProps {
 
 export function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
   const t = useTranslations();
+  const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -176,6 +187,7 @@ export function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
   };
 
   const hasPermission = (id: string) => {
+    if (id === 'dashboard' || id === 'dashboard_2') return true;
     if (!currentUser) return false;
     // Always allow profile settings for logged-in users
     if (id === 'settings_profile') return true;
@@ -233,7 +245,12 @@ export function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
             href={item.href} 
             title={isCollapsed ? t(item.labelKey) : ''}
             className={`group w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2 rounded-md transition-all duration-200 ${isActive(item.href) ? 'bg-sidebar-accent text-primary font-medium' : 'text-muted-foreground hover:bg-sidebar-accent hover:text-foreground'}`}
-            onClick={() => {
+            onClick={(event) => {
+              if (item.id === 'dashboard_2') {
+                event.preventDefault();
+                window.location.href = `/${locale}/dashboard-2`;
+                return;
+              }
               try {
                 api.createActivityLog({
                   action: 'CLICK',

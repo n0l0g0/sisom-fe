@@ -79,17 +79,22 @@ function MeterForm({ userId, allowByLogin }: { userId?: string; allowByLogin?: b
         }
         setDbValues(JSON.parse(JSON.stringify(map)));
 
-        // Pre-fill rooms with no current-month reading using their latest historical reading
+        // ดึงเลขมิเตอร์ล่าสุดของแต่ละห้องก่อนเดือนที่เลือก
         const latestPerRoom = await api.getLatestMeterReadingsPerRoom(month, year).catch(() => []);
         const latestMap: Record<string, { water: number; electric: number }> = {};
         for (const m of latestPerRoom) {
           latestMap[m.roomId] = { water: Number(m.waterReading), electric: Number(m.electricReading) };
         }
+        // ห้องว่าง (ไม่มี active contract) → ยกเลขมิเตอร์ล่าสุดมาอัตโนมัติ เพื่อให้ข้อมูลต่อเนื่อง
+        // ห้องที่มีผู้เช่าอยู่ → ช่องว่างเปล่า บังคับกรอกเลขจริงจากมิเตอร์เท่านั้น
         for (const r of rs) {
           if (map[r.id].water === '' && map[r.id].electric === '') {
             const latest = latestMap[r.id];
             if (latest !== undefined) {
-              map[r.id] = { water: String(latest.water), electric: String(latest.electric) };
+              const isOccupied = cs.some((c) => c.roomId === r.id && c.isActive);
+              if (!isOccupied) {
+                map[r.id] = { water: String(latest.water), electric: String(latest.electric) };
+              }
             }
           }
         }

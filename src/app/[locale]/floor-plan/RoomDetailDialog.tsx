@@ -67,6 +67,7 @@ export default function RoomDetailDialog({ room, children, onRoomChange }: Props
   const [targetRoomId, setTargetRoomId] = useState('');
   const [movingContractId, setMovingContractId] = useState<string | null>(null);
   const [settleMethod, setSettleMethod] = useState<'DEPOSIT' | 'CASH'>('DEPOSIT');
+  const [localDeposit, setLocalDeposit] = useState<number | null>(null);
   const [moveOutDate, setMoveOutDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [settled, setSettled] = useState<Array<{ id: string; label: string; amount: number; method: 'DEPOSIT' | 'CASH' }>>([]);
   const [moveOutDays, setMoveOutDays] = useState<number>(7);
@@ -157,7 +158,13 @@ export default function RoomDetailDialog({ room, children, onRoomChange }: Props
   };
 
   const outstandingInvoices = invoices.filter(inv => inv.status !== 'PAID' && inv.status !== 'CANCELLED');
-  const outstandingTotal = outstandingInvoices.reduce((sum, inv) => sum + Number(inv.totalAmount || 0), 0);
+  const getInvoiceRemaining = (inv: typeof invoices[0]) => {
+    const paid = (inv.payments ?? [])
+      .filter((p: any) => p.status === 'VERIFIED')
+      .reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+    return Math.max(0, Number(inv.totalAmount || 0) - paid);
+  };
+  const outstandingTotal = outstandingInvoices.reduce((sum, inv) => sum + getInvoiceRemaining(inv), 0);
 
   useEffect(() => {
     if (tenantDialogOpen) {
@@ -182,8 +189,11 @@ export default function RoomDetailDialog({ room, children, onRoomChange }: Props
 
   const activeContract = room.contracts?.find(c => c.isActive);
 
-  const depositInitial = Math.max(0, Number(activeContract?.deposit ?? 0));
-  const depositUsed = settled
+  const depositInitial = localDeposit !== null
+    ? localDeposit
+    : Math.max(0, Number(activeContract?.deposit ?? 0));
+  // When localDeposit is set, deductions are already reflected in it — don't double-count via settled
+  const depositUsed = localDeposit !== null ? 0 : settled
     .filter((s) => s.method === 'DEPOSIT')
     .reduce((sum, s) => sum + s.amount, 0);
   
@@ -242,6 +252,7 @@ export default function RoomDetailDialog({ room, children, onRoomChange }: Props
       setEditRent(initialRent !== undefined ? String(initialRent) : '');
       setEditDeposit(activeContract?.deposit !== undefined ? String(Number(activeContract.deposit)) : '');
       setSettled([]);
+      setLocalDeposit(null);
     }
   }, [open, activeContract?.id, activeContract?.occupantCount]);
 
@@ -603,6 +614,7 @@ export default function RoomDetailDialog({ room, children, onRoomChange }: Props
     try {
       setSavingContractInfo(true);
       await api.updateContract(activeContract.id, payload as any);
+      if (payload.deposit !== undefined) setLocalDeposit(null);
       onRoomChange?.();
     } catch {
       alert('บันทึกข้อมูลสัญญาเช่าไม่สำเร็จ');
@@ -624,6 +636,9 @@ export default function RoomDetailDialog({ room, children, onRoomChange }: Props
         isActive: false,
         endDate: new Date().toISOString()
       });
+      if (activeContract.tenantId) {
+        await api.updateTenant(activeContract.tenantId, { status: 'MOVED_OUT' });
+      }
       alert('แจ้งย้ายออกเรียบร้อยแล้ว');
       setOpen(false);
       onRoomChange?.();
@@ -636,25 +651,23 @@ export default function RoomDetailDialog({ room, children, onRoomChange }: Props
   const handleSettleOutstanding = async () => {
     if (!activeContract) return;
     if (outstandingInvoices.length === 0) return;
+
+    const currentDeposit = localDeposit !== null ? localDeposit : Math.max(0, Number(activeContract.deposit || 0));
+
     if (settleMethod === 'DEPOSIT') {
-      const deposit = Math.max(0, Number(activeContract.deposit || 0));
-      // Calculate total deductible amount (excluding rent)
       const deductibleTotal = outstandingInvoices.reduce((sum, inv) => {
-        // Rent is NOT deductible from deposit for this check, as user requested
-        // Calculate non-rent components: water + electric + other
-        const nonRentAmount = (Number(inv.waterAmount || 0) + Number(inv.electricAmount || 0) + Number(inv.otherFees || 0));
-        return sum + nonRentAmount;
+        return sum + Number(inv.waterAmount || 0) + Number(inv.electricAmount || 0) + Number(inv.otherFees || 0);
       }, 0);
 
-      if (deposit < deductibleTotal) {
+      if (currentDeposit < deductibleTotal) {
         alert(`เงินประกันไม่พอ (ยอดหักได้: ฿${deductibleTotal.toLocaleString()}) กรุณาเลือกชำระเงินสดหรือปรับยอดให้พอ`);
         return;
       }
     }
     try {
+      let depositAfterSettle = currentDeposit;
       for (const inv of outstandingInvoices) {
         await api.settleInvoice(inv.id, settleMethod);
-        // Optimistic update: mark as PAID immediately so UI reflects change without waiting for refetch
         setInvoices((prev) => prev.map((i) => i.id === inv.id ? { ...i, status: 'PAID' as const } : i));
         setSettled((prev) => [
           ...prev,
@@ -665,8 +678,16 @@ export default function RoomDetailDialog({ room, children, onRoomChange }: Props
             method: settleMethod,
           },
         ]);
+        if (settleMethod === 'DEPOSIT') {
+          const deducted = Number(inv.waterAmount || 0) + Number(inv.electricAmount || 0) + Number(inv.otherFees || 0);
+          depositAfterSettle = Math.max(0, depositAfterSettle - deducted);
+        }
+      }
+      if (settleMethod === 'DEPOSIT') {
+        setLocalDeposit(depositAfterSettle);
       }
       await fetchInvoices();
+      onRoomChange?.();
       alert('เคลียร์บิลค้างชำระเรียบร้อย');
     } catch (e) {
       console.error(e);

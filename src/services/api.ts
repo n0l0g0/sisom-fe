@@ -1348,18 +1348,29 @@ export const api = {
     if (!res.ok) throw new Error('Failed to upload to Google Drive');
     return res.json();
   },
-  getGoogleDriveConfig: async (): Promise<{ folderId: string; autoUpload: boolean; connected: boolean }> => {
+  getGoogleDriveConfig: async (): Promise<{ folderId: string; autoUpload: boolean; connected: boolean; authType: string }> => {
     const res = await fetch(`${API_URL}/backups/google-drive`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch Google Drive config');
     return res.json();
   },
-  setGoogleDriveConfig: async (data: { folderId: string; autoUpload: boolean; credentials?: object | null }): Promise<{ folderId: string; autoUpload: boolean; connected: boolean }> => {
+  setGoogleDriveConfig: async (data: { folderId: string; autoUpload: boolean; credentials?: object | null }): Promise<{ folderId: string; autoUpload: boolean; connected: boolean; authType: string }> => {
     const res = await fetch(`${API_URL}/backups/google-drive`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error('Failed to save Google Drive config');
+    return res.json();
+  },
+  getOAuthUrl: async (data: { clientId: string; clientSecret: string; folderId: string; autoUpload: boolean }): Promise<{ url: string }> => {
+    const params = new URLSearchParams({
+      clientId: data.clientId,
+      clientSecret: data.clientSecret,
+      folderId: data.folderId,
+      autoUpload: String(data.autoUpload),
+    });
+    const res = await fetch(`${API_URL}/backups/google-drive/oauth/url?${params}`);
+    if (!res.ok) throw new Error('Failed to get OAuth URL');
     return res.json();
   },
   removeGoogleDriveConfig: async (): Promise<{ ok: boolean }> => {

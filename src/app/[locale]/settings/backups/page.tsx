@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { api } from '@/services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,9 +36,13 @@ interface DriveConfig {
   folderId: string;
   autoUpload: boolean;
   connected: boolean;
+  authType: string;
 }
 
-export default function BackupSettingsPage() {
+function BackupSettingsContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [hour, setHour] = useState<number>(3);
   const [minute, setMinute] = useState<number>(0);
   const [saving, setSaving] = useState(false);
@@ -46,24 +51,23 @@ export default function BackupSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Google Drive state
-  const [driveConfig, setDriveConfig] = useState<DriveConfig>({ folderId: '', autoUpload: false, connected: false });
+  const [driveConfig, setDriveConfig] = useState<DriveConfig>({ folderId: '', autoUpload: false, connected: false, authType: 'none' });
   const [driveFolderId, setDriveFolderId] = useState('');
   const [driveAutoUpload, setDriveAutoUpload] = useState(false);
-  const [driveCredentials, setDriveCredentials] = useState('');
-  const [driveSaving, setDriveSaving] = useState(false);
+  const [driveClientId, setDriveClientId] = useState('');
+  const [driveClientSecret, setDriveClientSecret] = useState('');
+  const [driveConnecting, setDriveConnecting] = useState(false);
   const [driveTesting, setDriveTesting] = useState(false);
   const [driveMessage, setDriveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [uploadingFile, setUploadingFile] = useState<string | null>(null);
-  const [showCredentials, setShowCredentials] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [schedule, backupFiles, driveCfg] = await Promise.all([
         api.getBackupSchedule().catch(() => ({ hour: 3, minute: 0 })),
         api.listBackups().catch(() => []),
-        api.getGoogleDriveConfig().catch(() => ({ folderId: '', autoUpload: false, connected: false })),
+        api.getGoogleDriveConfig().catch(() => ({ folderId: '', autoUpload: false, connected: false, authType: 'none' })),
       ]);
       setHour(Number(schedule.hour || 3));
       setMinute(Number(schedule.minute || 0));
@@ -76,11 +80,24 @@ export default function BackupSettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
+
+  useEffect(() => {
+    const connected = searchParams.get('drive_connected');
+    const driveError = searchParams.get('drive_error');
+    if (connected === '1') {
+      setDriveMessage({ type: 'success', text: 'เชื่อมต่อ Google Drive สำเร็จ!' });
+      fetchData();
+      router.replace('/settings/backups');
+    } else if (driveError) {
+      setDriveMessage({ type: 'error', text: `เชื่อมต่อไม่สำเร็จ: ${driveError}` });
+      router.replace('/settings/backups');
+    }
+  }, [searchParams, fetchData, router]);
 
   const saveSchedule = async () => {
     setSaving(true);
@@ -135,9 +152,7 @@ export default function BackupSettingsPage() {
     try {
       const res = await api.uploadBackupToDrive(name);
       if (res.ok) {
-        if (res.webViewLink) {
-          window.open(res.webViewLink, '_blank');
-        }
+        if (res.webViewLink) window.open(res.webViewLink, '_blank');
         setDriveMessage({ type: 'success', text: `อัปโหลด ${name} ไป Google Drive สำเร็จ` });
       } else {
         setDriveMessage({ type: 'error', text: res.error || 'อัปโหลดไม่สำเร็จ' });
@@ -150,34 +165,28 @@ export default function BackupSettingsPage() {
     }
   };
 
-  const saveDriveConfig = async () => {
-    setDriveSaving(true);
+  const connectWithGoogle = async () => {
+    if (!driveClientId.trim() || !driveClientSecret.trim()) {
+      setDriveMessage({ type: 'error', text: 'กรุณากรอก Client ID และ Client Secret' });
+      return;
+    }
+    if (!driveFolderId.trim()) {
+      setDriveMessage({ type: 'error', text: 'กรุณากรอก Folder ID' });
+      return;
+    }
+    setDriveConnecting(true);
     setDriveMessage(null);
     try {
-      let credentials: object | null | undefined = undefined;
-      if (driveCredentials.trim()) {
-        try {
-          credentials = JSON.parse(driveCredentials.trim());
-        } catch {
-          setDriveMessage({ type: 'error', text: 'Service Account JSON ไม่ถูกต้อง' });
-          setDriveSaving(false);
-          return;
-        }
-      }
-      const cfg = await api.setGoogleDriveConfig({
+      const { url } = await api.getOAuthUrl({
+        clientId: driveClientId.trim(),
+        clientSecret: driveClientSecret.trim(),
         folderId: driveFolderId.trim(),
         autoUpload: driveAutoUpload,
-        credentials,
       });
-      setDriveConfig(cfg);
-      setDriveCredentials('');
-      setShowCredentials(false);
-      setDriveMessage({ type: 'success', text: 'บันทึกการตั้งค่า Google Drive สำเร็จ' });
-      setTimeout(() => setDriveMessage(null), 3000);
+      window.location.href = url;
     } catch {
-      setDriveMessage({ type: 'error', text: 'บันทึกไม่สำเร็จ' });
-    } finally {
-      setDriveSaving(false);
+      setDriveMessage({ type: 'error', text: 'ไม่สามารถเริ่มการเชื่อมต่อได้' });
+      setDriveConnecting(false);
     }
   };
 
@@ -185,10 +194,11 @@ export default function BackupSettingsPage() {
     if (!confirm('ยืนยันการยกเลิกการเชื่อมต่อ Google Drive ?')) return;
     try {
       await api.removeGoogleDriveConfig();
-      setDriveConfig({ folderId: '', autoUpload: false, connected: false });
+      setDriveConfig({ folderId: '', autoUpload: false, connected: false, authType: 'none' });
       setDriveFolderId('');
       setDriveAutoUpload(false);
-      setDriveCredentials('');
+      setDriveClientId('');
+      setDriveClientSecret('');
       setDriveMessage({ type: 'success', text: 'ยกเลิกการเชื่อมต่อสำเร็จ' });
       setTimeout(() => setDriveMessage(null), 3000);
     } catch {
@@ -367,104 +377,128 @@ export default function BackupSettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6 space-y-5">
-          {/* How to guide */}
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 rounded-xl text-sm text-blue-700 dark:text-blue-300 space-y-1">
-            <p className="font-semibold">วิธีตั้งค่า:</p>
-            <ol className="list-decimal list-inside space-y-1 text-blue-600 dark:text-blue-400">
-              <li>ไปที่ <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="underline">Google Cloud Console</a> → สร้าง Service Account</li>
-              <li>สร้าง Key (JSON) แล้วคัดลอกเนื้อหาทั้งหมด</li>
-              <li>สร้าง Folder ใน Google Drive แล้ว Share ให้ Service Account email</li>
-              <li>คัดลอก Folder ID จาก URL (ส่วนท้ายหลัง /folders/)</li>
-            </ol>
-          </div>
-
-          <div className="grid gap-4">
-            {/* Folder ID */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Google Drive Folder ID
-              </label>
-              <input
-                type="text"
-                value={driveFolderId}
-                onChange={(e) => setDriveFolderId(e.target.value)}
-                placeholder="เช่น 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
-                className="w-full h-11 px-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
-              />
-            </div>
-
-            {/* Service Account JSON */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Service Account JSON {driveConfig.connected && !showCredentials && <span className="text-emerald-500 font-normal">(บันทึกแล้ว)</span>}
-                </label>
-                {driveConfig.connected && (
-                  <button
-                    type="button"
-                    onClick={() => setShowCredentials(!showCredentials)}
-                    className="text-xs text-blue-500 hover:underline"
-                  >
-                    {showCredentials ? 'ซ่อน' : 'อัปเดต credentials'}
-                  </button>
-                )}
+          {!driveConfig.connected ? (
+            <>
+              {/* How to guide */}
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 rounded-xl text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                <p className="font-semibold">วิธีตั้งค่า:</p>
+                <ol className="list-decimal list-inside space-y-1 text-blue-600 dark:text-blue-400">
+                  <li>ไปที่ <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="underline">Google Cloud Console → Credentials</a></li>
+                  <li>สร้าง OAuth 2.0 Client ID ประเภท <strong>Web application</strong></li>
+                  <li>เพิ่ม Authorized redirect URI: <code className="bg-blue-100 dark:bg-blue-900/30 px-1 rounded text-xs">https://line-sisom.washqueue.com/api/backups/google-drive/oauth/callback</code></li>
+                  <li>คัดลอก Client ID และ Client Secret มากรอกด้านล่าง</li>
+                  <li>กรอก Folder ID จาก URL ของ Google Drive folder</li>
+                  <li>กด <strong>เชื่อมต่อ Google Drive</strong> แล้วอนุมัติสิทธิ์</li>
+                </ol>
               </div>
-              {(!driveConfig.connected || showCredentials) && (
-                <textarea
-                  value={driveCredentials}
-                  onChange={(e) => setDriveCredentials(e.target.value)}
-                  placeholder={'วาง Service Account JSON ที่นี่\n{\n  "type": "service_account",\n  "project_id": "...",\n  ...\n}'}
-                  rows={6}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all resize-none"
-                />
-              )}
-            </div>
 
-            {/* Auto upload toggle */}
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={driveAutoUpload}
-                  onChange={(e) => setDriveAutoUpload(e.target.checked)}
-                  className="sr-only"
-                />
-                <div className={`w-11 h-6 rounded-full transition-colors ${driveAutoUpload ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
-                  <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${driveAutoUpload ? 'translate-x-5' : ''}`} />
+              <div className="grid gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Client ID</label>
+                    <input
+                      type="text"
+                      value={driveClientId}
+                      onChange={(e) => setDriveClientId(e.target.value)}
+                      placeholder="xxxx.apps.googleusercontent.com"
+                      className="w-full h-11 px-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Client Secret</label>
+                    <input
+                      type="password"
+                      value={driveClientSecret}
+                      onChange={(e) => setDriveClientSecret(e.target.value)}
+                      placeholder="GOCSPX-..."
+                      className="w-full h-11 px-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Google Drive Folder ID</label>
+                  <input
+                    type="text"
+                    value={driveFolderId}
+                    onChange={(e) => setDriveFolderId(e.target.value)}
+                    placeholder="เช่น 1hIzxwAdAUTLRFVof3yD19qpfo4uC4jNT"
+                    className="w-full h-11 px-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+                  />
+                </div>
+
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={driveAutoUpload}
+                      onChange={(e) => setDriveAutoUpload(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div className={`w-11 h-6 rounded-full transition-colors ${driveAutoUpload ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                      <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${driveAutoUpload ? 'translate-x-5' : ''}`} />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">อัปโหลดอัตโนมัติหลัง backup</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">เมื่อ backup เสร็จ ระบบจะส่งไฟล์ไป Google Drive โดยอัตโนมัติ</p>
+                  </div>
+                </label>
+              </div>
+
+              {driveMessage && (
+                <div className={`p-3 rounded-xl flex items-center gap-3 text-sm font-medium ${
+                  driveMessage.type === 'success'
+                    ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800'
+                    : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800'
+                }`}>
+                  {driveMessage.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
+                  {driveMessage.text}
+                </div>
+              )}
+
+              <Button
+                onClick={connectWithGoogle}
+                disabled={driveConnecting}
+                className="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl w-full sm:w-auto"
+              >
+                {driveConnecting ? (
+                  <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />กำลังเชื่อมต่อ...</span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                    เชื่อมต่อด้วย Google
+                  </span>
+                )}
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">เชื่อมต่อ Google Drive สำเร็จ</p>
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
+                      Folder ID: <code className="font-mono">{driveConfig.folderId}</code>
+                      {driveConfig.autoUpload && ' · อัปโหลดอัตโนมัติ: เปิด'}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">อัปโหลดอัตโนมัติหลัง backup</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">เมื่อ backup เสร็จ ระบบจะส่งไฟล์ไป Google Drive โดยอัตโนมัติ</p>
-              </div>
-            </label>
-          </div>
 
-          {driveMessage && (
-            <div className={`p-3 rounded-xl flex items-center gap-3 text-sm font-medium ${
-              driveMessage.type === 'success'
-                ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800'
-                : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800'
-            }`}>
-              {driveMessage.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
-              {driveMessage.text}
-            </div>
-          )}
-
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={saveDriveConfig}
-              disabled={driveSaving}
-              className="h-10 px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
-            >
-              {driveSaving ? (
-                <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />กำลังบันทึก...</span>
-              ) : (
-                <span className="flex items-center gap-2"><Save className="w-4 h-4" />บันทึกการตั้งค่า</span>
+              {driveMessage && (
+                <div className={`p-3 rounded-xl flex items-center gap-3 text-sm font-medium ${
+                  driveMessage.type === 'success'
+                    ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800'
+                    : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800'
+                }`}>
+                  {driveMessage.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
+                  {driveMessage.text}
+                </div>
               )}
-            </Button>
-            {driveConfig.connected && (
-              <>
+
+              <div className="flex flex-wrap gap-3">
                 <Button
                   onClick={testDriveConnection}
                   disabled={driveTesting}
@@ -485,9 +519,9 @@ export default function BackupSettingsPage() {
                   <Link2Off className="w-4 h-4 mr-2" />
                   ยกเลิกการเชื่อมต่อ
                 </Button>
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -611,5 +645,13 @@ export default function BackupSettingsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function BackupSettingsPage() {
+  return (
+    <Suspense>
+      <BackupSettingsContent />
+    </Suspense>
   );
 }
